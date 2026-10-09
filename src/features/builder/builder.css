@@ -1,0 +1,538 @@
+/* Form builder — Google Forms' builder mapped onto the 003-29 shell:
+   tabs in the sidebar, title in the top-bar centre, actions top-right,
+   cards in the content area. */
+
+/* ── Top bar: title + save state ─────────────────────────── */
+.title-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+  background: var(--fill);
+  transition: background 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.title-field:focus-within {
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line), 0 2px 8px rgb(0 0 0 / 0.04);
+}
+
+.title-field input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 500;
+}
+
+.save-state {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.save-error {
+  color: var(--danger);
+}
+
+/* ── Top bar: actions ────────────────────────────────────── */
+.builder-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.builder-actions .icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+  background: none;
+}
+
+.publish-btn {
+  height: 36px;
+  margin: 0 6px;
+  padding: 0 18px;
+}
+
+.status-menu > .icon-btn {
+  width: auto;
+  margin: 0 6px;
+  padding: 0;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px 0 16px;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.status-pill-published {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.status-pill-closed {
+  background: var(--fill-strong);
+  color: var(--text);
+}
+
+/* ── Missing / loading ───────────────────────────────────── */
+.form-missing {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.form-missing p {
+  color: var(--text-muted);
+}
+
+.form-missing .btn {
+  margin-top: 8px;
+}
+
+.builder-loading {
+  min-height: 320px;
+  border-radius: var(--radius-card);
+  background: var(--fill);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+/* ── Layout ──────────────────────────────────────────────── */
+.builder {
+  display: grid;
+  grid-template-columns: minmax(0, 760px) auto;
+  justify-content: center;
+  gap: 16px;
+}
+
+.builder-column {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.builder-toolbar {
+  position: sticky;
+  top: 16px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.builder-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 28px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-card);
+  background: none;
+  color: var(--accent);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.builder-empty:hover {
+  background: var(--accent-soft);
+}
+
+/* ── Cards ───────────────────────────────────────────────── */
+.form-head,
+.q-card {
+  position: relative;
+  padding: 20px 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  transition: box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+
+.form-head {
+  border-top: 6px solid var(--accent);
+}
+
+/* Active card: accent bar on the left, like Google Forms. */
+.q-card-active {
+  box-shadow: inset 4px 0 0 var(--accent), var(--shadow);
+}
+
+.q-card {
+  cursor: pointer;
+}
+
+.q-card-active {
+  cursor: default;
+}
+
+.q-card-dragging {
+  z-index: 2;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.12);
+}
+
+.form-head textarea,
+.q-card textarea,
+.q-option input {
+  width: 100%;
+  padding: 6px 0;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  outline: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  resize: none;
+  overflow: hidden;
+  transition: border-color 0.2s var(--ease);
+}
+
+.form-head textarea:hover,
+.q-card textarea:hover,
+.q-option input:hover {
+  border-bottom-color: var(--line);
+}
+
+.form-head textarea:focus,
+.q-card textarea:focus,
+.q-option input:focus {
+  border-bottom-color: var(--accent);
+}
+
+/* Element-qualified so these beat the shared textarea reset above. */
+.form-head .form-head-title {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+.form-head .form-head-desc {
+  color: var(--text-muted);
+}
+
+.q-drag {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-muted);
+  cursor: grab;
+  opacity: 0;
+  transform: translateX(-50%);
+  touch-action: none;
+  transition: opacity 0.2s var(--ease);
+}
+
+.q-card:hover .q-drag,
+.q-card-active .q-drag,
+.q-drag:focus-visible {
+  opacity: 1;
+}
+
+.q-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.q-card .q-title-input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: var(--radius-control) var(--radius-control) 0 0;
+  background: var(--fill);
+  font-weight: 500;
+}
+
+.type-menu > .icon-btn {
+  width: auto;
+  height: 42px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+
+.type-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 0 12px;
+  color: var(--text);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.q-card .q-desc-input {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.q-hint {
+  width: 55%;
+  margin-top: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px dotted var(--line);
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.q-options {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.q-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 36px;
+}
+
+.q-marker {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--fill-strong);
+}
+
+.q-marker-circle {
+  border-radius: 50%;
+}
+
+.q-marker-box {
+  border-radius: 4px;
+}
+
+.q-marker-num {
+  width: auto;
+  height: auto;
+  min-width: 16px;
+  border: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.q-option-remove {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+}
+
+.q-add-option {
+  font-size: 14px;
+}
+
+.q-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.q-foot-divider {
+  width: 1px;
+  height: 24px;
+  margin: 0 10px;
+  background: var(--line);
+}
+
+.q-preview-title {
+  font-weight: 500;
+}
+
+.q-preview-desc {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.q-required {
+  color: var(--danger);
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+/* ── Switch (checkbox styled as a toggle) ────────────────── */
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.switch input {
+  appearance: none;
+  position: relative;
+  flex-shrink: 0;
+  width: 36px;
+  height: 20px;
+  margin: 0;
+  border-radius: var(--radius-pill);
+  background: var(--fill-strong);
+  cursor: pointer;
+  transition: background 0.2s var(--ease);
+}
+
+.switch input::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+  transition: transform 0.2s var(--ease);
+}
+
+.switch input:checked {
+  background: var(--accent);
+}
+
+.switch input:checked::after {
+  transform: translateX(16px);
+}
+
+/* ── Settings ────────────────────────────────────────────── */
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.settings h1 {
+  font-size: 22px;
+}
+
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.settings-group h2 {
+  padding: 16px 20px 4px;
+  font-size: 15px;
+}
+
+.setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 20px;
+  cursor: pointer;
+}
+
+.setting + .setting {
+  border-top: 1px solid var(--line);
+}
+
+.setting-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.setting-text strong {
+  font-weight: 500;
+}
+
+.setting-text span {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* ── Smaller screens ─────────────────────────────────────── */
+@media (max-width: 767px) {
+  .desktop-only {
+    display: none;
+  }
+
+  .builder {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Toolbar becomes a floating add button. */
+  .builder-toolbar {
+    position: fixed;
+    top: auto;
+    right: 16px;
+    bottom: 20px;
+    z-index: 5;
+    padding: 4px;
+    border-radius: var(--radius-pill);
+  }
+
+  .builder-toolbar .icon-btn {
+    width: 48px;
+    height: 48px;
+    color: var(--accent);
+  }
+
+  .form-head,
+  .q-card {
+    padding: 18px 16px;
+  }
+
+  .form-head .form-head-title {
+    font-size: 22px;
+  }
+
+  .q-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .type-menu > .icon-btn {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .save-state {
+    display: none;
+  }
+}

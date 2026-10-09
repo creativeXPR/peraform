@@ -1,9 +1,11 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import AppShell from './lib/AppShell.jsx'
 import RequireCreator from './features/auth/RequireCreator.jsx'
 import SignInPage from './features/auth/SignInPage.jsx'
 import DashboardPage from './features/dashboard/DashboardPage.jsx'
 import BuilderPage from './features/builder/BuilderPage.jsx'
+import FormLayout from './features/builder/FormLayout.jsx'
+import SettingsPage from './features/builder/SettingsPage.jsx'
 import ResponsesPage from './features/responses/ResponsesPage.jsx'
 import RespondPage from './features/respond/RespondPage.jsx'
 
@@ -16,9 +18,12 @@ export default function App() {
           <Route element={<AppShell sidebar={false} search />}>
             <Route path="/" element={<DashboardPage />} />
           </Route>
-          <Route element={<AppShell />}>
-            <Route path="/forms/:formId/edit" element={<BuilderPage />} />
-            <Route path="/forms/:formId/responses" element={<ResponsesPage />} />
+          {/* One editing session per form; the tabs share it. */}
+          <Route path="/forms/:formId" element={<FormLayout />}>
+            <Route index element={<Navigate to="edit" replace />} />
+            <Route path="edit" element={<BuilderPage />} />
+            <Route path="responses" element={<ResponsesPage />} />
+            <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Route>
         <Route path="/signin" element={<SignInPage />} />

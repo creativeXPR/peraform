@@ -31,7 +31,7 @@ export const QUESTION_TYPES = [
 
 export function newForm(ownerId) {
   return {
-    title: 'Untitled form',
+    title: '', // shown as "Untitled form" until named
     description: '',
     ownerId,
     memberIds: [ownerId],

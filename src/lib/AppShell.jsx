@@ -9,9 +9,18 @@ const NAV_ITEMS = [{ to: '/', label: 'My forms', icon: LayoutGrid }]
 
 // Creator-side frame: top bar, optional collapsible sidebar, content card,
 // footer. Desktop collapses the sidebar in place; below 768px it becomes a
-// slide-over drawer. `search` adds the centred top-bar search; the page
-// reads its text via useOutletContext().search.
-export default function AppShell({ sidebar = true, search = false }) {
+// slide-over drawer.
+//   nav     — sidebar items ({ to, label, icon, end? })
+//   search  — centred top-bar search; the page reads useOutletContext().search
+//   center  — any other centred top-bar content (e.g. the form title)
+//   actions — extra top-bar buttons, before the theme toggle and account
+export default function AppShell({
+  sidebar = true,
+  nav = NAV_ITEMS,
+  search = false,
+  center = null,
+  actions = null,
+}) {
   const { theme, toggleTheme } = useTheme()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -30,22 +39,29 @@ export default function AppShell({ sidebar = true, search = false }) {
       data-sidebar={!sidebar ? 'none' : sidebarOpen ? 'open' : 'closed'}
       data-drawer={drawerOpen ? 'open' : 'closed'}
     >
-      <header className={`topbar${search ? ' topbar-search' : ''}`}>
-        {sidebar && (
-          <button
-            type="button"
-            className="icon-btn drawer-btn"
-            onClick={() => setDrawerOpen(true)}
-            aria-label="Open menu"
-          >
-            <Menu size={18} />
-          </button>
+      <header className={`topbar${search || center ? ' topbar-has-center' : ''}`}>
+        <div className="topbar-start">
+          {sidebar && (
+            <button
+              type="button"
+              className="icon-btn drawer-btn"
+              onClick={() => setDrawerOpen(true)}
+              aria-label="Open menu"
+            >
+              <Menu size={18} />
+            </button>
+          )}
+          <Link to="/" className="logo">
+            PeraForm
+          </Link>
+        </div>
+        {(search || center) && (
+          <div className="topbar-center">
+            {search ? <SearchBar value={searchText} onChange={setSearchText} /> : center}
+          </div>
         )}
-        <Link to="/" className="logo">
-          PeraForm
-        </Link>
-        {search && <SearchBar value={searchText} onChange={setSearchText} />}
         <div className="topbar-actions">
+          {actions}
           <button
             type="button"
             className="icon-btn"
@@ -73,11 +89,11 @@ export default function AppShell({ sidebar = true, search = false }) {
               </button>
             </div>
             <nav className="sidebar-nav">
-              {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+              {nav.map(({ to, label, icon: Icon, end = true }) => (
                 <NavLink
                   key={to}
                   to={to}
-                  end
+                  end={end}
                   className="nav-item"
                   onClick={() => setDrawerOpen(false)}
                 >

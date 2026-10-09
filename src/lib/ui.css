@@ -119,3 +119,25 @@
   background: var(--fill);
   color: var(--text);
 }
+
+/* Toast (useToast) */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  z-index: 40;
+  padding: 10px 18px;
+  border-radius: var(--radius-pill);
+  background: var(--text);
+  color: var(--bg);
+  font-size: 14px;
+  transform: translateX(-50%);
+  animation: toast-in 0.25s var(--ease);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+}

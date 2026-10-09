@@ -3,6 +3,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom'
 import { ArrowDownAZ, Filter, LayoutGrid, List, Plus, Upload } from 'lucide-react'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import MenuButton from '../../lib/MenuButton.jsx'
+import { useToast } from '../../lib/useToast.jsx'
 import { useAuth } from '../auth/useAuth.js'
 import FormCard from './FormCard.jsx'
 import FormThumbnail from './FormThumbnail.jsx'
@@ -50,11 +51,10 @@ export default function DashboardPage() {
   const [view, setView] = useState(readSavedView)
   const [creating, setCreating] = useState(false)
   const [actionError, setActionError] = useState('')
-  const [toast, setToast] = useState('')
+  const [toast, showToast] = useToast()
   const [pendingDelete, setPendingDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const fileRef = useRef(null)
-  const toastTimer = useRef(null)
 
   const visible = useMemo(() => {
     const list = forms.filter(
@@ -63,12 +63,6 @@ export default function DashboardPage() {
     const compare = SORTS[sort].compare
     return compare ? [...list].sort(compare) : list
   }, [forms, filter, sort, search, user.uid])
-
-  function showToast(message) {
-    setToast(message)
-    clearTimeout(toastTimer.current)
-    toastTimer.current = setTimeout(() => setToast(''), 2500)
-  }
 
   function toggleView() {
     const next = view === 'grid' ? 'list' : 'grid'
@@ -255,11 +249,7 @@ export default function DashboardPage() {
         onCancel={() => setPendingDelete(null)}
       />
 
-      {toast && (
-        <div className="toast" role="status">
-          {toast}
-        </div>
-      )}
+      {toast}
     </div>
   )
 }
