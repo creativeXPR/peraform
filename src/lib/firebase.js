@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app'
-import { getAuth, GoogleAuthProvider } from 'firebase/auth'
-import { getFirestore } from 'firebase/firestore'
+import { connectAuthEmulator, getAuth, GoogleAuthProvider } from 'firebase/auth'
+import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore'
 import { getFunctions } from 'firebase/functions'
 import { getStorage } from 'firebase/storage'
 
@@ -20,6 +20,12 @@ export const firebaseApp = initializeApp(firebaseConfig)
 // Named database, not the project's default one — that's what separates
 // PeraForm's data (and its security rules) from the other apps.
 export const db = getFirestore(firebaseApp, 'peraform')
+
+// `npm run dev:emulators` sets this, so local testing never touches the
+// real c-xpr25 data or user list.
+const useEmulators = import.meta.env.VITE_USE_EMULATORS === 'true'
+if (useEmulators) connectFirestoreEmulator(db, '127.0.0.1', 8080)
+
 // Points at PeraForm's own bucket (VITE_FIREBASE_STORAGE_BUCKET), so its
 // storage rules can't overwrite Anix's on the project's default bucket.
 export const storage = getStorage(firebaseApp)
@@ -32,6 +38,9 @@ let authInstance
 export function getFirebaseAuth() {
   if (!authInstance) {
     authInstance = getAuth(firebaseApp)
+    if (useEmulators) {
+      connectAuthEmulator(authInstance, 'http://127.0.0.1:9099', { disableWarnings: true })
+    }
   }
   return authInstance
 }

@@ -11,10 +11,12 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Creator screens: signed-in (non-anonymous) only, in the sidebar frame. */}
+        {/* Creator screens: signed-in (non-anonymous) only. */}
         <Route element={<RequireCreator />}>
-          <Route element={<AppShell />}>
+          <Route element={<AppShell sidebar={false} search />}>
             <Route path="/" element={<DashboardPage />} />
+          </Route>
+          <Route element={<AppShell />}>
             <Route path="/forms/:formId/edit" element={<BuilderPage />} />
             <Route path="/forms/:formId/responses" element={<ResponsesPage />} />
           </Route>

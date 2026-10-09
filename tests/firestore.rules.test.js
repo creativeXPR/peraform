@@ -5,12 +5,17 @@ import {
   initializeTestEnvironment,
 } from '@firebase/rules-unit-testing'
 import {
+  collection,
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
+  orderBy,
+  query,
   serverTimestamp,
   setDoc,
   updateDoc,
+  where,
 } from 'firebase/firestore'
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest'
 
@@ -86,6 +91,35 @@ describe('forms: read', () => {
   })
 })
 
+describe('forms: dashboard list query', () => {
+  beforeEach(async () => {
+    await seed('forms/mine', form({ status: 'draft', updatedAt: new Date() }))
+    await seed(
+      'forms/theirs',
+      form({ status: 'draft', ownerId: STRANGER, memberIds: [STRANGER], updatedAt: new Date() }),
+    )
+  })
+
+  const myForms = (db, uid) =>
+    query(
+      collection(db, 'forms'),
+      where('memberIds', 'array-contains', uid),
+      orderBy('updatedAt', 'desc'),
+    )
+
+  it('lets a user list the forms they are a member of', async () => {
+    await assertSucceeds(getDocs(myForms(real(EDITOR), EDITOR)))
+  })
+
+  it('blocks listing every form', async () => {
+    await assertFails(getDocs(collection(real(EDITOR), 'forms')))
+  })
+
+  it('blocks listing someone else’s forms', async () => {
+    await assertFails(getDocs(myForms(real(EDITOR), STRANGER)))
+  })
+})
+
 describe('forms: create', () => {
   const draft = form({ status: 'draft', memberIds: [OWNER] })
 
@@ -134,9 +168,7 @@ describe('forms: update and delete', () => {
   })
 
   it('lets the owner add and remove collaborators', async () => {
-    await assertSucceeds(
-      updateDoc(doc(real(OWNER), 'forms/f1'), { memberIds: [OWNER, STRANGER] }),
-    )
+    await assertSucceeds(updateDoc(doc(real(OWNER), 'forms/f1'), { memberIds: [OWNER, STRANGER] }))
   })
 
   it('blocks the owner from removing themselves from members', async () => {
@@ -185,9 +217,7 @@ describe('responses: create', () => {
   it('requires a real account when requireSignIn is on', async () => {
     await seed('forms/f1', form({ settings: { requireSignIn: true, limitOneResponse: false } }))
     await assertFails(setDoc(doc(anon(), 'forms/f1/responses/r1'), response(ANON)))
-    await assertSucceeds(
-      setDoc(doc(real(STRANGER), 'forms/f1/responses/r1'), response(STRANGER)),
-    )
+    await assertSucceeds(setDoc(doc(real(STRANGER), 'forms/f1/responses/r1'), response(STRANGER)))
   })
 
   it('allows only one response per person when limitOneResponse is on', async () => {
@@ -204,7 +234,11 @@ describe('responses: create', () => {
 describe('responses: read and delete', () => {
   beforeEach(async () => {
     await seed('forms/f1', form())
-    await seed('forms/f1/responses/r1', { respondentId: ANON, answers: {}, submittedAt: new Date() })
+    await seed('forms/f1/responses/r1', {
+      respondentId: ANON,
+      answers: {},
+      submittedAt: new Date(),
+    })
   })
 
   it('lets the owner and editors read responses', async () => {

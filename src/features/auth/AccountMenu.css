@@ -2,7 +2,7 @@
   position: relative;
 }
 
-.account-btn {
+.icon-btn.account-btn {
   overflow: hidden;
   background: var(--accent-soft);
   color: var(--accent);

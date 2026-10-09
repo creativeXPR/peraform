@@ -6,7 +6,8 @@
   min-height: 100dvh;
 }
 
-.shell[data-sidebar='closed'] {
+.shell[data-sidebar='closed'],
+.shell[data-sidebar='none'] {
   --sidebar-w: 0px;
 }
 
@@ -27,6 +28,52 @@
   left: 30%;
   width: 40%;
   border-bottom: 1px solid var(--line);
+}
+
+/* With search, the hairline moves under the search bar instead. */
+.topbar-search::after {
+  display: none;
+}
+
+.searchbar {
+  position: absolute;
+  left: 50%;
+  width: min(50%, 640px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+  background: var(--fill);
+  color: var(--text-muted);
+  transform: translateX(-50%);
+  transition: background 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.searchbar::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -12px;
+  left: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.searchbar:focus-within {
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line), 0 2px 8px rgb(0 0 0 / 0.04);
+}
+
+.searchbar input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
 }
 
 .logo {
@@ -78,6 +125,12 @@
 }
 
 .shell[data-sidebar='closed'] .shell-main {
+  gap: 0;
+}
+
+/* No sidebar at all: the card is the only column. */
+.shell[data-sidebar='none'] .shell-main {
+  grid-template-columns: minmax(0, 1fr);
   gap: 0;
 }
 
@@ -188,6 +241,19 @@
 @media (max-width: 767px) {
   .shell {
     --sidebar-w: 0px;
+  }
+
+  .topbar-search {
+    flex-wrap: wrap;
+    row-gap: 14px;
+  }
+
+  .searchbar {
+    position: relative;
+    left: auto;
+    order: 1;
+    width: 100%;
+    transform: none;
   }
 
   .drawer-btn {
