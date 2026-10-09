@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
-import { LayoutGrid, Menu, Moon, PanelLeft, Sun, UserRound, X } from 'lucide-react'
+import { LayoutGrid, Menu, Moon, PanelLeft, Sun, X } from 'lucide-react'
+import AccountMenu from '../features/auth/AccountMenu.jsx'
 import { useTheme } from './useTheme.js'
 import './AppShell.css'
 
@@ -48,9 +49,7 @@ export default function AppShell() {
           >
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </button>
-          <Link to="/signin" className="icon-btn" aria-label="Account">
-            <UserRound size={18} />
-          </Link>
+          <AccountMenu />
         </div>
       </header>
 
