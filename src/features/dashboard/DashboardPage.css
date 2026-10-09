@@ -117,11 +117,12 @@
 }
 
 /* ── Form card (grid) ────────────────────────────────────── */
+/* No overflow: hidden here — the ⋮ menu popover must be able to spill
+   out of the card. The thumbnail rounds its own top corners instead. */
 .form-card {
   position: relative;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
@@ -135,7 +136,14 @@
 
 .form-card .thumb {
   aspect-ratio: 16 / 11;
+  border-radius: 7px 7px 0 0;
   background: var(--fill);
+}
+
+/* While its menu is open, lift the card above the cards after it. */
+.form-card:has(.menu-pop),
+.form-row:has(.menu-pop) {
+  z-index: 3;
 }
 
 .form-card-info {
