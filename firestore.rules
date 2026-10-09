@@ -1,0 +1,66 @@
+rules_version = '2';
+
+// Rules for PeraForm's named "peraform" database only — Anix and MulTeam
+// have their own databases and rules in the shared c-xpr25 project.
+// Document shapes are in src/lib/formModel.js.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Any signed-in user, including anonymous respondents.
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Google or email/password — anonymous sessions can't create forms.
+    function isRealUser() {
+      return isSignedIn()
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    match /forms/{formId} {
+      function isMember() {
+        return isSignedIn() && request.auth.uid in resource.data.memberIds;
+      }
+
+      function isOwner() {
+        return isSignedIn() && request.auth.uid == resource.data.ownerId;
+      }
+
+      // Drafts are private; published and closed forms are readable by
+      // anyone with the link (closed so respondents see a "closed" notice).
+      allow read: if isMember() || resource.data.status in ['published', 'closed'];
+
+      allow create: if isRealUser()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.memberIds == [request.auth.uid]
+        && request.resource.data.status == 'draft';
+
+      // Editors change content; only the owner changes who has access.
+      allow update: if isMember()
+        && request.resource.data.ownerId == resource.data.ownerId
+        && (isOwner() || request.resource.data.memberIds == resource.data.memberIds)
+        && request.resource.data.ownerId in request.resource.data.memberIds;
+
+      allow delete: if isOwner();
+
+      match /responses/{responseId} {
+        function form() {
+          return get(/databases/$(database)/documents/forms/$(formId)).data;
+        }
+
+        allow read, delete: if isSignedIn() && request.auth.uid in form().memberIds;
+
+        // Respondents only ever create — never read back, edit or delete.
+        // With limitOneResponse the doc id must be the respondent's uid, so
+        // a second submission collides with the first and is rejected.
+        allow create: if isSignedIn()
+          && form().status == 'published'
+          && (!form().settings.requireSignIn || isRealUser())
+          && (!form().settings.limitOneResponse || responseId == request.auth.uid)
+          && request.resource.data.respondentId == request.auth.uid
+          && request.resource.data.submittedAt == request.time
+          && request.resource.data.answers is map;
+      }
+    }
+  }
+}

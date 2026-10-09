@@ -1,0 +1,228 @@
+import { readFileSync } from 'node:fs'
+import {
+  assertFails,
+  assertSucceeds,
+  initializeTestEnvironment,
+} from '@firebase/rules-unit-testing'
+import {
+  deleteDoc,
+  doc,
+  getDoc,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+} from 'firebase/firestore'
+import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest'
+
+// Runs against the Firestore emulator (npm run test:rules). The rules don't
+// depend on the database name, so the emulator's default database stands in
+// for "peraform".
+const OWNER = 'owner'
+const EDITOR = 'editor'
+const STRANGER = 'stranger'
+const ANON = 'anon'
+
+let testEnv
+
+const real = (uid) =>
+  testEnv.authenticatedContext(uid, { firebase: { sign_in_provider: 'google.com' } }).firestore()
+const anon = (uid = ANON) =>
+  testEnv.authenticatedContext(uid, { firebase: { sign_in_provider: 'anonymous' } }).firestore()
+const guest = () => testEnv.unauthenticatedContext().firestore()
+
+function form(overrides = {}) {
+  return {
+    title: 'Survey',
+    description: '',
+    ownerId: OWNER,
+    memberIds: [OWNER, EDITOR],
+    status: 'published',
+    settings: { requireSignIn: false, limitOneResponse: false },
+    questions: [],
+    ...overrides,
+  }
+}
+
+function response(respondentId) {
+  return { respondentId, answers: { q1: 'hi' }, submittedAt: serverTimestamp() }
+}
+
+async function seed(path, data) {
+  await testEnv.withSecurityRulesDisabled((ctx) => setDoc(doc(ctx.firestore(), path), data))
+}
+
+beforeAll(async () => {
+  testEnv = await initializeTestEnvironment({
+    projectId: 'demo-peraform',
+    firestore: { rules: readFileSync('firestore.rules', 'utf8') },
+  })
+})
+
+afterAll(() => testEnv.cleanup())
+
+beforeEach(() => testEnv.clearFirestore())
+
+describe('forms: read', () => {
+  it('lets anyone, even signed out, read a published form', async () => {
+    await seed('forms/f1', form())
+    await assertSucceeds(getDoc(doc(guest(), 'forms/f1')))
+  })
+
+  it('lets anyone read a closed form', async () => {
+    await seed('forms/f1', form({ status: 'closed' }))
+    await assertSucceeds(getDoc(doc(anon(), 'forms/f1')))
+  })
+
+  it('hides drafts from non-members', async () => {
+    await seed('forms/f1', form({ status: 'draft' }))
+    await assertFails(getDoc(doc(real(STRANGER), 'forms/f1')))
+    await assertFails(getDoc(doc(guest(), 'forms/f1')))
+  })
+
+  it('shows drafts to the owner and editors', async () => {
+    await seed('forms/f1', form({ status: 'draft' }))
+    await assertSucceeds(getDoc(doc(real(OWNER), 'forms/f1')))
+    await assertSucceeds(getDoc(doc(real(EDITOR), 'forms/f1')))
+  })
+})
+
+describe('forms: create', () => {
+  const draft = form({ status: 'draft', memberIds: [OWNER] })
+
+  it('lets a real user create their own draft', async () => {
+    await assertSucceeds(setDoc(doc(real(OWNER), 'forms/f1'), draft))
+  })
+
+  it('blocks anonymous users from creating forms', async () => {
+    await assertFails(setDoc(doc(anon(OWNER), 'forms/f1'), draft))
+  })
+
+  it('blocks creating a form owned by someone else', async () => {
+    await assertFails(setDoc(doc(real(STRANGER), 'forms/f1'), draft))
+  })
+
+  it('blocks creating a form already published', async () => {
+    await assertFails(setDoc(doc(real(OWNER), 'forms/f1'), { ...draft, status: 'published' }))
+  })
+
+  it('blocks adding extra members at creation', async () => {
+    await assertFails(
+      setDoc(doc(real(OWNER), 'forms/f1'), { ...draft, memberIds: [OWNER, STRANGER] }),
+    )
+  })
+})
+
+describe('forms: update and delete', () => {
+  beforeEach(() => seed('forms/f1', form()))
+
+  it('lets an editor change content', async () => {
+    await assertSucceeds(updateDoc(doc(real(EDITOR), 'forms/f1'), { title: 'New title' }))
+  })
+
+  it('blocks a stranger from changing content', async () => {
+    await assertFails(updateDoc(doc(real(STRANGER), 'forms/f1'), { title: 'Hacked' }))
+  })
+
+  it('blocks an editor from changing members', async () => {
+    await assertFails(
+      updateDoc(doc(real(EDITOR), 'forms/f1'), { memberIds: [OWNER, EDITOR, STRANGER] }),
+    )
+  })
+
+  it('blocks an editor from taking ownership', async () => {
+    await assertFails(updateDoc(doc(real(EDITOR), 'forms/f1'), { ownerId: EDITOR }))
+  })
+
+  it('lets the owner add and remove collaborators', async () => {
+    await assertSucceeds(
+      updateDoc(doc(real(OWNER), 'forms/f1'), { memberIds: [OWNER, STRANGER] }),
+    )
+  })
+
+  it('blocks the owner from removing themselves from members', async () => {
+    await assertFails(updateDoc(doc(real(OWNER), 'forms/f1'), { memberIds: [EDITOR] }))
+  })
+
+  it('lets only the owner delete the form', async () => {
+    await assertFails(deleteDoc(doc(real(EDITOR), 'forms/f1')))
+    await assertSucceeds(deleteDoc(doc(real(OWNER), 'forms/f1')))
+  })
+})
+
+describe('responses: create', () => {
+  it('lets an anonymous respondent submit to an open published form', async () => {
+    await seed('forms/f1', form())
+    await assertSucceeds(setDoc(doc(anon(), 'forms/f1/responses/r1'), response(ANON)))
+  })
+
+  it('blocks signed-out visitors (they need at least anonymous auth)', async () => {
+    await seed('forms/f1', form())
+    await assertFails(setDoc(doc(guest(), 'forms/f1/responses/r1'), response(ANON)))
+  })
+
+  it('blocks submissions to draft and closed forms', async () => {
+    await seed('forms/draft', form({ status: 'draft' }))
+    await seed('forms/closed', form({ status: 'closed' }))
+    await assertFails(setDoc(doc(anon(), 'forms/draft/responses/r1'), response(ANON)))
+    await assertFails(setDoc(doc(anon(), 'forms/closed/responses/r1'), response(ANON)))
+  })
+
+  it('blocks submitting as someone else', async () => {
+    await seed('forms/f1', form())
+    await assertFails(setDoc(doc(anon(), 'forms/f1/responses/r1'), response(STRANGER)))
+  })
+
+  it('blocks a faked submission time', async () => {
+    await seed('forms/f1', form())
+    await assertFails(
+      setDoc(doc(anon(), 'forms/f1/responses/r1'), {
+        ...response(ANON),
+        submittedAt: new Date('2020-01-01'),
+      }),
+    )
+  })
+
+  it('requires a real account when requireSignIn is on', async () => {
+    await seed('forms/f1', form({ settings: { requireSignIn: true, limitOneResponse: false } }))
+    await assertFails(setDoc(doc(anon(), 'forms/f1/responses/r1'), response(ANON)))
+    await assertSucceeds(
+      setDoc(doc(real(STRANGER), 'forms/f1/responses/r1'), response(STRANGER)),
+    )
+  })
+
+  it('allows only one response per person when limitOneResponse is on', async () => {
+    await seed('forms/f1', form({ settings: { requireSignIn: true, limitOneResponse: true } }))
+    const db = real(STRANGER)
+    // Response id must be the respondent's uid…
+    await assertFails(setDoc(doc(db, 'forms/f1/responses/random'), response(STRANGER)))
+    await assertSucceeds(setDoc(doc(db, `forms/f1/responses/${STRANGER}`), response(STRANGER)))
+    // …so a second submission collides with the first.
+    await assertFails(setDoc(doc(db, `forms/f1/responses/${STRANGER}`), response(STRANGER)))
+  })
+})
+
+describe('responses: read and delete', () => {
+  beforeEach(async () => {
+    await seed('forms/f1', form())
+    await seed('forms/f1/responses/r1', { respondentId: ANON, answers: {}, submittedAt: new Date() })
+  })
+
+  it('lets the owner and editors read responses', async () => {
+    await assertSucceeds(getDoc(doc(real(OWNER), 'forms/f1/responses/r1')))
+    await assertSucceeds(getDoc(doc(real(EDITOR), 'forms/f1/responses/r1')))
+  })
+
+  it('blocks respondents and strangers from reading responses, even their own', async () => {
+    await assertFails(getDoc(doc(anon(), 'forms/f1/responses/r1')))
+    await assertFails(getDoc(doc(real(STRANGER), 'forms/f1/responses/r1')))
+  })
+
+  it('blocks respondents from editing their response', async () => {
+    await assertFails(updateDoc(doc(anon(), 'forms/f1/responses/r1'), { answers: { q1: 'x' } }))
+  })
+
+  it('lets members delete responses, but not respondents', async () => {
+    await assertFails(deleteDoc(doc(anon(), 'forms/f1/responses/r1')))
+    await assertSucceeds(deleteDoc(doc(real(EDITOR), 'forms/f1/responses/r1')))
+  })
+})

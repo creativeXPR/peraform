@@ -1,0 +1,31 @@
+{
+  "firestore": [
+    {
+      "database": "peraform",
+      "rules": "firestore.rules",
+      "indexes": "firestore.indexes.json"
+    }
+  ],
+  "storage": [
+    {
+      "bucket": "peraform",
+      "rules": "storage.rules"
+    }
+  ],
+  "hosting": {
+    "site": "peraform",
+    "public": "dist",
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "emulators": {
+    "firestore": {
+      "port": 8080
+    },
+    "singleProjectMode": true
+  }
+}

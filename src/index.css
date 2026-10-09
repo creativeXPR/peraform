@@ -1,0 +1,12 @@
+/* Bare reset only — the design system is still to be decided (#003). */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
