@@ -1,0 +1,106 @@
+import { useEffect, useState } from 'react'
+import { Link, NavLink, Outlet } from 'react-router-dom'
+import { LayoutGrid, Menu, Moon, PanelLeft, Sun, UserRound, X } from 'lucide-react'
+import { useTheme } from './useTheme.js'
+import './AppShell.css'
+
+const NAV_ITEMS = [{ to: '/', label: 'My forms', icon: LayoutGrid }]
+
+// Creator-side frame (dashboard, builder, responses): top bar, collapsible
+// sidebar, content card, footer. Desktop collapses the sidebar in place;
+// below 768px it becomes a slide-over drawer instead.
+export default function AppShell() {
+  const { theme, toggleTheme } = useTheme()
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
+  useEffect(() => {
+    if (!drawerOpen) return
+    const onKey = (e) => e.key === 'Escape' && setDrawerOpen(false)
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [drawerOpen])
+
+  return (
+    <div
+      className="shell"
+      data-sidebar={sidebarOpen ? 'open' : 'closed'}
+      data-drawer={drawerOpen ? 'open' : 'closed'}
+    >
+      <header className="topbar">
+        <button
+          type="button"
+          className="icon-btn drawer-btn"
+          onClick={() => setDrawerOpen(true)}
+          aria-label="Open menu"
+        >
+          <Menu size={18} />
+        </button>
+        <Link to="/" className="logo">
+          PeraForm
+        </Link>
+        <div className="topbar-actions">
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+          >
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+          <Link to="/signin" className="icon-btn" aria-label="Account">
+            <UserRound size={18} />
+          </Link>
+        </div>
+      </header>
+
+      <div className="shell-main">
+        <aside className="sidebar" aria-label="Main navigation">
+          <div className="drawer-head">
+            <span className="logo">PeraForm</span>
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={() => setDrawerOpen(false)}
+              aria-label="Close menu"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <nav className="sidebar-nav">
+            {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end
+                className="nav-item"
+                onClick={() => setDrawerOpen(false)}
+              >
+                <Icon size={18} />
+                <span>{label}</span>
+              </NavLink>
+            ))}
+          </nav>
+        </aside>
+
+        <button
+          type="button"
+          className="icon-btn sidebar-toggle"
+          onClick={() => setSidebarOpen((open) => !open)}
+          aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+          aria-expanded={sidebarOpen}
+        >
+          <PanelLeft size={16} />
+        </button>
+
+        <main className="content-card">
+          <Outlet />
+        </main>
+      </div>
+
+      <footer className="footerbar">PeraForm</footer>
+
+      <div className="drawer-backdrop" onClick={() => setDrawerOpen(false)} />
+    </div>
+  )
+}

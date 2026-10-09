@@ -1,4 +1,67 @@
-/* Bare reset only — the design system is still to be decided (#003). */
+/* Design tokens — built from the minimalist wireframe in Stores playbook
+   003-29: near-white canvas, hairline dividers, pill shapes, one indigo
+   accent. Dark values mirror the light ones; components only ever use
+   the tokens. */
+:root {
+  --bg: #fbfcff;
+  --surface: #ffffff;
+  --fill: rgb(0 0 0 / 0.05);
+  --fill-strong: rgb(0 0 0 / 0.08);
+  --line: rgb(0 0 0 / 0.06);
+  --text: #14151a;
+  --text-muted: #6b6f7b;
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-soft: rgb(79 70 229 / 0.1);
+  --on-accent: #ffffff;
+  --shadow: 0 0 10px rgb(0 0 0 / 0.03), 0 1px 2px rgb(0 0 0 / 0.03);
+  --backdrop: rgb(15 16 20 / 0.3);
+
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --radius-pill: 999px;
+  --radius-card: 12px;
+  --radius-control: 10px;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #0e0f13;
+    --surface: #15161b;
+    --fill: rgb(255 255 255 / 0.06);
+    --fill-strong: rgb(255 255 255 / 0.1);
+    --line: rgb(255 255 255 / 0.07);
+    --text: #ecedf2;
+    --text-muted: #9a9eab;
+    --accent: #818cf8;
+    --accent-hover: #a5b4fc;
+    --accent-soft: rgb(129 140 248 / 0.14);
+    --on-accent: #0e0f13;
+    --shadow: 0 0 10px rgb(0 0 0 / 0.3);
+    --backdrop: rgb(0 0 0 / 0.5);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg: #0e0f13;
+  --surface: #15161b;
+  --fill: rgb(255 255 255 / 0.06);
+  --fill-strong: rgb(255 255 255 / 0.1);
+  --line: rgb(255 255 255 / 0.07);
+  --text: #ecedf2;
+  --text-muted: #9a9eab;
+  --accent: #818cf8;
+  --accent-hover: #a5b4fc;
+  --accent-soft: rgb(129 140 248 / 0.14);
+  --on-accent: #0e0f13;
+  --shadow: 0 0 10px rgb(0 0 0 / 0.3);
+  --backdrop: rgb(0 0 0 / 0.5);
+  color-scheme: dark;
+}
+
 *,
 *::before,
 *::after {
@@ -7,6 +70,47 @@
 
 body {
   margin: 0;
-  font-family: system-ui, sans-serif;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
   line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
