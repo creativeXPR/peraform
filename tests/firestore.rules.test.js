@@ -204,6 +204,13 @@ describe('responses: create', () => {
     await assertFails(setDoc(doc(anon(), 'forms/f1/responses/r1'), response(STRANGER)))
   })
 
+  it('blocks extra fields on a response', async () => {
+    await seed('forms/f1', form())
+    await assertFails(
+      setDoc(doc(anon(), 'forms/f1/responses/r1'), { ...response(ANON), score: 100 }),
+    )
+  })
+
   it('blocks a faked submission time', async () => {
     await seed('forms/f1', form())
     await assertFails(

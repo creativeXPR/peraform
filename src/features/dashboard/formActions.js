@@ -9,15 +9,20 @@ export async function createForm(uid, content = {}) {
   return ref.id
 }
 
-// Responses live in a subcollection, which Firestore doesn't delete along
-// with the parent — clear them first so nothing is left orphaned.
-export async function deleteForm(formId) {
+// Batched in 500s, Firestore's per-batch write limit.
+export async function deleteAllResponses(formId) {
   const responses = await getDocs(collection(db, 'forms', formId, 'responses'))
   for (let i = 0; i < responses.docs.length; i += 500) {
     const batch = writeBatch(db)
     responses.docs.slice(i, i + 500).forEach((d) => batch.delete(d.ref))
     await batch.commit()
   }
+}
+
+// Responses live in a subcollection, which Firestore doesn't delete along
+// with the parent — clear them first so nothing is left orphaned.
+export async function deleteForm(formId) {
+  await deleteAllResponses(formId)
   await deleteDoc(doc(db, 'forms', formId))
 }
 

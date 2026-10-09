@@ -57,6 +57,7 @@ service cloud.firestore {
           && form().status == 'published'
           && (!form().settings.requireSignIn || isRealUser())
           && (!form().settings.limitOneResponse || responseId == request.auth.uid)
+          && request.resource.data.keys().hasOnly(['respondentId', 'answers', 'submittedAt'])
           && request.resource.data.respondentId == request.auth.uid
           && request.resource.data.submittedAt == request.time
           && request.resource.data.answers is map;

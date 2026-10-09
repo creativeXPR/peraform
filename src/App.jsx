@@ -1,35 +1,41 @@
+import { Suspense, lazy } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import AppShell from './lib/AppShell.jsx'
 import RequireCreator from './features/auth/RequireCreator.jsx'
-import SignInPage from './features/auth/SignInPage.jsx'
-import DashboardPage from './features/dashboard/DashboardPage.jsx'
-import BuilderPage from './features/builder/BuilderPage.jsx'
-import FormLayout from './features/builder/FormLayout.jsx'
-import SettingsPage from './features/builder/SettingsPage.jsx'
-import ResponsesPage from './features/responses/ResponsesPage.jsx'
-import RespondPage from './features/respond/RespondPage.jsx'
+
+// Each screen is its own chunk, so someone opening a form link downloads the
+// respond page, not the dashboard and builder (dnd-kit and all).
+const SignInPage = lazy(() => import('./features/auth/SignInPage.jsx'))
+const DashboardPage = lazy(() => import('./features/dashboard/DashboardPage.jsx'))
+const FormLayout = lazy(() => import('./features/builder/FormLayout.jsx'))
+const BuilderPage = lazy(() => import('./features/builder/BuilderPage.jsx'))
+const SettingsPage = lazy(() => import('./features/builder/SettingsPage.jsx'))
+const ResponsesPage = lazy(() => import('./features/responses/ResponsesPage.jsx'))
+const RespondPage = lazy(() => import('./features/respond/RespondPage.jsx'))
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Creator screens: signed-in (non-anonymous) only. */}
-        <Route element={<RequireCreator />}>
-          <Route element={<AppShell sidebar={false} search />}>
-            <Route path="/" element={<DashboardPage />} />
+      <Suspense fallback={null}>
+        <Routes>
+          {/* Creator screens: signed-in (non-anonymous) only. */}
+          <Route element={<RequireCreator />}>
+            <Route element={<AppShell sidebar={false} search />}>
+              <Route path="/" element={<DashboardPage />} />
+            </Route>
+            {/* One editing session per form; the tabs share it. */}
+            <Route path="/forms/:formId" element={<FormLayout />}>
+              <Route index element={<Navigate to="edit" replace />} />
+              <Route path="edit" element={<BuilderPage />} />
+              <Route path="responses" element={<ResponsesPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+            </Route>
           </Route>
-          {/* One editing session per form; the tabs share it. */}
-          <Route path="/forms/:formId" element={<FormLayout />}>
-            <Route index element={<Navigate to="edit" replace />} />
-            <Route path="edit" element={<BuilderPage />} />
-            <Route path="responses" element={<ResponsesPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-          </Route>
-        </Route>
-        <Route path="/signin" element={<SignInPage />} />
-        {/* Public link respondents open — kept short for sharing. */}
-        <Route path="/f/:formId" element={<RespondPage />} />
-      </Routes>
+          <Route path="/signin" element={<SignInPage />} />
+          {/* Public link respondents open — kept short for sharing. */}
+          <Route path="/f/:formId" element={<RespondPage />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }

@@ -1,0 +1,251 @@
+.responses {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.responses-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.responses-head h1 {
+  font-size: 22px;
+}
+
+.responses-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.responses-empty {
+  padding: 48px 24px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-card);
+  text-align: center;
+}
+
+.responses-empty h2 {
+  font-size: 17px;
+}
+
+.responses-empty p {
+  margin-top: 6px;
+  color: var(--text-muted);
+}
+
+/* ── Summary / Individual switch ─────────────────────────── */
+.segmented {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--fill);
+}
+
+.segmented button {
+  height: 32px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.segmented button.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+}
+
+/* ── Cards ───────────────────────────────────────────────── */
+.summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.summary-card h2 {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.summary-count {
+  margin-top: -6px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.summary-none {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.summary-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.summary-texts li {
+  padding: 8px 12px;
+  border-radius: var(--radius-control);
+  background: var(--fill);
+  font-size: 14px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.summary-card > .link-btn {
+  align-self: flex-start;
+}
+
+/* ── Bars (see BarList) ──────────────────────────────────── */
+.bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bar-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(80px, 30%) 1fr;
+  align-items: center;
+  gap: 14px;
+  padding: 2px 0;
+  border-radius: 4px;
+  outline-offset: 2px;
+}
+
+.bar-label {
+  overflow: hidden;
+  font-size: 14px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.bar-track {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Square at the baseline, 4px rounded at the data end. */
+.bar {
+  flex-shrink: 1;
+  height: 20px;
+  min-width: 2px;
+  max-width: calc(100% - 72px);
+  border-radius: 0 4px 4px 0;
+  background: var(--chart-bar);
+}
+
+.bar-value {
+  flex-shrink: 0;
+  color: var(--text);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.bar-pct {
+  color: var(--text-muted);
+}
+
+.bar-tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 30%;
+  z-index: 2;
+  padding: 6px 10px;
+  border-radius: var(--radius-control);
+  background: var(--text);
+  color: var(--bg);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s var(--ease);
+}
+
+.bar-row:hover .bar-tip,
+.bar-row:focus-visible .bar-tip {
+  opacity: 1;
+}
+
+/* ── Individual ──────────────────────────────────────────── */
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.pager .icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+  background: none;
+}
+
+.pager-delete {
+  margin-left: auto;
+}
+
+.individual {
+  gap: 0;
+}
+
+.individual-row {
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+.individual .summary-count {
+  margin: 0 0 8px;
+}
+
+.individual-q {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.individual-a {
+  margin-top: 2px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 639px) {
+  .summary-card {
+    padding: 18px 16px;
+  }
+
+  .bar-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .bar-tip {
+    left: 0;
+  }
+}
