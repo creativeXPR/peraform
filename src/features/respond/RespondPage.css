@@ -252,3 +252,179 @@ textarea.respond-input {
     font-size: 22px;
   }
 }
+
+/* ── Sections & paging ───────────────────────────────────── */
+.respond-section {
+  border-left: 4px solid var(--accent);
+}
+
+.respond-section h2 {
+  font-size: 18px;
+}
+
+.respond-nav {
+  display: flex;
+  gap: 10px;
+}
+
+.respond-nav .btn-outline {
+  min-width: 96px;
+}
+
+.respond-page {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* ── Linear scale ────────────────────────────────────────── */
+.scale {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 12px;
+  overflow-x: auto;
+}
+
+.scale-label {
+  padding-bottom: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+  max-width: 120px;
+}
+
+.scale-steps {
+  display: flex;
+}
+
+.scale-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 40px;
+  padding: 6px 4px;
+  border-radius: var(--radius-control);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.scale-step:hover {
+  background: var(--fill);
+}
+
+.scale-step input,
+.grid input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* ── Rating ──────────────────────────────────────────────── */
+.rating {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.rating-star {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  border-radius: var(--radius-control);
+  color: var(--fill-strong);
+  cursor: pointer;
+  transition: color 0.15s var(--ease), transform 0.15s var(--ease);
+}
+
+/* Visually hidden but still focusable/clickable for keyboard and readers. */
+.rating-star input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.rating-star.on {
+  color: var(--accent);
+}
+
+.rating-star.on svg {
+  fill: currentColor;
+}
+
+/* Hovering a star previews it and every star before it. */
+.rating:hover .rating-star {
+  color: var(--accent);
+}
+
+.rating-star:hover ~ .rating-star {
+  color: var(--fill-strong);
+}
+
+.rating-star:hover {
+  transform: scale(1.08);
+}
+
+.rating-star:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+}
+
+/* ── Grids ───────────────────────────────────────────────── */
+.grid-wrap {
+  overflow-x: auto;
+}
+
+.grid {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 4px;
+  font-size: 14px;
+}
+
+.grid th {
+  padding: 6px 10px;
+  font-weight: 500;
+}
+
+.grid thead th {
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.grid tbody th {
+  text-align: left;
+  border-radius: var(--radius-control) 0 0 var(--radius-control);
+}
+
+.grid tbody tr {
+  background: var(--fill);
+}
+
+.grid tbody td {
+  padding: 10px;
+  text-align: center;
+}
+
+.grid tbody td:last-child {
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
+}
+
+@media (max-width: 639px) {
+  /* Buttons on one row; page count and "Clear form" on the row below. */
+  .respond-actions {
+    flex-wrap: wrap;
+    row-gap: 14px;
+  }
+
+  .respond-nav {
+    width: 100%;
+  }
+
+  .respond-nav .btn {
+    flex: 1;
+  }
+}

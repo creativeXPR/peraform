@@ -1,31 +1,77 @@
 // Turns raw responses into per-question summaries and CSV.
+import { GRID_TYPES, hasAnswer } from '../../lib/formLogic.js'
 
 const CHOICE_TYPES = ['multipleChoice', 'checkboxes', 'dropdown']
+const SCALE_TYPES = ['linearScale', 'rating']
 
-// { answered, kind: 'choice', rows: [{ label, count }] }
-//   or { answered, kind: 'text', values: [string] } (newest first)
+// One of:
+//   { answered, kind: 'choice', rows: [{ label, count }] }
+//   { answered, kind: 'scale', rows: [{ label, count }], average }
+//   { answered, kind: 'grid', columns, rows: [{ label, counts: [n per column] }] }
+//   { answered, kind: 'text', values: [string] } (newest first)
 export function summarizeQuestion(question, responses) {
   const values = responses
     .map((r) => r.answers?.[question.id])
-    .filter((v) => v !== undefined && v !== '' && !(Array.isArray(v) && !v.length))
+    .filter((v) => hasAnswer(question, v))
+  const answered = values.length
 
-  if (!CHOICE_TYPES.includes(question.type)) {
-    return { answered: values.length, kind: 'text', values: values.map(String) }
-  }
-
-  // Current options first, in form order; answers for options that were
-  // since renamed or removed still count, listed after them.
-  const counts = new Map(question.options.map((o) => [o, 0]))
-  for (const v of values) {
-    for (const choice of Array.isArray(v) ? v : [v]) {
-      counts.set(choice, (counts.get(choice) ?? 0) + 1)
+  if (CHOICE_TYPES.includes(question.type)) {
+    // Current options first, in form order; answers for options that were
+    // since renamed or removed still count, listed after them.
+    const counts = new Map(question.options.map((o) => [o, 0]))
+    for (const v of values) {
+      for (const choice of Array.isArray(v) ? v : [v]) {
+        counts.set(choice, (counts.get(choice) ?? 0) + 1)
+      }
+    }
+    return {
+      answered,
+      kind: 'choice',
+      rows: [...counts].map(([label, count]) => ({ label, count })),
     }
   }
-  return {
-    answered: values.length,
-    kind: 'choice',
-    rows: [...counts].map(([label, count]) => ({ label, count })),
+
+  if (SCALE_TYPES.includes(question.type)) {
+    const min = question.type === 'rating' ? 1 : question.min
+    const counts = new Map()
+    for (let n = min; n <= question.max; n++) counts.set(n, 0)
+    for (const v of values) counts.set(v, (counts.get(v) ?? 0) + 1)
+    const average = answered ? values.reduce((sum, v) => sum + v, 0) / answered : 0
+    return {
+      answered,
+      kind: 'scale',
+      average,
+      rows: [...counts].map(([n, count]) => ({ label: String(n), count })),
+    }
   }
+
+  if (GRID_TYPES.includes(question.type)) {
+    const rows = question.rows.map((label, i) => {
+      const counts = question.columns.map(() => 0)
+      for (const v of values) {
+        for (const choice of [v[i]].flat()) {
+          const j = question.columns.indexOf(choice)
+          if (j !== -1) counts[j]++
+        }
+      }
+      return { label, counts }
+    })
+    return { answered, kind: 'grid', columns: question.columns, rows }
+  }
+
+  return { answered, kind: 'text', values: values.map(String) }
+}
+
+// Grid answers ({ rowIndex: value }) become one column per row.
+function csvColumns(question) {
+  const title = question.title || 'Untitled question'
+  if (!GRID_TYPES.includes(question.type)) {
+    return [{ header: title, value: (answers) => answers?.[question.id] }]
+  }
+  return question.rows.map((row, i) => ({
+    header: `${title} [${row}]`,
+    value: (answers) => answers?.[question.id]?.[i],
+  }))
 }
 
 function csvCell(value) {
@@ -34,13 +80,14 @@ function csvCell(value) {
 }
 
 export function responsesToCsv(questions, responses) {
-  const header = ['Submitted at', ...questions.map((q) => q.title || 'Untitled question')]
+  const columns = questions.flatMap(csvColumns)
+  const header = ['Submitted at', ...columns.map((c) => c.header)]
   // Oldest first reads naturally in a spreadsheet.
   const rows = [...responses]
     .reverse()
     .map((r) => [
       r.submittedAt ? r.submittedAt.toISOString() : '',
-      ...questions.map((q) => r.answers?.[q.id]),
+      ...columns.map((c) => c.value(r.answers)),
     ])
   return [header, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n')
 }

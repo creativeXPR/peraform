@@ -389,6 +389,138 @@
   color: var(--text-muted);
 }
 
+/* ── Sections ────────────────────────────────────────────── */
+/* Section cards carry a tab-like chip on top, like a page divider. */
+.s-card {
+  position: relative;
+  margin-top: 26px;
+  padding: 20px 24px;
+  border: 1px solid var(--line);
+  border-top: 6px solid var(--accent);
+  border-radius: 0 var(--radius-card) var(--radius-card) var(--radius-card);
+  background: var(--surface);
+  cursor: pointer;
+  transition: box-shadow 0.2s var(--ease);
+}
+
+.s-card.q-card-active {
+  cursor: default;
+}
+
+.s-chip {
+  position: absolute;
+  bottom: 100%;
+  left: -1px;
+  padding: 3px 12px;
+  border-radius: 8px 8px 0 0;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* The header card's chip sits inside it (it has no room above). */
+.form-head .s-chip {
+  position: static;
+  display: inline-block;
+  margin-bottom: 8px;
+  border-radius: var(--radius-pill);
+}
+
+.s-card .s-title-input {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.s-preview-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.s-foot {
+  justify-content: space-between;
+}
+
+.s-after {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.target-select,
+.scale-range select {
+  max-width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.q-option .target-select {
+  flex-shrink: 0;
+  width: min(280px, 45%);
+}
+
+/* ── Scale / rating / grid editors ──────────────────────── */
+.scale-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.scale-range {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.scale-editor .scale-range {
+  margin-top: 0;
+}
+
+.scale-num {
+  flex-shrink: 0;
+  min-width: 16px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.stars {
+  display: inline-flex;
+  gap: 4px;
+  margin-top: 10px;
+  color: var(--text-muted);
+}
+
+.scale-range .stars {
+  margin-top: 0;
+}
+
+.grid-editor {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 8px;
+}
+
+.grid-editor-head {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
 /* ── Switch (checkbox styled as a toggle) ────────────────── */
 .switch {
   display: inline-flex;
@@ -525,6 +657,23 @@
   .q-head {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .grid-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .q-option {
+    flex-wrap: wrap;
+  }
+
+  .q-option .target-select {
+    width: 100%;
+    margin-left: 28px;
+  }
+
+  .s-card {
+    padding: 18px 16px;
   }
 
   .type-menu > .icon-btn {

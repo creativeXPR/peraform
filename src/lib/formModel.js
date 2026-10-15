@@ -9,13 +9,17 @@ import { serverTimestamp } from 'firebase/firestore'
 //                                          dashboard queries array-contains on this
 //     status: 'draft' | 'published' | 'closed'
 //     settings: { requireSignIn, limitOneResponse }
-//     questions: [Question]              — array, so one read loads the whole form
+//     questions: [Question | Section]    — array, so one read loads the whole form.
+//                                          A Section item starts a new page; see
+//                                          lib/formLogic.js for paging + skip logic.
 //     createdAt, updatedAt
 //
 //   forms/{formId}/responses/{responseId} — auto-ID, or the respondent's uid
 //                                           when limitOneResponse is on
 //     respondentId                       — anonymous or real uid
-//     answers: { [questionId]: value }
+//     answers: { [questionId]: value }   — string, string[] (checkboxes), number
+//                                          (scale/rating), or { [rowIndex]: value }
+//                                          for grids
 //     submittedAt
 //
 // firestore.rules enforces these shapes — keep the two in sync.
@@ -26,8 +30,28 @@ export const QUESTION_TYPES = [
   'multipleChoice',
   'checkboxes',
   'dropdown',
+  'linearScale',
+  'rating',
+  'mcGrid',
+  'checkboxGrid',
   'date',
+  'time',
 ]
+
+// Type-specific fields each new question starts with.
+//   choice types: options (+ optional branching/goTo — see formLogic.js)
+//   linearScale:  min (0|1), max (2–10), minLabel, maxLabel
+//   rating:       max (3–10)
+//   grids:        rows, columns
+export const TYPE_DEFAULTS = {
+  multipleChoice: () => ({ options: ['Option 1'] }),
+  checkboxes: () => ({ options: ['Option 1'] }),
+  dropdown: () => ({ options: ['Option 1'] }),
+  linearScale: () => ({ min: 1, max: 5, minLabel: '', maxLabel: '' }),
+  rating: () => ({ max: 5 }),
+  mcGrid: () => ({ rows: ['Row 1'], columns: ['Column 1'] }),
+  checkboxGrid: () => ({ rows: ['Row 1'], columns: ['Column 1'] }),
+}
 
 export function newForm(ownerId) {
   return {
@@ -44,7 +68,6 @@ export function newForm(ownerId) {
 }
 
 export function newQuestion(type = 'shortText') {
-  const hasOptions = ['multipleChoice', 'checkboxes', 'dropdown'].includes(type)
   return {
     // Stable id so answers stay matched to a question across reorders/edits.
     id: crypto.randomUUID(),
@@ -52,8 +75,14 @@ export function newQuestion(type = 'shortText') {
     title: '',
     description: '',
     required: false,
-    ...(hasOptions && { options: ['Option 1'] }),
+    ...TYPE_DEFAULTS[type]?.(),
   }
+}
+
+// A page break. `next` is where respondents go after this section:
+// 'next' (the following section), 'submit', or another section's id.
+export function newSection() {
+  return { id: crypto.randomUUID(), type: 'section', title: '', description: '', next: 'next' }
 }
 
 export function newResponse(respondentId, answers) {

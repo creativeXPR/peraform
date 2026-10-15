@@ -1,0 +1,212 @@
+import { Star } from 'lucide-react'
+import AutoTextarea from '../../lib/AutoTextarea.jsx'
+
+// One question as respondents see it. `value` shapes per type are listed in
+// lib/formModel.js (answers).
+export default function QuestionField({ question: q, value, onChange, missing }) {
+  const name = `q-${q.id}`
+  const labelId = `${name}-label`
+  const isGrid = q.type === 'mcGrid' || q.type === 'checkboxGrid'
+
+  return (
+    <section id={name} className={`respond-card respond-q${missing ? ' respond-q-missing' : ''}`}>
+      <p id={labelId} className="respond-q-title">
+        {q.title || 'Untitled question'}
+        {q.required && <span className="q-required"> *</span>}
+      </p>
+      {q.description && <p className="respond-q-desc">{q.description}</p>}
+      <Control q={q} name={name} labelId={labelId} value={value} onChange={onChange} />
+      {missing && (
+        <p className="respond-q-error" role="alert">
+          {isGrid ? 'This question requires one response per row' : 'This is a required question'}
+        </p>
+      )}
+    </section>
+  )
+}
+
+function Control({ q, name, labelId, value, onChange }) {
+  switch (q.type) {
+    case 'shortText':
+      return (
+        <input
+          className="respond-input"
+          aria-labelledby={labelId}
+          value={value ?? ''}
+          maxLength={500}
+          placeholder="Your answer"
+          onChange={(e) => onChange(e.target.value)}
+        />
+      )
+    case 'longText':
+      return (
+        <AutoTextarea
+          className="respond-input"
+          aria-labelledby={labelId}
+          value={value ?? ''}
+          maxLength={5000}
+          placeholder="Your answer"
+          onChange={(e) => onChange(e.target.value)}
+        />
+      )
+    case 'date':
+    case 'time':
+      return (
+        <input
+          type={q.type}
+          className="respond-input respond-date"
+          aria-labelledby={labelId}
+          value={value ?? ''}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      )
+    case 'dropdown':
+      return (
+        <select
+          className="respond-input respond-select"
+          aria-labelledby={labelId}
+          value={value ?? ''}
+          onChange={(e) => onChange(e.target.value)}
+        >
+          <option value="">Choose</option>
+          {q.options.map((o, i) => (
+            <option key={i} value={o}>
+              {o}
+            </option>
+          ))}
+        </select>
+      )
+    case 'multipleChoice':
+      return (
+        <div role="radiogroup" aria-labelledby={labelId} className="respond-choices">
+          {q.options.map((o, i) => (
+            <label key={i} className="respond-choice">
+              <input type="radio" name={name} checked={value === o} onChange={() => onChange(o)} />
+              <span>{o}</span>
+            </label>
+          ))}
+          {value && !q.required && (
+            <button type="button" className="link-btn respond-clear" onClick={() => onChange('')}>
+              Clear selection
+            </button>
+          )}
+        </div>
+      )
+    case 'checkboxes': {
+      const selected = value ?? []
+      return (
+        <div role="group" aria-labelledby={labelId} className="respond-choices">
+          {q.options.map((o, i) => (
+            <label key={i} className="respond-choice">
+              <input
+                type="checkbox"
+                checked={selected.includes(o)}
+                onChange={(e) =>
+                  onChange(e.target.checked ? [...selected, o] : selected.filter((s) => s !== o))
+                }
+              />
+              <span>{o}</span>
+            </label>
+          ))}
+        </div>
+      )
+    }
+    case 'linearScale': {
+      const steps = Array.from({ length: q.max - q.min + 1 }, (_, i) => q.min + i)
+      return (
+        <div className="scale" role="radiogroup" aria-labelledby={labelId}>
+          {q.minLabel && <span className="scale-label">{q.minLabel}</span>}
+          <div className="scale-steps">
+            {steps.map((n) => (
+              <label key={n} className="scale-step">
+                <span>{n}</span>
+                <input
+                  type="radio"
+                  name={name}
+                  checked={value === n}
+                  onChange={() => onChange(n)}
+                />
+              </label>
+            ))}
+          </div>
+          {q.maxLabel && <span className="scale-label">{q.maxLabel}</span>}
+        </div>
+      )
+    }
+    case 'rating':
+      return (
+        <div className="rating" role="radiogroup" aria-labelledby={labelId}>
+          {Array.from({ length: q.max }, (_, i) => i + 1).map((n) => (
+            <label
+              key={n}
+              className={`rating-star${value >= n ? ' on' : ''}`}
+              title={`${n} of ${q.max}`}
+            >
+              <input
+                type="radio"
+                name={name}
+                checked={value === n}
+                onChange={() => onChange(n)}
+                aria-label={`${n} of ${q.max}`}
+              />
+              <Star size={30} />
+            </label>
+          ))}
+        </div>
+      )
+    case 'mcGrid':
+    case 'checkboxGrid': {
+      const multi = q.type === 'checkboxGrid'
+      const grid = value ?? {}
+      const setRow = (row, rowValue) => onChange({ ...grid, [row]: rowValue })
+      return (
+        <div className="grid-wrap">
+          <table className="grid" aria-labelledby={labelId}>
+            <thead>
+              <tr>
+                <td />
+                {q.columns.map((c, j) => (
+                  <th key={j} scope="col">
+                    {c}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {q.rows.map((r, i) => {
+                const rowValue = grid[i]
+                return (
+                  <tr key={i}>
+                    <th scope="row">{r}</th>
+                    {q.columns.map((c, j) => (
+                      <td key={j}>
+                        <input
+                          type={multi ? 'checkbox' : 'radio'}
+                          name={`${name}-${i}`}
+                          aria-label={`${r}: ${c}`}
+                          checked={multi ? (rowValue ?? []).includes(c) : rowValue === c}
+                          onChange={(e) =>
+                            setRow(
+                              i,
+                              multi
+                                ? e.target.checked
+                                  ? [...(rowValue ?? []), c]
+                                  : (rowValue ?? []).filter((x) => x !== c)
+                                : c,
+                            )
+                          }
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )
+    }
+    default:
+      return null
+  }
+}

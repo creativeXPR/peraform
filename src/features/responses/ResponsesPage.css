@@ -249,3 +249,55 @@
     left: 0;
   }
 }
+
+/* ── Sections & grids ────────────────────────────────────── */
+.summary-section {
+  margin-top: 12px;
+  padding-left: 12px;
+  border-left: 4px solid var(--accent);
+  font-size: 17px;
+}
+
+.individual-section {
+  margin-top: 8px;
+  padding: 12px 0 4px;
+  border-top: 1px solid var(--line);
+  color: var(--accent);
+  font-size: 14px;
+}
+
+.grid-wrap {
+  overflow-x: auto;
+}
+
+/* Counts table: one hue whose strength follows the count (--heat), with
+   the number printed in every cell. */
+.grid-summary {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-size: 13px;
+}
+
+.grid-summary thead th {
+  padding: 6px 8px;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-align: center;
+}
+
+.grid-summary tbody th {
+  padding: 8px 10px 8px 0;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.grid-summary tbody td {
+  min-width: 52px;
+  padding: 8px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--chart-bar) var(--heat, 0%), var(--fill));
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}

@@ -3,6 +3,7 @@ import { deleteDoc, doc } from 'firebase/firestore'
 import { ChevronLeft, ChevronRight, Download, MoreVertical, Trash2 } from 'lucide-react'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { db } from '../../lib/firebase.js'
+import { GRID_TYPES, hasAnswer, isSection, questionsOnly } from '../../lib/formLogic.js'
 import MenuButton from '../../lib/MenuButton.jsx'
 import { useToast } from '../../lib/useToast.jsx'
 import { useFormEditor } from '../builder/editorContext.js'
@@ -27,7 +28,7 @@ export default function ResponsesPage() {
 
   if (!form || !draft) return <div className="builder-loading" aria-busy="true" />
 
-  const questions = draft.questions
+  const items = draft.questions // questions and section breaks
   const title = draft.title || 'Untitled form'
   const count = responses.length
   const current = responses[Math.min(index, count - 1)]
@@ -85,7 +86,7 @@ export default function ResponsesPage() {
                 icon: Download,
                 onSelect: () =>
                   count
-                    ? downloadCsv(`${title} responses.csv`, responsesToCsv(questions, responses))
+                    ? downloadCsv(`${title} responses.csv`, responsesToCsv(questionsOnly(items), responses))
                     : showToast('No responses to download yet'),
               },
               {
@@ -133,7 +134,7 @@ export default function ResponsesPage() {
           </div>
 
           {view === 'summary' ? (
-            questions.map((q) => <QuestionSummary key={q.id} question={q} responses={responses} />)
+            items.map((item) => <SummaryItem key={item.id} item={item} responses={responses} />)
           ) : (
             <>
               <div className="pager">
@@ -168,7 +169,7 @@ export default function ResponsesPage() {
                   <Trash2 size={18} />
                 </button>
               </div>
-              <IndividualResponse response={current} questions={questions} />
+              <IndividualResponse response={current} questions={items} />
             </>
           )}
         </>
@@ -191,22 +192,39 @@ export default function ResponsesPage() {
   )
 }
 
+// Section breaks show as dividers between their questions' summaries.
+function SummaryItem({ item, responses }) {
+  if (isSection(item)) {
+    return <h2 className="summary-section">{item.title || 'Untitled section'}</h2>
+  }
+  return <QuestionSummary question={item} responses={responses} />
+}
+
 function QuestionSummary({ question, responses }) {
   const [expanded, setExpanded] = useState(false)
   const summary = summarizeQuestion(question, responses)
   const shown = expanded ? summary.values : summary.values?.slice(0, TEXT_PREVIEW)
+  const multi = question.type === 'checkboxes' || question.type === 'checkboxGrid'
 
   return (
     <section className="summary-card">
       <h2>{question.title || 'Untitled question'}</h2>
       <p className="summary-count">
         {summary.answered} {summary.answered === 1 ? 'response' : 'responses'}
-        {question.type === 'checkboxes' && summary.answered > 0 && ' · people could pick several'}
+        {multi && summary.answered > 0 && ' · people could pick several'}
+        {summary.kind === 'scale' && summary.answered > 0 && (
+          <>
+            {' · '}average <strong>{summary.average.toFixed(1)}</strong>
+            {question.type === 'rating' && ` of ${question.max}`}
+          </>
+        )}
       </p>
       {summary.answered === 0 ? (
         <p className="summary-none">No answers yet.</p>
-      ) : summary.kind === 'choice' ? (
+      ) : summary.kind === 'choice' || summary.kind === 'scale' ? (
         <BarList rows={summary.rows} total={summary.answered} />
+      ) : summary.kind === 'grid' ? (
+        <GridSummary summary={summary} />
       ) : (
         <>
           <ul className="summary-texts">
@@ -225,6 +243,57 @@ function QuestionSummary({ question, responses }) {
   )
 }
 
+// Counts per row × column. Cell tint scales with the count (one hue,
+// light → strong) and every cell also prints its number, so the tint is
+// never the only signal.
+function GridSummary({ summary }) {
+  const max = Math.max(1, ...summary.rows.flatMap((r) => r.counts))
+  return (
+    <div className="grid-wrap">
+      <table className="grid-summary">
+        <thead>
+          <tr>
+            <td />
+            {summary.columns.map((c, j) => (
+              <th key={j} scope="col">
+                {c}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {summary.rows.map((row, i) => (
+            <tr key={i}>
+              <th scope="row">{row.label}</th>
+              {row.counts.map((n, j) => (
+                <td
+                  key={j}
+                  title={`${row.label} — ${summary.columns[j]}: ${n}`}
+                  style={{ '--heat': `${Math.round((n / max) * 32)}%` }}
+                >
+                  {n}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function formatAnswer(question, value) {
+  if (GRID_TYPES.includes(question.type)) {
+    return question.rows
+      .map((row, i) => [row, value[i]])
+      .filter(([, v]) => v !== undefined && !(Array.isArray(v) && !v.length))
+      .map(([row, v]) => `${row}: ${[v].flat().join(', ')}`)
+      .join('\n')
+  }
+  if (question.type === 'rating') return `${value} of ${question.max}`
+  return Array.isArray(value) ? value.join(', ') : String(value)
+}
+
 function IndividualResponse({ response, questions }) {
   return (
     <section className="summary-card individual">
@@ -238,13 +307,20 @@ function IndividualResponse({ response, questions }) {
           : 'just now'}
       </p>
       {questions.map((q) => {
+        if (isSection(q)) {
+          return (
+            <h3 key={q.id} className="individual-section">
+              {q.title || 'Untitled section'}
+            </h3>
+          )
+        }
         const value = response.answers?.[q.id]
-        const empty = value === undefined || value === '' || (Array.isArray(value) && !value.length)
+        const empty = !hasAnswer(q, value)
         return (
           <div key={q.id} className="individual-row">
             <p className="individual-q">{q.title || 'Untitled question'}</p>
             <p className={empty ? 'individual-a muted' : 'individual-a'}>
-              {empty ? 'No answer' : Array.isArray(value) ? value.join(', ') : value}
+              {empty ? 'No answer' : formatAnswer(q, value)}
             </p>
           </div>
         )

@@ -1,13 +1,21 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { collection, doc, getDoc, setDoc } from 'firebase/firestore'
 import { CheckCircle2, Moon, Sun } from 'lucide-react'
-import AutoTextarea from '../../lib/AutoTextarea.jsx'
 import { db } from '../../lib/firebase.js'
+import {
+  hasAnswer,
+  isComplete,
+  pageTarget,
+  questionsOnly,
+  resolveTarget,
+  splitPages,
+} from '../../lib/formLogic.js'
 import { newResponse } from '../../lib/formModel.js'
 import { useTheme } from '../../lib/useTheme.js'
 import { ensureSignedIn } from '../auth/authActions.js'
 import { isCreator, useAuth } from '../auth/useAuth.js'
+import QuestionField from './QuestionField.jsx'
 import './RespondPage.css'
 
 // The public form at /f/:formId. Anyone with the link can read a published
@@ -87,14 +95,42 @@ function Notice({ title, children, icon }) {
   )
 }
 
+// Trim text; drop empty grid rows. Returns undefined for "no answer".
+function cleanAnswer(question, value) {
+  if (!hasAnswer(question, value)) return undefined
+  if (typeof value === 'string') return value.trim()
+  if (Array.isArray(value) || typeof value === 'number') return value
+  // Grid: { rowIndex: value } with only the answered rows.
+  return Object.fromEntries(
+    Object.entries(value).filter(([, v]) => (Array.isArray(v) ? v.length : Boolean(v))),
+  )
+}
+
 function FormView({ form, user }) {
   const [answers, setAnswers] = useState({})
   const [missing, setMissing] = useState(new Set())
   const [state, setState] = useState('filling') // filling | sending | sent | already
   const [error, setError] = useState('')
+  // Sections are pages; history is the pages visited before this one, so
+  // Back retraces skip logic and only visited pages' answers are submitted.
+  const [pageIndex, setPageIndex] = useState(0)
+  const [history, setHistory] = useState([])
+  const pages = useMemo(() => splitPages(form.questions), [form.questions])
   const isMember = Boolean(user && form.memberIds.includes(user.uid))
   const { requireSignIn, limitOneResponse } = form.settings
   const title = form.title || 'Untitled form'
+
+  // Each new page starts at the top.
+  useEffect(() => {
+    window.scrollTo({ top: 0 })
+  }, [pageIndex])
+
+  function reset() {
+    setAnswers({})
+    setMissing(new Set())
+    setPageIndex(0)
+    setHistory([])
+  }
 
   if (form.status === 'closed') {
     return <Notice title={title}>This form is no longer accepting responses.</Notice>
@@ -131,7 +167,7 @@ function FormView({ form, user }) {
               type="button"
               className="link-btn respond-again"
               onClick={() => {
-                setAnswers({})
+                reset()
                 setState('filling')
               }}
             >
@@ -143,33 +179,56 @@ function FormView({ form, user }) {
     )
   }
 
+  const page = pages[pageIndex]
+  const next = resolveTarget(pages, pageIndex, pageTarget(page, answers))
+  const preview = form.status === 'draft'
+
   const setAnswer = (id, value) => {
     setAnswers((a) => ({ ...a, [id]: value }))
     if (missing.has(id)) {
       setMissing((m) => {
-        const next = new Set(m)
-        next.delete(id)
-        return next
+        const without = new Set(m)
+        without.delete(id)
+        return without
       })
     }
   }
 
+  // Required questions on this page must be complete before moving on.
+  function pageIsValid() {
+    const incomplete = page.questions.filter((q) => q.required && !isComplete(q, answers[q.id]))
+    if (!incomplete.length) return true
+    setMissing(new Set(incomplete.map((q) => q.id)))
+    document
+      .getElementById(`q-${incomplete[0].id}`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    return false
+  }
+
+  function goNext() {
+    if (!pageIsValid()) return
+    setHistory((h) => [...h, pageIndex])
+    setPageIndex(next)
+  }
+
+  function goBack() {
+    setPageIndex(history[history.length - 1])
+    setHistory((h) => h.slice(0, -1))
+  }
+
   async function submit(e) {
     e.preventDefault()
+    if (next !== 'submit') return goNext() // Enter key on a non-final page
+    if (!pageIsValid()) return
+
+    // Only pages the respondent actually saw — skipped sections don't count.
+    const visited = new Set([...history, pageIndex])
     const clean = {}
-    for (const q of form.questions) {
-      const value = answers[q.id]
-      if (Array.isArray(value) ? value.length : typeof value === 'string' && value.trim()) {
-        clean[q.id] = typeof value === 'string' ? value.trim() : value
+    for (const i of visited) {
+      for (const q of pages[i].questions) {
+        const value = cleanAnswer(q, answers[q.id])
+        if (value !== undefined) clean[q.id] = value
       }
-    }
-    const unanswered = form.questions.filter((q) => q.required && !(q.id in clean))
-    if (unanswered.length) {
-      setMissing(new Set(unanswered.map((q) => q.id)))
-      document
-        .getElementById(`q-${unanswered[0].id}`)
-        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      return
     }
 
     setState('sending')
@@ -196,8 +255,6 @@ function FormView({ form, user }) {
     }
   }
 
-  const preview = form.status === 'draft'
-
   return (
     <form className="respond-form" onSubmit={submit} noValidate>
       {preview && (
@@ -206,18 +263,29 @@ function FormView({ form, user }) {
 
       <header className="respond-card respond-head">
         <h1>{title}</h1>
-        {form.description && <p className="respond-desc">{form.description}</p>}
-        <p className="respond-meta">
-          {form.questions.some((q) => q.required) && (
-            <span>
-              <span className="q-required">*</span> Required
-            </span>
-          )}
-          {limitOneResponse && <span>You can respond only once.</span>}
-        </p>
+        {pageIndex === 0 && (
+          <>
+            {form.description && <p className="respond-desc">{form.description}</p>}
+            <p className="respond-meta">
+              {questionsOnly(form.questions).some((q) => q.required) && (
+                <span>
+                  <span className="q-required">*</span> Required
+                </span>
+              )}
+              {limitOneResponse && <span>You can respond only once.</span>}
+            </p>
+          </>
+        )}
       </header>
 
-      {form.questions.map((q) => (
+      {page.section && (
+        <section className="respond-card respond-section">
+          <h2>{page.section.title || 'Untitled section'}</h2>
+          {page.section.description && <p className="respond-desc">{page.section.description}</p>}
+        </section>
+      )}
+
+      {page.questions.map((q) => (
         <QuestionField
           key={q.id}
           question={q}
@@ -234,136 +302,47 @@ function FormView({ form, user }) {
       )}
 
       <div className="respond-actions">
-        <button type="submit" className="btn btn-primary" disabled={preview || state === 'sending'}>
-          {state === 'sending' ? 'Submitting…' : 'Submit'}
-        </button>
-        <button
-          type="button"
-          className="link-btn"
-          onClick={() => {
-            setAnswers({})
-            setMissing(new Set())
-          }}
-        >
+        <div className="respond-nav">
+          {history.length > 0 && (
+            <button type="button" className="btn btn-outline" onClick={goBack}>
+              Back
+            </button>
+          )}
+          {/* Distinct keys: if React reused one <button> and flipped its type
+              to "submit" mid-click, clicking Next on the second-to-last page
+              would submit the form straight away. */}
+          {next === 'submit' ? (
+            <button
+              key="submit"
+              type="submit"
+              className="btn btn-primary"
+              disabled={preview || state === 'sending'}
+            >
+              {state === 'sending' ? 'Submitting…' : 'Submit'}
+            </button>
+          ) : (
+            <button
+              key="next"
+              type="button"
+              className="btn btn-primary"
+              onClick={(e) => {
+                e.preventDefault()
+                goNext()
+              }}
+            >
+              Next
+            </button>
+          )}
+        </div>
+        {pages.length > 1 && (
+          <span className="respond-page">
+            Page {pageIndex + 1} of {pages.length}
+          </span>
+        )}
+        <button type="button" className="link-btn" onClick={reset}>
           Clear form
         </button>
       </div>
     </form>
-  )
-}
-
-function QuestionField({ question: q, value, onChange, missing }) {
-  const name = `q-${q.id}`
-  const labelId = `${name}-label`
-
-  let control
-  switch (q.type) {
-    case 'shortText':
-      control = (
-        <input
-          className="respond-input"
-          aria-labelledby={labelId}
-          value={value ?? ''}
-          maxLength={500}
-          placeholder="Your answer"
-          onChange={(e) => onChange(e.target.value)}
-        />
-      )
-      break
-    case 'longText':
-      control = (
-        <AutoTextarea
-          className="respond-input"
-          aria-labelledby={labelId}
-          value={value ?? ''}
-          maxLength={5000}
-          placeholder="Your answer"
-          onChange={(e) => onChange(e.target.value)}
-        />
-      )
-      break
-    case 'date':
-      control = (
-        <input
-          type="date"
-          className="respond-input respond-date"
-          aria-labelledby={labelId}
-          value={value ?? ''}
-          onChange={(e) => onChange(e.target.value)}
-        />
-      )
-      break
-    case 'dropdown':
-      control = (
-        <select
-          className="respond-input respond-select"
-          aria-labelledby={labelId}
-          value={value ?? ''}
-          onChange={(e) => onChange(e.target.value)}
-        >
-          <option value="">Choose</option>
-          {q.options.map((o, i) => (
-            <option key={i} value={o}>
-              {o}
-            </option>
-          ))}
-        </select>
-      )
-      break
-    case 'multipleChoice':
-      control = (
-        <div role="radiogroup" aria-labelledby={labelId} className="respond-choices">
-          {q.options.map((o, i) => (
-            <label key={i} className="respond-choice">
-              <input type="radio" name={name} checked={value === o} onChange={() => onChange(o)} />
-              <span>{o}</span>
-            </label>
-          ))}
-          {value && !q.required && (
-            <button type="button" className="link-btn respond-clear" onClick={() => onChange('')}>
-              Clear selection
-            </button>
-          )}
-        </div>
-      )
-      break
-    case 'checkboxes': {
-      const selected = value ?? []
-      control = (
-        <div role="group" aria-labelledby={labelId} className="respond-choices">
-          {q.options.map((o, i) => (
-            <label key={i} className="respond-choice">
-              <input
-                type="checkbox"
-                checked={selected.includes(o)}
-                onChange={(e) =>
-                  onChange(e.target.checked ? [...selected, o] : selected.filter((s) => s !== o))
-                }
-              />
-              <span>{o}</span>
-            </label>
-          ))}
-        </div>
-      )
-      break
-    }
-    default:
-      control = null
-  }
-
-  return (
-    <section id={name} className={`respond-card respond-q${missing ? ' respond-q-missing' : ''}`}>
-      <p id={labelId} className="respond-q-title">
-        {q.title || 'Untitled question'}
-        {q.required && <span className="q-required"> *</span>}
-      </p>
-      {q.description && <p className="respond-q-desc">{q.description}</p>}
-      {control}
-      {missing && (
-        <p className="respond-q-error" role="alert">
-          This is a required question
-        </p>
-      )}
-    </section>
   )
 }

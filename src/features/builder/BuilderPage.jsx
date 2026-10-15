@@ -14,15 +14,18 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
-import { Plus } from 'lucide-react'
+import { Plus, Rows3 } from 'lucide-react'
 import AutoTextarea from '../../lib/AutoTextarea.jsx'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
-import { newQuestion } from '../../lib/formModel.js'
+import { dropSectionRefs, isSection } from '../../lib/formLogic.js'
+import { newQuestion, newSection } from '../../lib/formModel.js'
 import QuestionCard from './QuestionCard.jsx'
+import SectionCard from './SectionCard.jsx'
 import { useFormEditor } from './editorContext.js'
+import { buildTargets } from './questionTypes.js'
 
-// Questions tab: header card (title + description), the question cards,
-// and the floating add-question toolbar.
+// Questions tab: header card (title + description), the question and
+// section cards, and the floating toolbar (add question / add section).
 export default function BuilderPage() {
   const { draft, edit } = useFormEditor()
   const [activeId, setActiveId] = useState(null)
@@ -35,23 +38,30 @@ export default function BuilderPage() {
 
   if (!draft) return <div className="builder-loading" aria-busy="true" />
 
+  // Questions and section breaks, in order (see lib/formLogic.js).
   const questions = draft.questions
+  const sections = questions.filter(isSection)
+  const totalSections = sections.length + 1 // the header is section 1
+  const targets = sections.length ? buildTargets(sections) : []
 
   const setQuestions = (key, update) => edit(key, (d) => ({ ...d, questions: update(d.questions) }))
 
   const changeQuestion = (id) => (field, update) =>
     setQuestions(`q:${id}:${field}`, (qs) => qs.map((q) => (q.id === id ? update(q) : q)))
 
-  function addQuestion() {
-    const question = newQuestion('multipleChoice')
+  // New items go after the active card, or at the end.
+  function insert(item) {
     setQuestions('add', (qs) => {
       const at = qs.findIndex((q) => q.id === activeId)
       const next = [...qs]
-      next.splice(at === -1 ? qs.length : at + 1, 0, question)
+      next.splice(at === -1 ? qs.length : at + 1, 0, item)
       return next
     })
-    setActiveId(question.id)
+    setActiveId(item.id)
   }
+
+  const addQuestion = () => insert(newQuestion('multipleChoice'))
+  const addSection = () => insert(newSection())
 
   function duplicateQuestion(id) {
     const copy = { ...questions.find((q) => q.id === id), id: crypto.randomUUID() }
@@ -63,10 +73,18 @@ export default function BuilderPage() {
     setActiveId(copy.id)
   }
 
-  function deleteQuestion(id) {
-    setQuestions('delete', (qs) => qs.filter((q) => q.id !== id))
+  function deleteItem(id) {
+    setQuestions('delete', (qs) =>
+      dropSectionRefs(
+        qs.filter((q) => q.id !== id),
+        id,
+      ),
+    )
     setPendingDelete(null)
   }
+
+  const pendingIsSection =
+    pendingDelete && isSection(questions.find((q) => q.id === pendingDelete) ?? {})
 
   function onDragEnd({ active, over }) {
     if (!over || active.id === over.id) return
@@ -87,6 +105,7 @@ export default function BuilderPage() {
           onFocus={() => setActiveId('head')}
           onClick={() => setActiveId('head')}
         >
+          {sections.length > 0 && <span className="s-chip">Section 1 of {totalSections}</span>}
           <AutoTextarea
             className="form-head-title"
             value={draft.title}
@@ -119,17 +138,32 @@ export default function BuilderPage() {
             items={questions.map((q) => q.id)}
             strategy={verticalListSortingStrategy}
           >
-            {questions.map((question) => (
-              <QuestionCard
-                key={question.id}
-                question={question}
-                active={question.id === activeId}
-                onActivate={() => setActiveId(question.id)}
-                change={changeQuestion(question.id)}
-                onDuplicate={() => duplicateQuestion(question.id)}
-                onDelete={() => setPendingDelete(question.id)}
-              />
-            ))}
+            {questions.map((item) =>
+              isSection(item) ? (
+                <SectionCard
+                  key={item.id}
+                  section={item}
+                  number={sections.indexOf(item) + 2}
+                  total={totalSections}
+                  targets={targets}
+                  active={item.id === activeId}
+                  onActivate={() => setActiveId(item.id)}
+                  change={changeQuestion(item.id)}
+                  onDelete={() => setPendingDelete(item.id)}
+                />
+              ) : (
+                <QuestionCard
+                  key={item.id}
+                  question={item}
+                  targets={targets}
+                  active={item.id === activeId}
+                  onActivate={() => setActiveId(item.id)}
+                  change={changeQuestion(item.id)}
+                  onDuplicate={() => duplicateQuestion(item.id)}
+                  onDelete={() => setPendingDelete(item.id)}
+                />
+              ),
+            )}
           </SortableContext>
         </DndContext>
 
@@ -151,13 +185,26 @@ export default function BuilderPage() {
         >
           <Plus size={20} />
         </button>
+        <button
+          type="button"
+          className="icon-btn"
+          onClick={addSection}
+          aria-label="Add section"
+          title="Add section"
+        >
+          <Rows3 size={20} />
+        </button>
       </aside>
 
       <ConfirmModal
         open={Boolean(pendingDelete)}
-        title="Delete this question?"
-        message="Answers already collected for it will no longer appear in your results. You can undo this right after."
-        onConfirm={() => deleteQuestion(pendingDelete)}
+        title={pendingIsSection ? 'Delete this section?' : 'Delete this question?'}
+        message={
+          pendingIsSection
+            ? 'Its questions stay and join the section above. Anything that jumped to this section will continue to the next one instead. You can undo this right after.'
+            : 'Answers already collected for it will no longer appear in your results. You can undo this right after.'
+        }
+        onConfirm={() => deleteItem(pendingDelete)}
         onCancel={() => setPendingDelete(null)}
       />
     </div>
