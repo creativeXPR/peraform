@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { TYPE_DEFAULTS } from '../../lib/formModel.js'
 import { BRANCHING_TYPES, GRID_TYPES } from '../../lib/formLogic.js'
+import { VALIDATION_KINDS } from '../../lib/validation.js'
 
 // Builder labels/icons for each QUESTION_TYPES entry in lib/formModel.js.
 export const TYPE_INFO = {
@@ -47,6 +48,9 @@ export function changeQuestionType(question, type) {
     keep.add('rows').add('columns')
   }
   for (const field of TYPE_FIELDS) if (!keep.has(field)) delete next[field]
+  if (next.validation && !VALIDATION_KINDS[type]?.includes(next.validation.kind)) {
+    delete next.validation
+  }
   const defaults = TYPE_DEFAULTS[type]?.() ?? {}
   for (const [field, value] of Object.entries(defaults)) if (!keep.has(field)) next[field] = value
   return next

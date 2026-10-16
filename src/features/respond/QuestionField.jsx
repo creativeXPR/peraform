@@ -3,22 +3,21 @@ import AutoTextarea from '../../lib/AutoTextarea.jsx'
 
 // One question as respondents see it. `value` shapes per type are listed in
 // lib/formModel.js (answers).
-export default function QuestionField({ question: q, value, onChange, missing }) {
+export default function QuestionField({ question: q, value, onChange, error }) {
   const name = `q-${q.id}`
   const labelId = `${name}-label`
-  const isGrid = q.type === 'mcGrid' || q.type === 'checkboxGrid'
 
   return (
-    <section id={name} className={`respond-card respond-q${missing ? ' respond-q-missing' : ''}`}>
+    <section id={name} className={`respond-card respond-q${error ? ' respond-q-missing' : ''}`}>
       <p id={labelId} className="respond-q-title">
         {q.title || 'Untitled question'}
         {q.required && <span className="q-required"> *</span>}
       </p>
       {q.description && <p className="respond-q-desc">{q.description}</p>}
       <Control q={q} name={name} labelId={labelId} value={value} onChange={onChange} />
-      {missing && (
+      {error && (
         <p className="respond-q-error" role="alert">
-          {isGrid ? 'This question requires one response per row' : 'This is a required question'}
+          {error}
         </p>
       )}
     </section>

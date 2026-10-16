@@ -4,6 +4,7 @@ import { collection, doc, getDoc, setDoc } from 'firebase/firestore'
 import { CheckCircle2, Moon, Sun } from 'lucide-react'
 import { db } from '../../lib/firebase.js'
 import {
+  GRID_TYPES,
   hasAnswer,
   isComplete,
   pageTarget,
@@ -12,6 +13,7 @@ import {
   splitPages,
 } from '../../lib/formLogic.js'
 import { newResponse } from '../../lib/formModel.js'
+import { validateAnswer } from '../../lib/validation.js'
 import { useTheme } from '../../lib/useTheme.js'
 import { ensureSignedIn } from '../auth/authActions.js'
 import { isCreator, useAuth } from '../auth/useAuth.js'
@@ -108,7 +110,7 @@ function cleanAnswer(question, value) {
 
 function FormView({ form, user }) {
   const [answers, setAnswers] = useState({})
-  const [missing, setMissing] = useState(new Set())
+  const [errors, setErrors] = useState({}) // questionId → message
   const [state, setState] = useState('filling') // filling | sending | sent | already
   const [error, setError] = useState('')
   // Sections are pages; history is the pages visited before this one, so
@@ -127,7 +129,7 @@ function FormView({ form, user }) {
 
   function reset() {
     setAnswers({})
-    setMissing(new Set())
+    setErrors({})
     setPageIndex(0)
     setHistory([])
   }
@@ -185,23 +187,34 @@ function FormView({ form, user }) {
 
   const setAnswer = (id, value) => {
     setAnswers((a) => ({ ...a, [id]: value }))
-    if (missing.has(id)) {
-      setMissing((m) => {
-        const without = new Set(m)
-        without.delete(id)
+    if (errors[id]) {
+      setErrors((e) => {
+        const without = { ...e }
+        delete without[id]
         return without
       })
     }
   }
 
-  // Required questions on this page must be complete before moving on.
+  // Every question on this page must be complete (if required) and pass its
+  // response validation before moving on.
   function pageIsValid() {
-    const incomplete = page.questions.filter((q) => q.required && !isComplete(q, answers[q.id]))
-    if (!incomplete.length) return true
-    setMissing(new Set(incomplete.map((q) => q.id)))
-    document
-      .getElementById(`q-${incomplete[0].id}`)
-      ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const found = {}
+    for (const q of page.questions) {
+      const value = answers[q.id]
+      if (q.required && !isComplete(q, value)) {
+        found[q.id] = GRID_TYPES.includes(q.type)
+          ? 'This question requires one response per row'
+          : 'This is a required question'
+      } else {
+        const message = validateAnswer(q, value)
+        if (message) found[q.id] = message
+      }
+    }
+    const first = page.questions.find((q) => found[q.id])
+    if (!first) return true
+    setErrors(found)
+    document.getElementById(`q-${first.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     return false
   }
 
@@ -291,7 +304,7 @@ function FormView({ form, user }) {
           question={q}
           value={answers[q.id]}
           onChange={(value) => setAnswer(q.id, value)}
-          missing={missing.has(q.id)}
+          error={errors[q.id]}
         />
       ))}
 

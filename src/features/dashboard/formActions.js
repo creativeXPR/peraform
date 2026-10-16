@@ -2,6 +2,7 @@ import { addDoc, collection, deleteDoc, doc, getDocs, writeBatch } from 'firebas
 import { db } from '../../lib/firebase.js'
 import { BRANCHING_TYPES, GRID_TYPES } from '../../lib/formLogic.js'
 import { QUESTION_TYPES, newForm, newQuestion, newSection } from '../../lib/formModel.js'
+import { VALIDATION, VALIDATION_KINDS } from '../../lib/validation.js'
 
 // Creates a draft owned by uid, optionally pre-filled ({ title, description,
 // questions }), and returns its id.
@@ -89,6 +90,16 @@ export async function parseImportFile(file) {
       question.maxLabel = text(raw.maxLabel, 60)
     }
     if (raw.type === 'rating') question.max = int(raw.max, [3, 4, 5, 6, 7, 8, 9, 10], 5)
+    const rule = raw.validation
+    if (VALIDATION_KINDS[raw.type]?.includes(rule?.kind) && rule.op in VALIDATION[rule.kind].ops) {
+      question.validation = {
+        kind: rule.kind,
+        op: rule.op,
+        value: text(rule.value, 200),
+        value2: text(rule.value2, 200),
+        message: text(rule.message, 200),
+      }
+    }
     if (GRID_TYPES.includes(raw.type)) {
       question.rows = list(raw.rows, 300) ?? question.rows
       question.columns = list(raw.columns, 300) ?? question.columns

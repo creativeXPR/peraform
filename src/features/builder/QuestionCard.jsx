@@ -6,7 +6,9 @@ import AutoTextarea from '../../lib/AutoTextarea.jsx'
 import { BRANCHING_TYPES, GRID_TYPES } from '../../lib/formLogic.js'
 import { QUESTION_TYPES } from '../../lib/formModel.js'
 import MenuButton from '../../lib/MenuButton.jsx'
+import { VALIDATION_KINDS, newValidation } from '../../lib/validation.js'
 import TargetSelect from './TargetSelect.jsx'
+import ValidationEditor from './ValidationEditor.jsx'
 import { OPTION_TYPES, TYPE_INFO, changeQuestionType } from './questionTypes.js'
 
 // One question in the builder. Inactive: a read-only preview, click to edit.
@@ -35,6 +37,15 @@ export default function QuestionCard({
   const style = { transform: CSS.Translate.toString(transform), transition }
   const info = TYPE_INFO[question.type]
   const canBranch = BRANCHING_TYPES.includes(question.type) && targets.length > 0
+  const canValidate = Boolean(VALIDATION_KINDS[question.type])
+
+  const toggleValidation = () =>
+    change('validation', (q) => {
+      if (!q.validation) return { ...q, validation: newValidation(q.type) }
+      const rest = { ...q }
+      delete rest.validation
+      return rest
+    })
 
   const toggleBranching = () =>
     change('branching', (q) => {
@@ -46,6 +57,22 @@ export default function QuestionCard({
       }
       return { ...q, branching: true, goTo: q.options.map(() => 'next') }
     })
+
+  const moreItems = []
+  if (canValidate) {
+    moreItems.push({
+      label: 'Response validation',
+      checked: Boolean(question.validation),
+      onSelect: toggleValidation,
+    })
+  }
+  if (canBranch) {
+    moreItems.push({
+      label: 'Go to section based on answer',
+      checked: Boolean(question.branching),
+      onSelect: toggleBranching,
+    })
+  }
 
   return (
     <section
@@ -110,6 +137,9 @@ export default function QuestionCard({
           />
 
           <QuestionBody question={question} change={change} targets={targets} />
+          {question.validation && canValidate && (
+            <ValidationEditor question={question} change={change} onRemove={toggleValidation} />
+          )}
 
           <footer className="q-foot">
             <button
@@ -143,17 +173,11 @@ export default function QuestionCard({
                 }}
               />
             </label>
-            {canBranch && (
+            {moreItems.length > 0 && (
               <MenuButton
                 icon={<MoreVertical size={18} />}
                 label="More question options"
-                items={[
-                  {
-                    label: 'Go to section based on answer',
-                    checked: Boolean(question.branching),
-                    onSelect: toggleBranching,
-                  },
-                ]}
+                items={moreItems}
               />
             )}
           </footer>
