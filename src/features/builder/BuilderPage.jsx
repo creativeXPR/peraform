@@ -18,7 +18,7 @@ import { Plus, Rows3 } from 'lucide-react'
 import AutoTextarea from '../../lib/AutoTextarea.jsx'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { dropSectionRefs, isSection } from '../../lib/formLogic.js'
-import { newQuestion, newSection } from '../../lib/formModel.js'
+import { newQuestion, newSection, quizSettings } from '../../lib/formModel.js'
 import QuestionCard from './QuestionCard.jsx'
 import SectionCard from './SectionCard.jsx'
 import { useFormEditor } from './editorContext.js'
@@ -46,6 +46,28 @@ export default function BuilderPage() {
 
   const setQuestions = (key, update) => edit(key, (d) => ({ ...d, questions: update(d.questions) }))
 
+  const quiz = quizSettings(draft).enabled
+
+  // Renaming an option also renames it in the answer key — one edit, so it's
+  // one undo step and the key never points at a stale option.
+  const renameOption = (id) => (i, value) =>
+    edit(`q:${id}:option-${i}`, (d) => {
+      const old = d.questions.find((q) => q.id === id).options[i]
+      const questions = d.questions.map((q) =>
+        q.id === id ? { ...q, options: q.options.map((o, j) => (j === i ? value : o)) } : q,
+      )
+      const entry = d.answerKey?.[id]
+      if (!entry?.correct?.includes(old)) return { ...d, questions }
+      const correct = entry.correct.map((c) => (c === old ? value : c))
+      return { ...d, questions, answerKey: { ...d.answerKey, [id]: { ...entry, correct } } }
+    })
+
+  const changeKey = (id) => (field, update) =>
+    edit(`key:${id}:${field}`, (d) => ({
+      ...d,
+      answerKey: { ...d.answerKey, [id]: update(d.answerKey?.[id] ?? {}) },
+    }))
+
   const changeQuestion = (id) => (field, update) =>
     setQuestions(`q:${id}:${field}`, (qs) => qs.map((q) => (q.id === id ? update(q) : q)))
 
@@ -65,10 +87,16 @@ export default function BuilderPage() {
 
   function duplicateQuestion(id) {
     const copy = { ...questions.find((q) => q.id === id), id: crypto.randomUUID() }
-    setQuestions('duplicate', (qs) => {
-      const next = [...qs]
-      next.splice(qs.findIndex((q) => q.id === id) + 1, 0, copy)
-      return next
+    // The copy gets the original's answer key too.
+    edit('duplicate', (d) => {
+      const next = [...d.questions]
+      next.splice(d.questions.findIndex((q) => q.id === id) + 1, 0, copy)
+      const entry = d.answerKey?.[id]
+      return {
+        ...d,
+        questions: next,
+        ...(entry && { answerKey: { ...d.answerKey, [copy.id]: entry } }),
+      }
     })
     setActiveId(copy.id)
   }
@@ -161,6 +189,10 @@ export default function BuilderPage() {
                   change={changeQuestion(item.id)}
                   onDuplicate={() => duplicateQuestion(item.id)}
                   onDelete={() => setPendingDelete(item.id)}
+                  renameOption={renameOption(item.id)}
+                  quiz={quiz}
+                  keyEntry={draft.answerKey?.[item.id]}
+                  changeKey={changeKey(item.id)}
                 />
               ),
             )}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
-import { doc, onSnapshot, serverTimestamp, updateDoc } from 'firebase/firestore'
+import { doc, onSnapshot, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase.js'
 import { EditorContext } from './editorContext.js'
 import { editorReducer, initialEditorState, pickDraft } from './editorReducer.js'
@@ -16,6 +16,9 @@ export default function FormEditorProvider({ formId, children }) {
   const [state, dispatch] = useReducer(editorReducer, initialEditorState)
   const [saveError, setSaveError] = useState(false)
   const ref = useMemo(() => doc(db, 'forms', formId), [formId])
+  // Quiz answers live apart from the form so respondents can't read them.
+  const keyRef = useMemo(() => doc(db, 'forms', formId, 'private', 'answerKey'), [formId])
+  const savedKey = useRef(null)
 
   useEffect(
     () =>
@@ -35,6 +38,33 @@ export default function FormEditorProvider({ formId, children }) {
     [ref],
   )
 
+  useEffect(
+    () =>
+      onSnapshot(
+        keyRef,
+        (snap) => {
+          const answerKey = snap.data()?.questions ?? {}
+          savedKey.current = answerKey
+          dispatch({ type: 'load', draft: { answerKey } })
+        },
+        () => {}, // non-members never get this far; the form load reports errors
+      ),
+    [keyRef],
+  )
+
+  // Form fields to the form; the answer key (only if it changed) to its own doc.
+  const saveDraft = useCallback(
+    async ({ answerKey, ...fields }) => {
+      const writes = [updateDoc(ref, { ...fields, updatedAt: serverTimestamp() })]
+      if (answerKey && answerKey !== savedKey.current) {
+        writes.push(setDoc(keyRef, { questions: answerKey }))
+      }
+      await Promise.all(writes)
+      savedKey.current = answerKey
+    },
+    [ref, keyRef],
+  )
+
   // Debounced autosave: each change restarts the timer; the save carries the
   // version it was taken at so later edits stay marked unsaved. A failed save
   // flips saveError, which re-runs this effect as a slower retry.
@@ -49,7 +79,7 @@ export default function FormEditorProvider({ formId, children }) {
     const timer = setTimeout(
       async () => {
         try {
-          await updateDoc(ref, { ...latest.current.draft, updatedAt: serverTimestamp() })
+          await saveDraft(latest.current.draft)
           setSaveError(false)
           dispatch({ type: 'saved', version })
         } catch {
@@ -59,7 +89,7 @@ export default function FormEditorProvider({ formId, children }) {
       saveError ? RETRY_MS : AUTOSAVE_MS,
     )
     return () => clearTimeout(timer)
-  }, [ref, state.draft, state.version, state.savedVersion, saveError])
+  }, [saveDraft, state.draft, state.version, state.savedVersion, saveError])
 
   // Leaving the form (e.g. back to the dashboard) inside the debounce window:
   // send the last edits instead of dropping them.
@@ -67,10 +97,10 @@ export default function FormEditorProvider({ formId, children }) {
     () => () => {
       const { draft, version, savedVersion } = latest.current
       if (draft && version !== savedVersion) {
-        updateDoc(ref, { ...draft, updatedAt: serverTimestamp() }).catch(() => {})
+        saveDraft(draft).catch(() => {})
       }
     },
-    [ref],
+    [saveDraft],
   )
 
   // Warn before closing the tab with unsaved changes.
@@ -101,7 +131,7 @@ export default function FormEditorProvider({ formId, children }) {
   const value = useMemo(
     () => ({
       form,
-      draft: state.draft,
+      draft: form ? state.draft : null,
       loadError,
       edit,
       undo,

@@ -267,3 +267,116 @@ describe('responses: read and delete', () => {
     await assertSucceeds(deleteDoc(doc(real(EDITOR), 'forms/f1/responses/r1')))
   })
 })
+
+// ── Quizzes ────────────────────────────────────────────────
+const quizForm = (quiz = {}) =>
+  form({
+    settings: {
+      requireSignIn: false,
+      limitOneResponse: false,
+      quiz: { enabled: true, release: 'immediate', timeLimit: 0, ...quiz },
+    },
+  })
+
+describe('quiz answer key', () => {
+  beforeEach(async () => {
+    await seed('forms/f1', quizForm())
+    await seed('forms/f1/private/answerKey', { questions: { q1: { correct: ['A'] } } })
+  })
+
+  it('lets members read and write the key', async () => {
+    await assertSucceeds(getDoc(doc(real(EDITOR), 'forms/f1/private/answerKey')))
+    await assertSucceeds(setDoc(doc(real(OWNER), 'forms/f1/private/answerKey'), { questions: {} }))
+  })
+
+  it('hides the key from respondents and strangers', async () => {
+    await assertFails(getDoc(doc(anon(), 'forms/f1/private/answerKey')))
+    await assertFails(getDoc(doc(real(STRANGER), 'forms/f1/private/answerKey')))
+    await assertFails(setDoc(doc(anon(), 'forms/f1/private/answerKey'), { questions: {} }))
+  })
+})
+
+describe('timed quizzes', () => {
+  beforeEach(() => seed('forms/f1', quizForm({ timeLimit: 10 })))
+
+  const start = (db, uid = ANON) => setDoc(doc(db, `forms/f1/starts/${uid}`), { startedAt: serverTimestamp() })
+
+  it('lets a respondent record their own start once', async () => {
+    await assertSucceeds(start(anon()))
+    await assertFails(start(anon())) // a second write would be an update
+    await assertSucceeds(getDoc(doc(anon(), `forms/f1/starts/${ANON}`)))
+  })
+
+  it('blocks starting for someone else, or with a made-up time', async () => {
+    await assertFails(start(anon(), STRANGER))
+    await assertFails(
+      setDoc(doc(anon(), `forms/f1/starts/${ANON}`), { startedAt: new Date('2030-01-01') }),
+    )
+  })
+
+  it('blocks starts on untimed forms', async () => {
+    await seed('forms/f2', quizForm({ timeLimit: 0 }))
+    await assertFails(setDoc(doc(anon(), `forms/f2/starts/${ANON}`), { startedAt: serverTimestamp() }))
+  })
+
+  it('accepts a submission within the limit', async () => {
+    await start(anon())
+    await assertSucceeds(setDoc(doc(anon(), 'forms/f1/responses/r1'), response(ANON)))
+  })
+
+  it('rejects a submission without a recorded start', async () => {
+    await assertFails(setDoc(doc(anon(), 'forms/f1/responses/r1'), response(ANON)))
+  })
+
+  it('rejects a submission after the time limit', async () => {
+    await seed(`forms/f1/starts/${ANON}`, { startedAt: new Date(Date.now() - 11 * 60 * 1000) })
+    await assertFails(setDoc(doc(anon(), 'forms/f1/responses/r1'), response(ANON)))
+  })
+
+  it('ignores the time limit when the form is not a quiz', async () => {
+    await seed('forms/f3', quizForm({ enabled: false, timeLimit: 10 }))
+    await assertSucceeds(setDoc(doc(anon(), 'forms/f3/responses/r1'), response(ANON)))
+  })
+})
+
+describe('grading and released results', () => {
+  beforeEach(async () => {
+    await seed('forms/f1', quizForm({ release: 'manual' }))
+    await seed('forms/f1/responses/mine', {
+      respondentId: ANON,
+      answers: { q1: 'A' },
+      submittedAt: new Date(),
+      points: { q1: 1 },
+      score: 1,
+      maxScore: 2,
+      released: false,
+    })
+  })
+
+  it('lets members adjust points and release', async () => {
+    await assertSucceeds(
+      updateDoc(doc(real(EDITOR), 'forms/f1/responses/mine'), {
+        points: { q1: 2 },
+        score: 2,
+        released: true,
+      }),
+    )
+  })
+
+  it('blocks members from changing what was answered', async () => {
+    await assertFails(updateDoc(doc(real(OWNER), 'forms/f1/responses/mine'), { answers: { q1: 'B' } }))
+  })
+
+  it('blocks respondents from grading themselves', async () => {
+    await assertFails(updateDoc(doc(anon(), 'forms/f1/responses/mine'), { score: 2 }))
+  })
+
+  it('shows respondents their own result only once released', async () => {
+    await assertFails(getDoc(doc(anon(), 'forms/f1/responses/mine')))
+    await testEnv.withSecurityRulesDisabled((ctx) =>
+      updateDoc(doc(ctx.firestore(), 'forms/f1/responses/mine'), { released: true }),
+    )
+    await assertSucceeds(getDoc(doc(anon(), 'forms/f1/responses/mine')))
+    await assertFails(getDoc(doc(anon('someone-else'), 'forms/f1/responses/mine')))
+  })
+})

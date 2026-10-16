@@ -29,6 +29,20 @@
     "singleProjectMode": true,
     "auth": {
       "port": 9099
+    },
+    "functions": {
+      "port": 5001
     }
-  }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "peraform",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "*.log"
+      ]
+    }
+  ]
 }

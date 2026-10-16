@@ -1,7 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { collection, doc, getDoc, setDoc } from 'firebase/firestore'
-import { CheckCircle2, Moon, Sun } from 'lucide-react'
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocFromServer,
+  serverTimestamp,
+  setDoc,
+} from 'firebase/firestore'
+import { CheckCircle2, Moon, Sun, Timer } from 'lucide-react'
 import { db } from '../../lib/firebase.js'
 import {
   GRID_TYPES,
@@ -12,12 +19,14 @@ import {
   resolveTarget,
   splitPages,
 } from '../../lib/formLogic.js'
-import { newResponse } from '../../lib/formModel.js'
+import { newResponse, quizSettings } from '../../lib/formModel.js'
 import { validateAnswer } from '../../lib/validation.js'
 import { useTheme } from '../../lib/useTheme.js'
 import { ensureSignedIn } from '../auth/authActions.js'
 import { isCreator, useAuth } from '../auth/useAuth.js'
 import QuestionField from './QuestionField.jsx'
+import QuizSubmitted from './QuizSubmitted.jsx'
+import { formatClock, useCountdown } from './useCountdown.js'
 import './RespondPage.css'
 
 // The public form at /f/:formId. Anyone with the link can read a published
@@ -97,6 +106,22 @@ function Notice({ title, children, icon }) {
   )
 }
 
+// The server-recorded start of a timed quiz, in ms. Read from the server (a
+// cached copy right after the write can still lack the server timestamp),
+// retrying briefly on a slow connection.
+async function readStartTime(ref) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      const startedAt = (await getDocFromServer(ref)).data()?.startedAt
+      if (startedAt) return startedAt.toMillis()
+    } catch {
+      // fall through to retry
+    }
+    await new Promise((r) => setTimeout(r, 600))
+  }
+  throw new Error('Could not read the quiz start time')
+}
+
 // Trim text; drop empty grid rows. Returns undefined for "no answer".
 function cleanAnswer(question, value) {
   if (!hasAnswer(question, value)) return undefined
@@ -111,7 +136,8 @@ function cleanAnswer(question, value) {
 function FormView({ form, user }) {
   const [answers, setAnswers] = useState({})
   const [errors, setErrors] = useState({}) // questionId → message
-  const [state, setState] = useState('filling') // filling | sending | sent | already
+  // filling | sending | sent | already | late (timed quiz: arrived after the limit)
+  const [state, setState] = useState('filling')
   const [error, setError] = useState('')
   // Sections are pages; history is the pages visited before this one, so
   // Back retraces skip logic and only visited pages' answers are submitted.
@@ -121,6 +147,33 @@ function FormView({ form, user }) {
   const isMember = Boolean(user && form.memberIds.includes(user.uid))
   const { requireSignIn, limitOneResponse } = form.settings
   const title = form.title || 'Untitled form'
+  const quiz = quizSettings(form)
+  const timed = quiz.enabled && quiz.timeLimit > 0 && form.status === 'published'
+  const [deadline, setDeadline] = useState(null) // ms; timed quizzes, once started
+  const [starting, setStarting] = useState(false)
+  const [sentId, setSentId] = useState(null)
+  // When time runs out, submit whatever has been answered so far.
+  const sendRef = useRef(null)
+  const secondsLeft = useCountdown(deadline, () => sendRef.current?.({ auto: true }))
+
+  // A timed quiz already started in this browser (e.g. after a reload):
+  // pick the clock back up from the server-recorded start.
+  const uid = user?.uid
+  useEffect(() => {
+    if (!timed || !uid) return
+    let cancelled = false
+    getDoc(doc(db, 'forms', form.id, 'starts', uid))
+      .then((snap) => {
+        if (cancelled || !snap.exists()) return
+        const end = snap.data().startedAt.toMillis() + quiz.timeLimit * 60_000
+        if (end <= Date.now()) setState('late')
+        else setDeadline(end)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [timed, uid, form.id, quiz.timeLimit])
 
   // Each new page starts at the top.
   useEffect(() => {
@@ -156,6 +209,16 @@ function FormView({ form, user }) {
       </section>
     )
   }
+  if (state === 'late') {
+    return (
+      <Notice title={title}>
+        Time’s up. This quiz’s time limit has passed, so no more answers can be submitted.
+      </Notice>
+    )
+  }
+  if (state === 'sent' && quiz.enabled && sentId) {
+    return <QuizSubmitted form={form} quiz={quiz} responseId={sentId} />
+  }
   if (state === 'sent' || state === 'already') {
     return (
       <Notice title={title} icon={<CheckCircle2 size={36} className="respond-done-icon" />}>
@@ -178,6 +241,52 @@ function FormView({ form, user }) {
           </>
         )}
       </Notice>
+    )
+  }
+
+  async function startQuiz() {
+    setStarting(true)
+    setError('')
+    try {
+      const respondent = await ensureSignedIn()
+      const ref = doc(db, 'forms', form.id, 'starts', respondent.uid)
+      try {
+        await setDoc(ref, { startedAt: serverTimestamp() })
+      } catch (err) {
+        // Already started earlier: the rules refuse a second start, which
+        // is fine — we just resume from the first one.
+        if (err.code !== 'permission-denied') throw err
+      }
+      const end = (await readStartTime(ref)) + quiz.timeLimit * 60_000
+      if (end <= Date.now()) setState('late')
+      else setDeadline(end)
+    } catch {
+      setError('Couldn’t start the quiz. Check your connection and try again.')
+    } finally {
+      setStarting(false)
+    }
+  }
+
+  if (timed && !deadline) {
+    return (
+      <section className="respond-card respond-notice quiz-start">
+        <Timer size={36} className="respond-done-icon" />
+        <h1>{title}</h1>
+        {form.description && <p className="respond-desc">{form.description}</p>}
+        <p>
+          This quiz has a <strong>{quiz.timeLimit}-minute</strong> time limit. The timer starts when
+          you press Start and keeps running if you leave the page. When time runs out, your answers
+          are submitted automatically.
+        </p>
+        {error && (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        )}
+        <button type="button" className="btn btn-primary" onClick={startQuiz} disabled={starting}>
+          {starting ? 'Starting…' : 'Start quiz'}
+        </button>
+      </section>
     )
   }
 
@@ -229,11 +338,16 @@ function FormView({ form, user }) {
     setHistory((h) => h.slice(0, -1))
   }
 
-  async function submit(e) {
+  function submit(e) {
     e.preventDefault()
     if (next !== 'submit') return goNext() // Enter key on a non-final page
     if (!pageIsValid()) return
+    send({ auto: false })
+  }
 
+  // auto: the timer ran out — send what's there, skipping required checks.
+  async function send({ auto }) {
+    if (state === 'sending' || state === 'sent') return
     // Only pages the respondent actually saw — skipped sections don't count.
     const visited = new Set([...history, pageIndex])
     const clean = {}
@@ -253,10 +367,20 @@ function FormView({ form, user }) {
       // submission is rejected by the rules (see firestore.rules).
       const ref = limitOneResponse ? doc(responses, respondent.uid) : doc(responses)
       await setDoc(ref, newResponse(respondent.uid, clean))
+      setSentId(ref.id)
       setState('sent')
     } catch (err) {
       if (err.code === 'permission-denied' && limitOneResponse) {
         setState('already')
+        return
+      }
+      if (err.code === 'permission-denied' && timed) {
+        setState('late')
+        return
+      }
+      if (auto) {
+        setState('filling')
+        setError('Time’s up, but your answers couldn’t be sent. Check your connection and press Submit.')
         return
       }
       setState('filling')
@@ -268,8 +392,19 @@ function FormView({ form, user }) {
     }
   }
 
+  sendRef.current = send
+  // "Running low": the last minute, or the last quarter of a short quiz.
+  const lowAt = Math.min(60, quiz.timeLimit * 15)
+
   return (
     <form className="respond-form" onSubmit={submit} noValidate>
+      {deadline && (
+        <div className={`quiz-timer${secondsLeft <= lowAt ? ' quiz-timer-low' : ''}`} role="timer">
+          <Timer size={16} />
+          <span>{formatClock(secondsLeft)}</span>
+          <span className="quiz-timer-label">left</span>
+        </div>
+      )}
       {preview && (
         <p className="respond-banner">Preview — publish this form to start collecting responses.</p>
       )}
@@ -305,6 +440,7 @@ function FormView({ form, user }) {
           value={answers[q.id]}
           onChange={(value) => setAnswer(q.id, value)}
           error={errors[q.id]}
+          points={quiz.enabled && quiz.showPoints && q.points > 0 ? q.points : null}
         />
       ))}
 

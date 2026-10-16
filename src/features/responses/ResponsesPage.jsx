@@ -1,9 +1,20 @@
 import { useState } from 'react'
-import { deleteDoc, doc } from 'firebase/firestore'
-import { ChevronLeft, ChevronRight, Download, MoreVertical, Trash2 } from 'lucide-react'
+import { deleteDoc, doc, updateDoc, writeBatch } from 'firebase/firestore'
+import {
+  BadgeCheck,
+  ChevronLeft,
+  ChevronRight,
+  CircleCheck,
+  CircleX,
+  Download,
+  MoreVertical,
+  Trash2,
+} from 'lucide-react'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { db } from '../../lib/firebase.js'
-import { GRID_TYPES, hasAnswer, isSection, questionsOnly } from '../../lib/formLogic.js'
+import { formatAnswer } from '../../lib/formatAnswer.js'
+import { hasAnswer, isSection, questionsOnly } from '../../lib/formLogic.js'
+import { quizSettings } from '../../lib/formModel.js'
 import MenuButton from '../../lib/MenuButton.jsx'
 import { useToast } from '../../lib/useToast.jsx'
 import { useFormEditor } from '../builder/editorContext.js'
@@ -32,6 +43,25 @@ export default function ResponsesPage() {
   const title = draft.title || 'Untitled form'
   const count = responses.length
   const current = responses[Math.min(index, count - 1)]
+  const quiz = quizSettings(draft)
+  const graded = responses.filter((r) => r.gradedAt)
+  const unreleased = graded.filter((r) => !r.released)
+
+  async function releaseAll() {
+    if (!unreleased.length) return showToast('Every graded score is already released')
+    try {
+      for (let i = 0; i < unreleased.length; i += 500) {
+        const batch = writeBatch(db)
+        for (const r of unreleased.slice(i, i + 500)) {
+          batch.update(doc(db, 'forms', form.id, 'responses', r.id), { released: true })
+        }
+        await batch.commit()
+      }
+      showToast(`Released ${unreleased.length} ${unreleased.length === 1 ? 'score' : 'scores'}`)
+    } catch {
+      showToast('Couldn’t release scores. Please try again.')
+    }
+  }
 
   async function toggleAccepting(accepting) {
     try {
@@ -81,6 +111,9 @@ export default function ResponsesPage() {
             icon={<MoreVertical size={18} />}
             label="Response actions"
             items={[
+              ...(quiz.enabled
+                ? [{ label: 'Release all scores', icon: BadgeCheck, onSelect: releaseAll }]
+                : []),
               {
                 label: 'Download CSV',
                 icon: Download,
@@ -134,7 +167,12 @@ export default function ResponsesPage() {
           </div>
 
           {view === 'summary' ? (
-            items.map((item) => <SummaryItem key={item.id} item={item} responses={responses} />)
+            <>
+              {quiz.enabled && <QuizOverview responses={graded} />}
+              {items.map((item) => (
+                <SummaryItem key={item.id} item={item} responses={responses} quiz={quiz.enabled} />
+              ))}
+            </>
           ) : (
             <>
               <div className="pager">
@@ -169,7 +207,15 @@ export default function ResponsesPage() {
                   <Trash2 size={18} />
                 </button>
               </div>
-              <IndividualResponse response={current} questions={items} />
+              <IndividualResponse
+                key={current.id}
+                response={current}
+                questions={items}
+                formId={form.id}
+                quiz={quiz.enabled}
+                answerKey={draft.answerKey ?? {}}
+                showToast={showToast}
+              />
             </>
           )}
         </>
@@ -193,14 +239,49 @@ export default function ResponsesPage() {
 }
 
 // Section breaks show as dividers between their questions' summaries.
-function SummaryItem({ item, responses }) {
+// Quiz averages across graded responses.
+function QuizOverview({ responses }) {
+  if (!responses.length) return null
+  const max = responses[0].maxScore ?? 0
+  const avg = responses.reduce((sum, r) => sum + (r.score ?? 0), 0) / responses.length
+  const scores = responses.map((r) => r.score ?? 0)
+  return (
+    <section className="summary-card quiz-overview">
+      <h2>Quiz insights</h2>
+      <div className="quiz-stats">
+        <Stat label="Average" value={`${avg.toFixed(1)} / ${max}`} />
+        <Stat label="Median" value={`${median(scores)} / ${max}`} />
+        <Stat label="Range" value={`${Math.min(...scores)} – ${Math.max(...scores)}`} />
+        <Stat label="Graded" value={responses.length} />
+      </div>
+    </section>
+  )
+}
+
+function median(values) {
+  const sorted = [...values].sort((a, b) => a - b)
+  const mid = Math.floor(sorted.length / 2)
+  const m = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
+  return Number.isInteger(m) ? m : m.toFixed(1)
+}
+
+function Stat({ label, value }) {
+  return (
+    <div className="quiz-stat">
+      <span className="quiz-stat-value">{value}</span>
+      <span className="quiz-stat-label">{label}</span>
+    </div>
+  )
+}
+
+function SummaryItem({ item, responses, quiz }) {
   if (isSection(item)) {
     return <h2 className="summary-section">{item.title || 'Untitled section'}</h2>
   }
-  return <QuestionSummary question={item} responses={responses} />
+  return <QuestionSummary question={item} responses={responses} quiz={quiz} />
 }
 
-function QuestionSummary({ question, responses }) {
+function QuestionSummary({ question, responses, quiz }) {
   const [expanded, setExpanded] = useState(false)
   const summary = summarizeQuestion(question, responses)
   const shown = expanded ? summary.values : summary.values?.slice(0, TEXT_PREVIEW)
@@ -212,6 +293,7 @@ function QuestionSummary({ question, responses }) {
       <p className="summary-count">
         {summary.answered} {summary.answered === 1 ? 'response' : 'responses'}
         {multi && summary.answered > 0 && ' · people could pick several'}
+        {quiz && question.points > 0 && <CorrectCount question={question} responses={responses} />}
         {summary.kind === 'scale' && summary.answered > 0 && (
           <>
             {' · '}average <strong>{summary.average.toFixed(1)}</strong>
@@ -282,19 +364,38 @@ function GridSummary({ summary }) {
   )
 }
 
-function formatAnswer(question, value) {
-  if (GRID_TYPES.includes(question.type)) {
-    return question.rows
-      .map((row, i) => [row, value[i]])
-      .filter(([, v]) => v !== undefined && !(Array.isArray(v) && !v.length))
-      .map(([row, v]) => `${row}: ${[v].flat().join(', ')}`)
-      .join('\n')
-  }
-  if (question.type === 'rating') return `${value} of ${question.max}`
-  return Array.isArray(value) ? value.join(', ') : String(value)
+// How many graded responses earned full points on this question.
+function CorrectCount({ question, responses }) {
+  const graded = responses.filter((r) => r.points && question.id in r.points)
+  if (!graded.length) return null
+  const full = graded.filter((r) => r.points[question.id] >= question.points).length
+  return ` · ${full} of ${graded.length} got full points`
 }
 
-function IndividualResponse({ response, questions }) {
+function IndividualResponse({ response, questions, formId, quiz, answerKey, showToast }) {
+  const ref = doc(db, 'forms', formId, 'responses', response.id)
+  const graded = quiz && response.gradedAt
+
+  // Creators can override any question's points; the score follows.
+  async function setPoints(questionId, value) {
+    const points = { ...response.points, [questionId]: value }
+    const score = Object.values(points).reduce((sum, n) => sum + (Number(n) || 0), 0)
+    try {
+      await updateDoc(ref, { points, score })
+    } catch {
+      showToast('Couldn’t save the points. Please try again.')
+    }
+  }
+
+  async function release() {
+    try {
+      await updateDoc(ref, { released: true })
+      showToast('Score released')
+    } catch {
+      showToast('Couldn’t release the score. Please try again.')
+    }
+  }
+
   return (
     <section className="summary-card individual">
       <p className="summary-count">
@@ -306,6 +407,28 @@ function IndividualResponse({ response, questions }) {
             })
           : 'just now'}
       </p>
+      {quiz && (
+        <div className="individual-score">
+          {graded ? (
+            <>
+              <span className="individual-score-value">
+                {response.score} <span>/ {response.maxScore}</span>
+              </span>
+              {response.released ? (
+                <span className="released-chip">
+                  <BadgeCheck size={14} /> Released
+                </span>
+              ) : (
+                <button type="button" className="btn btn-primary release-btn" onClick={release}>
+                  Release score
+                </button>
+              )}
+            </>
+          ) : (
+            <span className="muted">Grading…</span>
+          )}
+        </div>
+      )}
       {questions.map((q) => {
         if (isSection(q)) {
           return (
@@ -316,12 +439,41 @@ function IndividualResponse({ response, questions }) {
         }
         const value = response.answers?.[q.id]
         const empty = !hasAnswer(q, value)
+        const max = q.points ?? 0
+        const awarded = response.points?.[q.id]
+        const keyed = answerKey[q.id]?.correct?.some((c) => String(c).trim())
+        const status = graded && keyed && max > 0 ? (awarded >= max ? 'right' : 'wrong') : null
         return (
           <div key={q.id} className="individual-row">
-            <p className="individual-q">{q.title || 'Untitled question'}</p>
-            <p className={empty ? 'individual-a muted' : 'individual-a'}>
-              {empty ? 'No answer' : formatAnswer(q, value)}
+            <div className="individual-q-row">
+              <p className="individual-q">{q.title || 'Untitled question'}</p>
+              {graded && max > 0 && (
+                <label className="points-input">
+                  <input
+                    type="number"
+                    min={0}
+                    max={max}
+                    defaultValue={awarded ?? 0}
+                    aria-label={`Points for ${q.title || 'this question'}`}
+                    onBlur={(e) => {
+                      const n = Math.min(max, Math.max(0, Math.round(Number(e.target.value)) || 0))
+                      e.target.value = n
+                      if (n !== awarded) setPoints(q.id, n)
+                    }}
+                    onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                  />
+                  / {max}
+                </label>
+              )}
+            </div>
+            <p className={empty ? 'individual-a muted' : `individual-a${status ? ` is-${status}` : ''}`}>
+              {status === 'right' && <CircleCheck size={15} aria-label="Correct" />}
+              {status === 'wrong' && <CircleX size={15} aria-label="Incorrect" />}
+              <span>{empty ? 'No answer' : formatAnswer(q, value)}</span>
             </p>
+            {status === 'wrong' && (
+              <p className="individual-key">Answer key: {answerKey[q.id].correct.join(', ')}</p>
+            )}
           </div>
         )
       })}

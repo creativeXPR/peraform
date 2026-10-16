@@ -19,6 +19,7 @@
   --shadow-center: 0 0 10px rgb(0 0 0 / 0.03), 0 1px 2px rgb(0 0 0 / 0.01);
   --backdrop: rgb(15 16 20 / 0.3);
   --chart-bar: #4f46e5; /* validated vs #fff (dataviz validator) */
+  --success: #16a34a;
   --danger: #dc2626;
   --danger-soft: rgb(220 38 38 / 0.1);
 
@@ -49,6 +50,7 @@
     --shadow-center: 0 0 10px rgb(0 0 0 / 0.1);
     --backdrop: rgb(0 0 0 / 0.5);
     --chart-bar: #6d70f5; /* validated vs #15161b; #818cf8 is too light */
+    --success: #4ade80;
     --danger: #f87171;
     --danger-soft: rgb(248 113 113 / 0.14);
     color-scheme: dark;
@@ -72,6 +74,7 @@
   --shadow-center: 0 0 10px rgb(0 0 0 / 0.1);
   --backdrop: rgb(0 0 0 / 0.5);
   --chart-bar: #6d70f5; /* validated vs #15161b; #818cf8 is too light */
+  --success: #4ade80;
   --danger: #f87171;
   --danger-soft: rgb(248 113 113 / 0.14);
   color-scheme: dark;

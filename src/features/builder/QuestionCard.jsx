@@ -1,12 +1,22 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { ChevronDown, Copy, GripHorizontal, MoreVertical, Star, Trash2, X } from 'lucide-react'
+import {
+  ChevronDown,
+  CircleCheckBig,
+  Copy,
+  GripHorizontal,
+  MoreVertical,
+  Star,
+  Trash2,
+  X,
+} from 'lucide-react'
 import AutoTextarea from '../../lib/AutoTextarea.jsx'
 import { BRANCHING_TYPES, GRID_TYPES } from '../../lib/formLogic.js'
 import { QUESTION_TYPES } from '../../lib/formModel.js'
 import MenuButton from '../../lib/MenuButton.jsx'
 import { VALIDATION_KINDS, newValidation } from '../../lib/validation.js'
+import AnswerKeyEditor from './AnswerKeyEditor.jsx'
 import TargetSelect from './TargetSelect.jsx'
 import ValidationEditor from './ValidationEditor.jsx'
 import { OPTION_TYPES, TYPE_INFO, changeQuestionType } from './questionTypes.js'
@@ -23,7 +33,13 @@ export default function QuestionCard({
   onDuplicate,
   onDelete,
   targets,
+  renameOption,
+  quiz,
+  keyEntry,
+  changeKey,
 }) {
+  // Quiz forms: the card flips between the question and its answer key.
+  const [keyMode, setKeyMode] = useState(false)
   const {
     attributes,
     listeners,
@@ -94,7 +110,15 @@ export default function QuestionCard({
         <GripHorizontal size={16} />
       </button>
 
-      {active ? (
+      {active && quiz && keyMode ? (
+        <AnswerKeyEditor
+          question={question}
+          entry={keyEntry}
+          change={change}
+          changeKey={changeKey}
+          onDone={() => setKeyMode(false)}
+        />
+      ) : active ? (
         <>
           <div className="q-head">
             <AutoTextarea
@@ -136,12 +160,24 @@ export default function QuestionCard({
             }}
           />
 
-          <QuestionBody question={question} change={change} targets={targets} />
+          <QuestionBody
+            question={question}
+            change={change}
+            targets={targets}
+            renameOption={renameOption}
+          />
           {question.validation && canValidate && (
             <ValidationEditor question={question} change={change} onRemove={toggleValidation} />
           )}
 
           <footer className="q-foot">
+            {quiz && (
+              <button type="button" className="key-btn" onClick={() => setKeyMode(true)}>
+                <CircleCheckBig size={18} />
+                Answer key
+                <span className="key-btn-points">({pointsLabel(question.points)})</span>
+              </button>
+            )}
             <button
               type="button"
               className="icon-btn"
@@ -183,16 +219,25 @@ export default function QuestionCard({
           </footer>
         </>
       ) : (
-        <QuestionPreview question={question} />
+        <QuestionPreview question={question} quiz={quiz} />
       )}
     </section>
   )
 }
 
-function QuestionBody({ question, change, targets }) {
+const pointsLabel = (points = 0) => `${points} ${points === 1 ? 'point' : 'points'}`
+
+function QuestionBody({ question, change, targets, renameOption }) {
   const { type } = question
   if (OPTION_TYPES.includes(type)) {
-    return <OptionsEditor question={question} change={change} targets={targets} />
+    return (
+      <OptionsEditor
+        question={question}
+        change={change}
+        targets={targets}
+        renameOption={renameOption}
+      />
+    )
   }
   if (type === 'linearScale') return <ScaleEditor question={question} change={change} />
   if (type === 'rating') return <RatingEditor question={question} change={change} />
@@ -258,7 +303,8 @@ function ListEditor({ items, noun, marker, onSet, onAdd, onRemove, extra }) {
 }
 
 // Choice options. With branching on, goTo stays index-aligned with options.
-function OptionsEditor({ question, change, targets }) {
+// Renames go through renameOption so the answer key follows the new text.
+function OptionsEditor({ question, change, targets, renameOption }) {
   const { options, type, branching } = question
   const insertAt = (arr, at, value) => {
     const next = [...arr]
@@ -271,12 +317,7 @@ function OptionsEditor({ question, change, targets }) {
       items={options}
       noun="Option"
       marker={(i) => <Marker type={type} index={i} />}
-      onSet={(i, value) =>
-        change(`option-${i}`, (q) => ({
-          ...q,
-          options: q.options.map((o, j) => (j === i ? value : o)),
-        }))
-      }
+      onSet={renameOption}
       onAdd={(after) =>
         change('options', (q) => ({
           ...q,
@@ -421,7 +462,7 @@ function GridEditor({ question, change }) {
   )
 }
 
-function QuestionPreview({ question }) {
+function QuestionPreview({ question, quiz }) {
   const { type } = question
   let body
   if (question.options) {
@@ -465,6 +506,7 @@ function QuestionPreview({ question }) {
       <p className="q-preview-title">
         {question.title || <span className="muted">Untitled question</span>}
         {question.required && <span className="q-required"> *</span>}
+        {quiz && <span className="q-points">{pointsLabel(question.points)}</span>}
       </p>
       {question.description && <p className="q-preview-desc">{question.description}</p>}
       {body}

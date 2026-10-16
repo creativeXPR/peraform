@@ -12,6 +12,7 @@ const BuilderPage = lazy(() => import('./features/builder/BuilderPage.jsx'))
 const SettingsPage = lazy(() => import('./features/builder/SettingsPage.jsx'))
 const ResponsesPage = lazy(() => import('./features/responses/ResponsesPage.jsx'))
 const RespondPage = lazy(() => import('./features/respond/RespondPage.jsx'))
+const ResultPage = lazy(() => import('./features/respond/ResultPage.jsx'))
 
 export default function App() {
   return (
@@ -34,6 +35,8 @@ export default function App() {
           <Route path="/signin" element={<SignInPage />} />
           {/* Public link respondents open — kept short for sharing. */}
           <Route path="/f/:formId" element={<RespondPage />} />
+          {/* A respondent's released quiz score. */}
+          <Route path="/f/:formId/r/:responseId" element={<ResultPage />} />
         </Routes>
       </Suspense>
     </BrowserRouter>

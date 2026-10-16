@@ -3,7 +3,7 @@ import AutoTextarea from '../../lib/AutoTextarea.jsx'
 
 // One question as respondents see it. `value` shapes per type are listed in
 // lib/formModel.js (answers).
-export default function QuestionField({ question: q, value, onChange, error }) {
+export default function QuestionField({ question: q, value, onChange, error, points }) {
   const name = `q-${q.id}`
   const labelId = `${name}-label`
 
@@ -12,6 +12,11 @@ export default function QuestionField({ question: q, value, onChange, error }) {
       <p id={labelId} className="respond-q-title">
         {q.title || 'Untitled question'}
         {q.required && <span className="q-required"> *</span>}
+        {points !== null && points !== undefined && (
+          <span className="respond-points">
+            {points} {points === 1 ? 'point' : 'points'}
+          </span>
+        )}
       </p>
       {q.description && <p className="respond-q-desc">{q.description}</p>}
       <Control q={q} name={name} labelId={labelId} value={value} onChange={onChange} />

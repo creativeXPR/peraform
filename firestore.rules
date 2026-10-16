@@ -43,16 +43,61 @@ service cloud.firestore {
 
       allow delete: if isOwner();
 
+      // Helpers for the subcollections below (resource there is the child).
+      function form() {
+        return get(/databases/$(database)/documents/forms/$(formId)).data;
+      }
+
+      function isFormMember() {
+        return isSignedIn() && request.auth.uid in form().memberIds;
+      }
+
+      // Minutes, or 0 when the form isn't a timed quiz.
+      function timeLimit() {
+        let quiz = form().settings.get('quiz', {});
+        return quiz.get('enabled', false) == true ? quiz.get('timeLimit', 0) : 0;
+      }
+
+      // Quiz answer key — never readable by respondents.
+      match /private/{docId} {
+        allow read, write: if isFormMember();
+      }
+
+      // Timed quizzes: the server records when each respondent started, once.
+      // Respondents can read their own start time (to resume the countdown
+      // after a reload) but never change it.
+      match /starts/{uid} {
+        allow read: if isSignedIn() && (request.auth.uid == uid || isFormMember());
+        allow create: if isSignedIn()
+          && request.auth.uid == uid
+          && form().status == 'published'
+          && timeLimit() > 0
+          && request.resource.data.keys().hasOnly(['startedAt'])
+          && request.resource.data.startedAt == request.time;
+        allow delete: if isFormMember();
+      }
+
       match /responses/{responseId} {
-        function form() {
-          return get(/databases/$(database)/documents/forms/$(formId)).data;
-        }
+        // Respondents can read their own response once its quiz score has
+        // been released; members can always read.
+        allow read: if isFormMember()
+          || (isSignedIn()
+            && resource.data.respondentId == request.auth.uid
+            && resource.data.get('released', false) == true);
 
-        allow read, delete: if isSignedIn() && request.auth.uid in form().memberIds;
+        allow delete: if isFormMember();
 
-        // Respondents only ever create — never read back, edit or delete.
+        // Members grade: adjust points/score and release results. Answers
+        // and everything else stay as submitted.
+        allow update: if isFormMember()
+          && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['points', 'score', 'released']);
+
+        // Respondents only ever create — never edit or delete.
         // With limitOneResponse the doc id must be the respondent's uid, so
         // a second submission collides with the first and is rejected.
+        // Timed quizzes must arrive within the limit (+30s for slow networks)
+        // of the server-recorded start.
         allow create: if isSignedIn()
           && form().status == 'published'
           && (!form().settings.requireSignIn || isRealUser())
@@ -60,7 +105,15 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly(['respondentId', 'answers', 'submittedAt'])
           && request.resource.data.respondentId == request.auth.uid
           && request.resource.data.submittedAt == request.time
-          && request.resource.data.answers is map;
+          && request.resource.data.answers is map
+          && (timeLimit() == 0 || withinTimeLimit());
+
+        function withinTimeLimit() {
+          let start = /databases/$(database)/documents/forms/$(formId)/starts/$(request.auth.uid);
+          return exists(start)
+            && request.time < get(start).data.startedAt
+              + duration.value(timeLimit() * 60 + 30, 's');
+        }
       }
     }
   }

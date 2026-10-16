@@ -1,5 +1,6 @@
 // Editor state for one form: the editable draft (title, description,
-// questions, settings) plus undo/redo history.
+// questions, settings — plus answerKey, which is saved to a separate private
+// document) and undo/redo history.
 //
 // `version` bumps on every local change; autosave records which version it
 // sent, so a save only marks the draft clean if nothing changed meanwhile.
@@ -29,9 +30,10 @@ export function editorReducer(state, action) {
   switch (action.type) {
     // A server snapshot. Ignored while local edits are unsaved so it can't
     // clobber what the user is typing; autosave will send those shortly.
+    // Merges, because the form and its private answer key arrive separately.
     case 'load': {
       if (state.draft && state.version !== state.savedVersion) return state
-      return { ...state, draft: action.draft }
+      return { ...state, draft: { ...state.draft, ...action.draft } }
     }
 
     case 'edit': {

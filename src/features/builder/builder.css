@@ -736,3 +736,199 @@
   color: var(--danger);
   font-size: 12px;
 }
+
+/* ── Quiz settings ───────────────────────────────────────── */
+.setting-select,
+.setting-minutes input {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.setting-minutes {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.setting-minutes input {
+  width: 80px;
+}
+
+.setting-stack {
+  flex-direction: column;
+  align-items: flex-start;
+  cursor: default;
+}
+
+.setting-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+.setting-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.setting-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+.setting-text .setting-hint {
+  margin-top: 4px;
+  color: var(--accent);
+}
+
+@media (max-width: 639px) {
+  .setting:has(.setting-select) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* ── Quiz: answer key ────────────────────────────────────── */
+.key-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.key-btn:hover {
+  background: var(--accent-soft);
+}
+
+.key-btn-points {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.q-points {
+  margin-left: 10px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.key-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.key-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.key-title {
+  font-weight: 500;
+}
+
+.key-points {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.key-points input,
+.key-feedback input {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.key-points input {
+  width: 72px;
+}
+
+.key-note {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.key-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.key-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.key-option:hover {
+  background: var(--fill);
+}
+
+/* Correct answers: tinted row, check mark, and the text says so for readers. */
+.key-option.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.key-check {
+  margin-left: auto;
+  color: var(--accent);
+}
+
+.key-feedback {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.key-done {
+  height: 36px;
+}
