@@ -1,7 +1,15 @@
 import { useState } from 'react'
-import { deleteDoc, doc, updateDoc, writeBatch } from 'firebase/firestore'
+import {
+  arrayRemove,
+  arrayUnion,
+  deleteDoc,
+  doc,
+  updateDoc,
+  writeBatch,
+} from 'firebase/firestore'
 import {
   BadgeCheck,
+  Bell,
   ChevronLeft,
   ChevronRight,
   CircleCheck,
@@ -17,6 +25,7 @@ import { hasAnswer, isSection, questionsOnly } from '../../lib/formLogic.js'
 import { quizSettings } from '../../lib/formModel.js'
 import MenuButton from '../../lib/MenuButton.jsx'
 import { useToast } from '../../lib/useToast.jsx'
+import { useAuth } from '../auth/useAuth.js'
 import { useFormEditor } from '../builder/editorContext.js'
 import { deleteAllResponses } from '../dashboard/formActions.js'
 import BarList from './BarList.jsx'
@@ -36,6 +45,7 @@ export default function ResponsesPage() {
   const [confirm, setConfirm] = useState(null) // { kind: 'all' } | { kind: 'one', id }
   const [busy, setBusy] = useState(false)
   const [toast, showToast] = useToast()
+  const { user } = useAuth()
 
   if (!form || !draft) return <div className="builder-loading" aria-busy="true" />
 
@@ -46,6 +56,20 @@ export default function ResponsesPage() {
   const quiz = quizSettings(draft)
   const graded = responses.filter((r) => r.gradedAt)
   const unreleased = graded.filter((r) => !r.released)
+
+  // Each member opts in for themselves (the rules only allow changing your
+  // own uid in notify).
+  const notifying = Boolean(form?.notify?.includes(user.uid))
+  async function toggleNotify() {
+    try {
+      await updateDoc(doc(db, 'forms', form.id), {
+        notify: notifying ? arrayRemove(user.uid) : arrayUnion(user.uid),
+      })
+      showToast(notifying ? 'Email notifications off' : 'You’ll get an email for each new response')
+    } catch {
+      showToast('Couldn’t change notifications. Please try again.')
+    }
+  }
 
   async function releaseAll() {
     if (!unreleased.length) return showToast('Every graded score is already released')
@@ -111,6 +135,12 @@ export default function ResponsesPage() {
             icon={<MoreVertical size={18} />}
             label="Response actions"
             items={[
+              {
+                label: 'Email me new responses',
+                icon: Bell,
+                checked: notifying,
+                onSelect: toggleNotify,
+              },
               ...(quiz.enabled
                 ? [{ label: 'Release all scores', icon: BadgeCheck, onSelect: releaseAll }]
                 : []),

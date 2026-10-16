@@ -932,3 +932,109 @@
 .key-done {
   height: 36px;
 }
+
+/* ── Collaborators dialog ────────────────────────────────── */
+.collab {
+  width: min(480px, calc(100vw - 32px));
+}
+
+.collab-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.collab-sub {
+  margin-top: -6px;
+}
+
+.collab-add {
+  display: flex;
+  gap: 8px;
+}
+
+.collab-add input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.collab-add .btn {
+  height: 40px;
+}
+
+.collab-loading {
+  height: 120px;
+  border-radius: var(--radius-control);
+  background: var(--fill);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.collab-list {
+  display: flex;
+  flex-direction: column;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.collab-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.collab-avatar {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.collab-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.collab-avatar-pending {
+  background: var(--fill);
+  color: var(--text-muted);
+}
+
+.collab-who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-wrap: anywhere;
+}
+
+.collab-who strong {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.collab-who span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.collab-role {
+  color: var(--text-muted);
+  font-size: 13px;
+}

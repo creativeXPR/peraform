@@ -1,9 +1,11 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useOutletContext } from 'react-router-dom'
 import { ArrowDownAZ, Filter, LayoutGrid, List, Plus, Upload } from 'lucide-react'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
+import { callAcceptInvites } from '../../lib/firebase.js'
 import MenuButton from '../../lib/MenuButton.jsx'
 import { useToast } from '../../lib/useToast.jsx'
+import { resendVerification } from '../auth/authActions.js'
 import { useAuth } from '../auth/useAuth.js'
 import FormCard from './FormCard.jsx'
 import FormThumbnail from './FormThumbnail.jsx'
@@ -13,6 +15,9 @@ import { useMyForms } from './useMyForms.js'
 import './DashboardPage.css'
 
 const VIEW_KEY = 'peraform-dashboard-view'
+
+// Users we've already checked for pending invites this session.
+const invitesChecked = new Set()
 
 const FILTERS = {
   anyone: { label: 'Owned by anyone', test: () => true },
@@ -55,6 +60,32 @@ export default function DashboardPage() {
   const [pendingDelete, setPendingDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const fileRef = useRef(null)
+  const [verifySent, setVerifySent] = useState(false)
+  // Email/password accounts must verify their address before invites to it
+  // can be accepted; Google accounts are verified already.
+  const needsVerify =
+    !user.emailVerified && user.providerData.some((p) => p.providerId === 'password')
+
+  // Forms shared with this email before the account existed join the list.
+  useEffect(() => {
+    if (invitesChecked.has(user.uid)) return
+    invitesChecked.add(user.uid)
+    ;(async () => {
+      try {
+        // Pick up a just-completed email verification.
+        await user.reload()
+        if (user.emailVerified) await user.getIdToken(true)
+        const { data } = await callAcceptInvites()
+        if (data.joined) {
+          showToast(
+            `You were added to ${data.joined} shared ${data.joined === 1 ? 'form' : 'forms'}`,
+          )
+        }
+      } catch {
+        // Not critical — invites stay pending and are retried next session.
+      }
+    })()
+  }, [user, showToast])
 
   const visible = useMemo(() => {
     const list = forms.filter(
@@ -117,6 +148,22 @@ export default function DashboardPage() {
 
   return (
     <div className="dash">
+      {needsVerify && (
+        <p className="form-notice dash-verify" role="status">
+          Verify your email ({user.email}) so collaborators can share forms with you.{' '}
+          {verifySent ? (
+            'Sent — check your inbox, then refresh this page.'
+          ) : (
+            <button
+              type="button"
+              className="link-btn"
+              onClick={() => resendVerification().then(() => setVerifySent(true), () => {})}
+            >
+              Resend email
+            </button>
+          )}
+        </p>
+      )}
       <section className="dash-start" aria-label="Start a new form">
         <button
           type="button"

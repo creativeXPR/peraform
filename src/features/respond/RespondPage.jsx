@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
-  collection,
   doc,
   getDoc,
   getDocFromServer,
@@ -9,7 +8,7 @@ import {
   setDoc,
 } from 'firebase/firestore'
 import { CheckCircle2, Moon, Sun, Timer } from 'lucide-react'
-import { db } from '../../lib/firebase.js'
+import { callSubmitResponse, db } from '../../lib/firebase.js'
 import {
   GRID_TYPES,
   hasAnswer,
@@ -19,7 +18,7 @@ import {
   resolveTarget,
   splitPages,
 } from '../../lib/formLogic.js'
-import { newResponse, quizSettings } from '../../lib/formModel.js'
+import { quizSettings } from '../../lib/formModel.js'
 import { validateAnswer } from '../../lib/validation.js'
 import { useTheme } from '../../lib/useTheme.js'
 import { ensureSignedIn } from '../auth/authActions.js'
@@ -361,32 +360,27 @@ function FormView({ form, user }) {
     setState('sending')
     setError('')
     try {
-      const respondent = await ensureSignedIn()
-      const responses = collection(db, 'forms', form.id, 'responses')
-      // One-per-person: the response id is the respondent's uid, so a second
-      // submission is rejected by the rules (see firestore.rules).
-      const ref = limitOneResponse ? doc(responses, respondent.uid) : doc(responses)
-      await setDoc(ref, newResponse(respondent.uid, clean))
-      setSentId(ref.id)
+      // Anonymous session if needed; the function checks everything else
+      // (functions/index.js → submitResponse).
+      await ensureSignedIn()
+      const { data } = await callSubmitResponse({ formId: form.id, answers: clean })
+      setSentId(data.responseId)
       setState('sent')
     } catch (err) {
-      if (err.code === 'permission-denied' && limitOneResponse) {
-        setState('already')
-        return
-      }
-      if (err.code === 'permission-denied' && timed) {
-        setState('late')
-        return
-      }
+      const code = err.code?.replace('functions/', '')
+      if (code === 'already-exists') return setState('already')
+      if (code === 'deadline-exceeded') return setState('late')
+      setState('filling')
       if (auto) {
-        setState('filling')
         setError('Time’s up, but your answers couldn’t be sent. Check your connection and press Submit.')
         return
       }
-      setState('filling')
+      // Server errors carry a readable message (closed form, too many
+      // submissions, sign-in needed…); network failures don't.
+      const readable = ['failed-precondition', 'resource-exhausted', 'unauthenticated', 'invalid-argument', 'not-found']
       setError(
-        err.code === 'permission-denied'
-          ? 'This form isn’t accepting responses right now.'
+        readable.includes(code)
+          ? err.message.replace(/\s*\[\d+\]$/, '') // the SDK appends the HTTP status
           : 'Couldn’t submit your response. Check your connection and try again.',
       )
     }

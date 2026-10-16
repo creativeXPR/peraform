@@ -29,3 +29,6 @@ dist-ssr
 # Firebase
 .firebase/
 *-debug.log
+
+# Local function secrets (emulator only)
+functions/.secret.local

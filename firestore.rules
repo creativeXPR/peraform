@@ -35,11 +35,25 @@ service cloud.firestore {
         && request.resource.data.memberIds == [request.auth.uid]
         && request.resource.data.status == 'draft';
 
-      // Editors change content; only the owner changes who has access.
+      // Members may only add or remove themselves from email notifications.
+      function notifyChangeIsOwn() {
+        let before = resource.data.get('notify', []).toSet();
+        let after = request.resource.data.get('notify', []).toSet();
+        return after.difference(before).union(before.difference(after))
+          .hasOnly([request.auth.uid]);
+      }
+
+      // Editors change content; only the owner changes who has access
+      // (members and pending invites — usually via the manageCollaborators
+      // function, which bypasses these rules).
       allow update: if isMember()
         && request.resource.data.ownerId == resource.data.ownerId
-        && (isOwner() || request.resource.data.memberIds == resource.data.memberIds)
-        && request.resource.data.ownerId in request.resource.data.memberIds;
+        && (isOwner() || (
+          request.resource.data.memberIds == resource.data.memberIds
+          && request.resource.data.get('invitedEmails', []) == resource.data.get('invitedEmails', [])
+        ))
+        && request.resource.data.ownerId in request.resource.data.memberIds
+        && notifyChangeIsOwn();
 
       allow delete: if isOwner();
 
@@ -93,27 +107,10 @@ service cloud.firestore {
           && request.resource.data.diff(resource.data).affectedKeys()
               .hasOnly(['points', 'score', 'released']);
 
-        // Respondents only ever create — never edit or delete.
-        // With limitOneResponse the doc id must be the respondent's uid, so
-        // a second submission collides with the first and is rejected.
-        // Timed quizzes must arrive within the limit (+30s for slow networks)
-        // of the server-recorded start.
-        allow create: if isSignedIn()
-          && form().status == 'published'
-          && (!form().settings.requireSignIn || isRealUser())
-          && (!form().settings.limitOneResponse || responseId == request.auth.uid)
-          && request.resource.data.keys().hasOnly(['respondentId', 'answers', 'submittedAt'])
-          && request.resource.data.respondentId == request.auth.uid
-          && request.resource.data.submittedAt == request.time
-          && request.resource.data.answers is map
-          && (timeLimit() == 0 || withinTimeLimit());
-
-        function withinTimeLimit() {
-          let start = /databases/$(database)/documents/forms/$(formId)/starts/$(request.auth.uid);
-          return exists(start)
-            && request.time < get(start).data.startedAt
-              + duration.value(timeLimit() * 60 + 30, 's');
-        }
+        // Responses are written only by the submitResponse Cloud Function, which
+        // checks App Check, rate limits, cleans answers and enforces the form's
+        // settings (published, sign-in, one per person, quiz time limit).
+        allow create: if false;
       }
     }
   }

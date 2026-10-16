@@ -1,11 +1,22 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronDown, Copy, Eye, Link2, MoreVertical, Redo2, Trash2, Undo2 } from 'lucide-react'
+import {
+  ChevronDown,
+  Copy,
+  Eye,
+  Link2,
+  MoreVertical,
+  Redo2,
+  Trash2,
+  Undo2,
+  UserPlus,
+} from 'lucide-react'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import MenuButton from '../../lib/MenuButton.jsx'
 import { useToast } from '../../lib/useToast.jsx'
 import { useAuth } from '../auth/useAuth.js'
 import { createForm, deleteForm } from '../dashboard/formActions.js'
+import CollaboratorsDialog from './CollaboratorsDialog.jsx'
 import { useFormEditor } from './editorContext.js'
 
 // Text fields have their own native undo; only take Ctrl+Z when focus is
@@ -22,6 +33,7 @@ export default function BuilderActions() {
   const [toast, showToast] = useToast()
   const [confirm, setConfirm] = useState(null) // 'delete' | 'unpublish'
   const [busy, setBusy] = useState(false)
+  const [collabOpen, setCollabOpen] = useState(false)
   const isOwner = form.ownerId === user.uid
   const link = `${window.location.origin}/f/${form.id}`
 
@@ -111,6 +123,7 @@ export default function BuilderActions() {
   const moreItems = [
     { label: 'Preview', icon: Eye, onSelect: () => window.open(link, '_blank', 'noopener') },
     { label: 'Copy link', icon: Link2, onSelect: copyLink },
+    { label: 'Collaborators', icon: UserPlus, onSelect: () => setCollabOpen(true) },
     { label: 'Make a copy', icon: Copy, onSelect: makeCopy },
   ]
   if (isOwner) {
@@ -164,6 +177,15 @@ export default function BuilderActions() {
         >
           <Link2 size={18} />
         </button>
+        <button
+          type="button"
+          className="icon-btn desktop-only"
+          onClick={() => setCollabOpen(true)}
+          aria-label="Collaborators"
+          title="Collaborators"
+        >
+          <UserPlus size={18} />
+        </button>
 
         {form.status === 'draft' ? (
           <button
@@ -196,6 +218,12 @@ export default function BuilderActions() {
         busy={busy}
         onConfirm={onConfirm}
         onCancel={() => setConfirm(null)}
+      />
+      <CollaboratorsDialog
+        formId={form.id}
+        open={collabOpen}
+        onClose={() => setCollabOpen(false)}
+        showToast={showToast}
       />
       {toast}
     </>

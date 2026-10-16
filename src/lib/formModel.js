@@ -9,6 +9,13 @@ import { serverTimestamp } from 'firebase/firestore'
 //                                          dashboard queries array-contains on this
 //     status: 'draft' | 'published' | 'closed'
 //     settings: { requireSignIn, limitOneResponse, quiz: QuizSettings }
+//     invitedEmails: [email]             — collaborators without an account yet;
+//                                          written by the manageCollaborators function
+//     notify: [uid]                      — members who get an email per new response
+//     questions: [Question | Section]    — array, so one read loads the whole form.
+//                                          A Section item starts a new page; see
+//                                          lib/formLogic.js for paging + skip logic.
+//     createdAt, updatedAt
 //
 //   forms/{formId}/private/answerKey     — members only, so respondents can't
 //     questions: { [questionId]: { correct: string[],     read the answers
@@ -16,23 +23,20 @@ import { serverTimestamp } from 'firebase/firestore'
 //
 //   forms/{formId}/starts/{uid}          — timed quizzes: when this respondent
 //     startedAt                            started (server time, set once)
-//     questions: [Question | Section]    — array, so one read loads the whole form.
-//                                          A Section item starts a new page; see
-//                                          lib/formLogic.js for paging + skip logic.
-//     createdAt, updatedAt
 //
 //   forms/{formId}/responses/{responseId} — auto-ID, or the respondent's uid
-//                                           when limitOneResponse is on
+//                                           when limitOneResponse is on. Written
+//                                           only by the submitResponse function
 //     respondentId                       — anonymous or real uid
 //     answers: { [questionId]: value }   — string, string[] (checkboxes), number
 //                                          (scale/rating), or { [rowIndex]: value }
 //                                          for grids
 //     submittedAt
-//     points, score, maxScore, result,    — quizzes: written by the gradeResponse
+//     points, score, maxScore, result,    — quizzes: written by the onResponseCreated
 //     released, gradedAt                    Cloud Function; creators may adjust
 //                                           points/score and set released
 //
-// firestore.rules enforces these shapes — keep the two in sync.
+// firestore.rules and functions/submit.js enforce these shapes — keep them in sync.
 
 export const QUESTION_TYPES = [
   'shortText',
@@ -113,12 +117,4 @@ export function newQuestion(type = 'shortText') {
 // 'next' (the following section), 'submit', or another section's id.
 export function newSection() {
   return { id: crypto.randomUUID(), type: 'section', title: '', description: '', next: 'next' }
-}
-
-export function newResponse(respondentId, answers) {
-  return {
-    respondentId,
-    answers,
-    submittedAt: serverTimestamp(),
-  }
 }

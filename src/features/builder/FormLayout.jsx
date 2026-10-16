@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
 import { BarChart3, ListChecks, Settings } from 'lucide-react'
 import AppShell from '../../lib/AppShell.jsx'
+import { useAuth } from '../auth/useAuth.js'
 import BuilderActions from './BuilderActions.jsx'
 import FormEditorProvider from './FormEditorProvider.jsx'
 import FormTitleField from './FormTitleField.jsx'
@@ -20,7 +21,11 @@ export default function FormLayout() {
 }
 
 function FormFrame({ formId }) {
-  const { form, draft, loadError } = useFormEditor()
+  const { form, draft, loadError: error } = useFormEditor()
+  const { user } = useAuth()
+  // Published forms are readable by anyone (respondents load them), so a
+  // successful load doesn't mean this person may edit it.
+  const loadError = error ?? (form && !form.memberIds.includes(user.uid) ? 'not-found' : null)
 
   if (loadError) {
     return (

@@ -175,6 +175,22 @@ describe('forms: update and delete', () => {
     await assertFails(updateDoc(doc(real(OWNER), 'forms/f1'), { memberIds: [EDITOR] }))
   })
 
+  it('blocks an editor from inviting people', async () => {
+    await assertFails(
+      updateDoc(doc(real(EDITOR), 'forms/f1'), { invitedEmails: ['friend@example.com'] }),
+    )
+  })
+
+  it('lets a member turn their own notifications on and off', async () => {
+    await assertSucceeds(updateDoc(doc(real(EDITOR), 'forms/f1'), { notify: [EDITOR] }))
+    await assertSucceeds(updateDoc(doc(real(EDITOR), 'forms/f1'), { notify: [] }))
+  })
+
+  it('blocks signing someone else up for notifications', async () => {
+    await assertFails(updateDoc(doc(real(EDITOR), 'forms/f1'), { notify: [OWNER] }))
+    await assertFails(updateDoc(doc(real(OWNER), 'forms/f1'), { notify: [OWNER, EDITOR] }))
+  })
+
   it('lets only the owner delete the form', async () => {
     await assertFails(deleteDoc(doc(real(EDITOR), 'forms/f1')))
     await assertSucceeds(deleteDoc(doc(real(OWNER), 'forms/f1')))
@@ -182,59 +198,13 @@ describe('forms: update and delete', () => {
 })
 
 describe('responses: create', () => {
-  it('lets an anonymous respondent submit to an open published form', async () => {
+  // Every submission goes through the submitResponse Cloud Function
+  // (functions/submit.js, unit tested); browsers can't write responses.
+  it('blocks direct writes from respondents, members and owners alike', async () => {
     await seed('forms/f1', form())
-    await assertSucceeds(setDoc(doc(anon(), 'forms/f1/responses/r1'), response(ANON)))
-  })
-
-  it('blocks signed-out visitors (they need at least anonymous auth)', async () => {
-    await seed('forms/f1', form())
-    await assertFails(setDoc(doc(guest(), 'forms/f1/responses/r1'), response(ANON)))
-  })
-
-  it('blocks submissions to draft and closed forms', async () => {
-    await seed('forms/draft', form({ status: 'draft' }))
-    await seed('forms/closed', form({ status: 'closed' }))
-    await assertFails(setDoc(doc(anon(), 'forms/draft/responses/r1'), response(ANON)))
-    await assertFails(setDoc(doc(anon(), 'forms/closed/responses/r1'), response(ANON)))
-  })
-
-  it('blocks submitting as someone else', async () => {
-    await seed('forms/f1', form())
-    await assertFails(setDoc(doc(anon(), 'forms/f1/responses/r1'), response(STRANGER)))
-  })
-
-  it('blocks extra fields on a response', async () => {
-    await seed('forms/f1', form())
-    await assertFails(
-      setDoc(doc(anon(), 'forms/f1/responses/r1'), { ...response(ANON), score: 100 }),
-    )
-  })
-
-  it('blocks a faked submission time', async () => {
-    await seed('forms/f1', form())
-    await assertFails(
-      setDoc(doc(anon(), 'forms/f1/responses/r1'), {
-        ...response(ANON),
-        submittedAt: new Date('2020-01-01'),
-      }),
-    )
-  })
-
-  it('requires a real account when requireSignIn is on', async () => {
-    await seed('forms/f1', form({ settings: { requireSignIn: true, limitOneResponse: false } }))
     await assertFails(setDoc(doc(anon(), 'forms/f1/responses/r1'), response(ANON)))
-    await assertSucceeds(setDoc(doc(real(STRANGER), 'forms/f1/responses/r1'), response(STRANGER)))
-  })
-
-  it('allows only one response per person when limitOneResponse is on', async () => {
-    await seed('forms/f1', form({ settings: { requireSignIn: true, limitOneResponse: true } }))
-    const db = real(STRANGER)
-    // Response id must be the respondent's uid…
-    await assertFails(setDoc(doc(db, 'forms/f1/responses/random'), response(STRANGER)))
-    await assertSucceeds(setDoc(doc(db, `forms/f1/responses/${STRANGER}`), response(STRANGER)))
-    // …so a second submission collides with the first.
-    await assertFails(setDoc(doc(db, `forms/f1/responses/${STRANGER}`), response(STRANGER)))
+    await assertFails(setDoc(doc(real(STRANGER), 'forms/f1/responses/r2'), response(STRANGER)))
+    await assertFails(setDoc(doc(real(OWNER), 'forms/f1/responses/r3'), response(OWNER)))
   })
 })
 
@@ -299,7 +269,8 @@ describe('quiz answer key', () => {
 describe('timed quizzes', () => {
   beforeEach(() => seed('forms/f1', quizForm({ timeLimit: 10 })))
 
-  const start = (db, uid = ANON) => setDoc(doc(db, `forms/f1/starts/${uid}`), { startedAt: serverTimestamp() })
+  const start = (db, uid = ANON) =>
+    setDoc(doc(db, `forms/f1/starts/${uid}`), { startedAt: serverTimestamp() })
 
   it('lets a respondent record their own start once', async () => {
     await assertSucceeds(start(anon()))
@@ -316,26 +287,15 @@ describe('timed quizzes', () => {
 
   it('blocks starts on untimed forms', async () => {
     await seed('forms/f2', quizForm({ timeLimit: 0 }))
-    await assertFails(setDoc(doc(anon(), `forms/f2/starts/${ANON}`), { startedAt: serverTimestamp() }))
+    await assertFails(
+      setDoc(doc(anon(), `forms/f2/starts/${ANON}`), { startedAt: serverTimestamp() }),
+    )
   })
 
-  it('accepts a submission within the limit', async () => {
+  it('hides other respondents’ start times', async () => {
     await start(anon())
-    await assertSucceeds(setDoc(doc(anon(), 'forms/f1/responses/r1'), response(ANON)))
-  })
-
-  it('rejects a submission without a recorded start', async () => {
-    await assertFails(setDoc(doc(anon(), 'forms/f1/responses/r1'), response(ANON)))
-  })
-
-  it('rejects a submission after the time limit', async () => {
-    await seed(`forms/f1/starts/${ANON}`, { startedAt: new Date(Date.now() - 11 * 60 * 1000) })
-    await assertFails(setDoc(doc(anon(), 'forms/f1/responses/r1'), response(ANON)))
-  })
-
-  it('ignores the time limit when the form is not a quiz', async () => {
-    await seed('forms/f3', quizForm({ enabled: false, timeLimit: 10 }))
-    await assertSucceeds(setDoc(doc(anon(), 'forms/f3/responses/r1'), response(ANON)))
+    await assertFails(getDoc(doc(anon('someone-else'), `forms/f1/starts/${ANON}`)))
+    await assertSucceeds(getDoc(doc(real(EDITOR), `forms/f1/starts/${ANON}`)))
   })
 })
 
@@ -364,7 +324,9 @@ describe('grading and released results', () => {
   })
 
   it('blocks members from changing what was answered', async () => {
-    await assertFails(updateDoc(doc(real(OWNER), 'forms/f1/responses/mine'), { answers: { q1: 'B' } }))
+    await assertFails(
+      updateDoc(doc(real(OWNER), 'forms/f1/responses/mine'), { answers: { q1: 'B' } }),
+    )
   })
 
   it('blocks respondents from grading themselves', async () => {

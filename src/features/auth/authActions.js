@@ -1,5 +1,6 @@
 import {
   createUserWithEmailAndPassword,
+  sendEmailVerification,
   sendPasswordResetEmail,
   signInAnonymously,
   signInWithEmailAndPassword,
@@ -20,7 +21,14 @@ export function signInWithEmail(email, password) {
 export async function createAccount(name, email, password) {
   const { user } = await createUserWithEmailAndPassword(getFirebaseAuth(), email, password)
   if (name) await updateProfile(user, { displayName: name })
+  // A verified address is what lets someone accept collaboration invites
+  // sent to it (see acceptInvites in functions/index.js).
+  await sendEmailVerification(user).catch(() => {})
   return user
+}
+
+export function resendVerification() {
+  return sendEmailVerification(getFirebaseAuth().currentUser)
 }
 
 export function resetPassword(email) {
