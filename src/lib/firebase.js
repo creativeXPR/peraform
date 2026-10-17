@@ -6,8 +6,8 @@ import { connectFunctionsEmulator, getFunctions, httpsCallable } from 'firebase/
 import { getStorage } from 'firebase/storage'
 
 // Values come from Vite's VITE_-prefixed env vars — see .env.example.
-// PeraForm shares the "c-xpr25" Firebase project with Anix and MulTeam
-// rather than owning its own project.
+// PeraForm lives in the "Quality Tools" Firebase project (quality-toolsx),
+// alongside related apps — each with its own database, bucket and site.
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -20,7 +20,7 @@ const firebaseConfig = {
 export const firebaseApp = initializeApp(firebaseConfig)
 
 // `npm run dev:emulators` sets this, so local testing never touches the
-// real c-xpr25 data or user list.
+// real project's data or user list.
 const useEmulators = import.meta.env.VITE_USE_EMULATORS === 'true'
 
 // App Check: proves requests come from this site (invisible reCAPTCHA
@@ -38,12 +38,12 @@ if (recaptchaKey && !useEmulators) {
 }
 
 // Named database, not the project's default one — that's what separates
-// PeraForm's data (and its security rules) from the other apps.
+// PeraForm's data (and its security rules) from the other Quality Tools apps.
 export const db = getFirestore(firebaseApp, 'peraform')
 if (useEmulators) connectFirestoreEmulator(db, '127.0.0.1', 8080)
 
 // Points at PeraForm's own bucket (VITE_FIREBASE_STORAGE_BUCKET), so its
-// storage rules can't overwrite Anix's on the project's default bucket.
+// storage rules stay separate from other Quality Tools apps.
 export const storage = getStorage(firebaseApp)
 
 // Same region as the database and the functions (functions/index.js).

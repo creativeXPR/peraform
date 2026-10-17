@@ -8,12 +8,12 @@
   ],
   "storage": [
     {
-      "bucket": "peraform",
+      "bucket": "quality-toolsx-peraform",
       "rules": "storage.rules"
     }
   ],
   "hosting": {
-    "site": "peraform",
+    "site": "peraform-qt",
     "public": "dist",
     "rewrites": [
       {

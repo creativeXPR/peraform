@@ -1,8 +1,8 @@
 rules_version = '2';
 
-// Rules for PeraForm's own "peraform" bucket only — the project's default
-// bucket (and its rules) belongs to Anix. Locked down until uploads
-// (#008-C) are designed.
+// Rules for PeraForm's own bucket (quality-toolsx-peraform) only — other
+// Quality Tools apps have their own buckets. Locked down until file-upload
+// questions are built.
 service firebase.storage {
   match /b/{bucket}/o {
     match /{allPaths=**} {

@@ -1,7 +1,7 @@
 rules_version = '2';
 
-// Rules for PeraForm's named "peraform" database only — Anix and MulTeam
-// have their own databases and rules in the shared c-xpr25 project.
+// Rules for PeraForm's named "peraform" database only — other Quality Tools
+// apps have their own databases and rules in the quality-toolsx project.
 // Document shapes are in src/lib/formModel.js.
 service cloud.firestore {
   match /databases/{database}/documents {
