@@ -18,4 +18,9 @@ export default defineConfig([
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
   },
+  // Cloud Functions and tests run on Node, not in the browser.
+  {
+    files: ['functions/**/*.js', 'tests/**/*.js'],
+    languageOptions: { globals: globals.node },
+  },
 ])
