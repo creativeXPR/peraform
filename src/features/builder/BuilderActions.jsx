@@ -16,7 +16,7 @@ import MenuButton from '../../lib/MenuButton.jsx'
 import { useToast } from '../../lib/useToast.jsx'
 import { useAuth } from '../auth/useAuth.js'
 import { createForm, deleteForm } from '../dashboard/formActions.js'
-import CollaboratorsDialog from './CollaboratorsDialog.jsx'
+import ShareDialog from './ShareDialog.jsx'
 import { useFormEditor } from './editorContext.js'
 
 // Text fields have their own native undo; only take Ctrl+Z when focus is
@@ -123,7 +123,7 @@ export default function BuilderActions() {
   const moreItems = [
     { label: 'Preview', icon: Eye, onSelect: () => window.open(link, '_blank', 'noopener') },
     { label: 'Copy link', icon: Link2, onSelect: copyLink },
-    { label: 'Collaborators', icon: UserPlus, onSelect: () => setCollabOpen(true) },
+    { label: 'Share', icon: UserPlus, onSelect: () => setCollabOpen(true) },
     { label: 'Make a copy', icon: Copy, onSelect: makeCopy },
   ]
   if (isOwner) {
@@ -181,8 +181,8 @@ export default function BuilderActions() {
           type="button"
           className="icon-btn desktop-only"
           onClick={() => setCollabOpen(true)}
-          aria-label="Collaborators"
-          title="Collaborators"
+          aria-label="Share"
+          title="Share"
         >
           <UserPlus size={18} />
         </button>
@@ -219,11 +219,13 @@ export default function BuilderActions() {
         onConfirm={onConfirm}
         onCancel={() => setConfirm(null)}
       />
-      <CollaboratorsDialog
+      <ShareDialog
         formId={form.id}
         open={collabOpen}
         onClose={() => setCollabOpen(false)}
         showToast={showToast}
+        onPublish={() => changeStatus('published', 'Form published')}
+        onCopyLink={copyLink}
       />
       {toast}
     </>

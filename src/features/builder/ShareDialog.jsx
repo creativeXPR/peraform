@@ -1,12 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
-import { MailPlus, X } from 'lucide-react'
+import { Globe, Info, Link2, Lock, MailPlus, X } from 'lucide-react'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { callManageCollaborators } from '../../lib/firebase.js'
+import { useFormEditor } from './editorContext.js'
 
-// "Collaborators" dialog: who can edit this form, pending invites, and (for
-// the owner) adding or removing people by email. Membership changes go
-// through the manageCollaborators function, which can look people up by email.
-export default function CollaboratorsDialog({ formId, open, onClose, showToast }) {
+// "Share" dialog, modelled on Google Forms': add people by email (owner),
+// who has access, general access (editors restricted; respondents anyone
+// with the link or signed-in users only), publish status and Copy link.
+// Membership changes go through the manageCollaborators function, which can
+// look people up by email.
+export default function ShareDialog({ formId, open, onClose, showToast, onPublish, onCopyLink }) {
+  const { form, draft, edit } = useFormEditor()
+  const requireSignIn = Boolean(draft?.settings?.requireSignIn)
+  const setResponderAccess = (signedInOnly) =>
+    edit('settings:requireSignIn', (d) => {
+      const settings = { ...d.settings, requireSignIn: signedInOnly }
+      // One-per-person needs real accounts (see SettingsPage).
+      if (!signedInOnly) settings.limitOneResponse = false
+      return { ...d, settings }
+    })
   const ref = useRef(null)
   const [data, setData] = useState(null) // { isOwner, members, invites }
   const [loadError, setLoadError] = useState('')
@@ -94,7 +106,7 @@ export default function CollaboratorsDialog({ formId, open, onClose, showToast }
     >
       <div className="confirm-body">
         <div className="collab-head">
-          <h2>Collaborators</h2>
+          <h2>Share “{draft?.title || 'Untitled form'}”</h2>
           <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">
             <X size={18} />
           </button>
@@ -107,7 +119,7 @@ export default function CollaboratorsDialog({ formId, open, onClose, showToast }
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Add by email"
+              placeholder="Add people by email"
               aria-label="Collaborator’s email"
               autoComplete="off"
             />
@@ -181,6 +193,65 @@ export default function CollaboratorsDialog({ formId, open, onClose, showToast }
             ))}
           </ul>
         )}
+
+        <h3 className="share-heading">General access</h3>
+        <div className="share-access">
+          <span className="share-access-icon">
+            <Lock size={16} />
+          </span>
+          <span className="share-access-text">
+            <strong>Editor view · Restricted</strong>
+            <span>Only the people above can open the editor</span>
+          </span>
+        </div>
+        <div className="share-access">
+          <span className="share-access-icon share-access-open">
+            <Globe size={16} />
+          </span>
+          <span className="share-access-text">
+            <strong>Responder view</strong>
+            <span>
+              {requireSignIn
+                ? 'People must sign in to PeraForm to respond'
+                : 'Anyone on the internet with the link can respond'}
+            </span>
+          </span>
+          <select
+            className="share-select"
+            value={requireSignIn ? 'signedIn' : 'anyone'}
+            aria-label="Who can respond"
+            onChange={(e) => setResponderAccess(e.target.value === 'signedIn')}
+          >
+            <option value="anyone">Anyone with the link</option>
+            <option value="signedIn">Signed-in users only</option>
+          </select>
+        </div>
+
+        {form?.status !== 'published' && (
+          <div className="share-status">
+            <Info size={16} />
+            <span>
+              {form?.status === 'closed'
+                ? 'This form isn’t accepting responses right now.'
+                : 'Publish the form to accept responses.'}
+            </span>
+            {form?.status === 'draft' && (
+              <button type="button" className="link-btn" onClick={onPublish}>
+                Publish
+              </button>
+            )}
+          </div>
+        )}
+
+        <div className="share-foot">
+          <button type="button" className="btn btn-outline" onClick={onCopyLink}>
+            <Link2 size={16} />
+            Copy responder link
+          </button>
+          <button type="button" className="btn btn-primary" onClick={onClose}>
+            Done
+          </button>
+        </div>
       </div>
 
       <ConfirmModal
