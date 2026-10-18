@@ -1,10 +1,13 @@
 import { initializeApp } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { FieldValue, getFirestore } from 'firebase-admin/firestore'
+import { getStorage } from 'firebase-admin/storage'
 import { logger } from 'firebase-functions'
 import { defineBoolean, defineString } from 'firebase-functions/params'
 import { onDocumentCreated } from 'firebase-functions/v2/firestore'
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
+import { onObjectFinalized } from 'firebase-functions/v2/storage'
+import { MARK, compressBuffer, compressionFor } from './compress.js'
 import { gradeResponse } from './grade.js'
 import { APP_URL, SMTP_PASS, emailHtml, sendMail } from './mail.js'
 import { allow, clientIp } from './rateLimit.js'
@@ -146,6 +149,40 @@ export const onResponseCreated = onDocumentCreated(
       })
     } catch (err) {
       logger.error('Notification email failed', { formId, err: err.message })
+    }
+  },
+)
+
+// ── Compress respondents' uploads ───────────────────────────
+// Rewrites the object in place, keeping its metadata (including the download
+// token, so stored URLs keep working). The generation precondition means a
+// file the respondent removed meanwhile isn't brought back.
+export const compressUpload = onObjectFinalized(
+  { bucket: UPLOAD_BUCKET, region: REGION, memory: '1GiB', timeoutSeconds: 300 },
+  async (event) => {
+    const object = event.data
+    const kind = compressionFor(object)
+    if (!kind) return
+    const file = getStorage().bucket(object.bucket).file(object.name)
+    const [input] = await file.download()
+    const result = await compressBuffer(input, kind, object.contentType)
+    if (!result) return
+    try {
+      await file.save(result.data, {
+        resumable: false,
+        preconditionOpts: { ifGenerationMatch: object.generation },
+        metadata: {
+          contentType: object.contentType,
+          ...(result.contentEncoding && { contentEncoding: result.contentEncoding }),
+          ...(object.contentDisposition && { contentDisposition: object.contentDisposition }),
+          ...(object.cacheControl && { cacheControl: object.cacheControl }),
+          metadata: { ...object.metadata, [MARK]: kind, originalSize: String(input.length) },
+        },
+      })
+      logger.info('Compressed upload', { name: object.name, kind, from: input.length, to: result.data.length })
+    } catch (err) {
+      if (err.code === 412) return // Replaced or removed while we worked.
+      throw err
     }
   },
 )

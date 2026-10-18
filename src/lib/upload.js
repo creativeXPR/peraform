@@ -1,4 +1,5 @@
 import { deleteObject, getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage'
+import { compressImage } from './compressImage.js'
 import { storage } from './firebase.js'
 
 // Paths match storage.rules:
@@ -7,6 +8,8 @@ import { storage } from './firebase.js'
 
 const MB = 1024 * 1024
 export const MAX_IMAGE_MB = 10
+// Originals can be bigger: they're shrunk in the browser before upload.
+const MAX_ORIGINAL_MB = 40
 
 function safeName(name) {
   return name.replace(/[^\w.-]+/g, '_').slice(-80) || 'file'
@@ -24,10 +27,14 @@ function upload(path, file, onProgress) {
   })
 }
 
-// An image for the form itself. Returns { url, path }.
+// An image for the form itself, compressed first. Returns { url, path }.
 export async function uploadFormImage(file, uid, onProgress) {
   if (!file.type.startsWith('image/')) throw new Error('Choose an image file.')
-  if (file.size > MAX_IMAGE_MB * MB) throw new Error(`Images can be up to ${MAX_IMAGE_MB} MB.`)
+  if (file.size > MAX_ORIGINAL_MB * MB) throw new Error(`Images can be up to ${MAX_ORIGINAL_MB} MB.`)
+  file = await compressImage(file)
+  if (file.size > MAX_IMAGE_MB * MB) {
+    throw new Error(`That image is still over ${MAX_IMAGE_MB} MB after compressing. Try a smaller one.`)
+  }
   const path = `creators/${uid}/images/${crypto.randomUUID()}-${safeName(file.name)}`
   return { url: await upload(path, file, onProgress), path }
 }
