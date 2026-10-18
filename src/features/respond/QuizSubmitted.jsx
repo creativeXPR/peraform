@@ -11,7 +11,7 @@ const POLL_TRIES = 20
 // After a quiz is submitted. Grading happens in a Cloud Function, and the
 // respondent can only read their response once it's released — so for
 // "release immediately" we poll until the grade appears.
-export default function QuizSubmitted({ form, quiz, responseId }) {
+export default function QuizSubmitted({ form, quiz, responseId, message }) {
   const [graded, setGraded] = useState(null)
   const [gaveUp, setGaveUp] = useState(false)
   const resultLink = `/f/${form.id}/r/${responseId}`
@@ -49,7 +49,7 @@ export default function QuizSubmitted({ form, quiz, responseId }) {
     <section className="respond-card respond-notice">
       <CheckCircle2 size={36} className="respond-done-icon" />
       <h1>{title}</h1>
-      <p>Your response has been recorded.</p>
+      <p>{message}</p>
       {quiz.release === 'manual' || gaveUp ? (
         <>
           <p>

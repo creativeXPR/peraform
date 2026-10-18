@@ -699,3 +699,30 @@ textarea.respond-input {
   background: var(--accent);
   transition: width 0.2s var(--ease);
 }
+
+/* "Other:" choice with its own text box. */
+.respond-other {
+  flex-wrap: wrap;
+}
+
+.respond-other-input {
+  flex: 1;
+  min-width: 160px;
+  max-width: none;
+  padding: 4px 0;
+}
+
+.respond-progress {
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--fill);
+}
+
+.respond-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 0.3s var(--ease);
+}

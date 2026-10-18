@@ -57,6 +57,30 @@ describe('sanitizeAnswers', () => {
   })
 })
 
+describe('choice answers', () => {
+  const choiceForm = {
+    ...form,
+    questions: [
+      { id: 'mc', type: 'multipleChoice', options: ['A', 'B'] },
+      { id: 'mco', type: 'multipleChoice', options: ['A'], allowOther: true },
+      { id: 'dd', type: 'dropdown', options: ['X'], allowOther: true },
+      { id: 'cb', type: 'checkboxes', options: ['x', 'y'] },
+      { id: 'cbo', type: 'checkboxes', options: ['x'], allowOther: true },
+    ],
+  }
+
+  it('only accepts listed options', () => {
+    expect(sanitizeAnswers(choiceForm, { mc: 'B', dd: 'X' })).toEqual({ mc: 'B', dd: 'X' })
+    expect(sanitizeAnswers(choiceForm, { mc: 'Z', dd: 'nope' })).toEqual({})
+    expect(sanitizeAnswers(choiceForm, { cb: ['x', 'made-up'] })).toEqual({ cb: ['x'] })
+  })
+
+  it('lets one typed "Other" answer through where allowed', () => {
+    expect(sanitizeAnswers(choiceForm, { mco: 'My own answer' })).toEqual({ mco: 'My own answer' })
+    expect(sanitizeAnswers(choiceForm, { cbo: ['x', 'first', 'second'] })).toEqual({ cbo: ['x', 'first'] })
+  })
+})
+
 describe('file upload answers', () => {
   const files = {
     ...form,
@@ -112,6 +136,12 @@ describe('checkSubmission', () => {
     expect(checkSubmission({ ...base, form: null }).code).toBe('not-found')
   })
 
+  it('requires a real account when collecting emails', () => {
+    const emails = { ...form, settings: { collectEmails: true } }
+    expect(checkSubmission({ ...base, form: emails }).code).toBe('unauthenticated')
+    expect(checkSubmission({ ...base, form: emails, signInProvider: 'password' })).toBeNull()
+  })
+
   it('requires a real account when the form says so', () => {
     const signedIn = { ...form, settings: { requireSignIn: true } }
     expect(checkSubmission({ ...base, form: signedIn }).code).toBe('unauthenticated')
@@ -135,5 +165,15 @@ describe('checkSubmission', () => {
   it('ignores a time limit on forms that are not quizzes', () => {
     const off = { ...form, settings: { quiz: { enabled: false, timeLimit: 10 } } }
     expect(checkSubmission({ ...base, form: off })).toBeNull()
+  })
+})
+
+describe('CSV email column', () => {
+  it('adds an Email address column when emails were collected', async () => {
+    const { responsesToCsv } = await import('../../src/features/responses/summarize.js')
+    const q = [{ id: 'a', type: 'shortText', title: 'Name' }]
+    const csv = responsesToCsv(q, [{ submittedAt: null, respondentEmail: 'ada@example.com', answers: { a: 'Ada' } }])
+    expect(csv.split('\r\n')).toEqual(['Submitted at,Email address,Name', ',ada@example.com,Ada'])
+    expect(responsesToCsv(q, [{ submittedAt: null, answers: { a: 'Ada' } }]).split('\r\n')[0]).toBe('Submitted at,Name')
   })
 })

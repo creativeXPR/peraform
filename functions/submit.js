@@ -55,11 +55,20 @@ export function sanitizeAnswers(form, answers, ctx) {
     if (q.type === 'section' || !(q.id in answers)) continue
     const v = answers[q.id]
 
-    if (SINGLE_CHOICE.includes(q.type) || ['shortText', 'longText', 'date', 'time'].includes(q.type)) {
+    const options = q.options ?? []
+    // "Other" lets one typed answer through (multiple choice and checkboxes).
+    const otherOk = q.allowOther && q.type !== 'dropdown'
+
+    if (SINGLE_CHOICE.includes(q.type)) {
+      if (isText(v) && v.trim() && (options.includes(v) || otherOk)) clean[q.id] = clip(v)
+    } else if (['shortText', 'longText', 'date', 'time'].includes(q.type)) {
       if (isText(v) && v.trim()) clean[q.id] = clip(v)
     } else if (q.type === 'checkboxes') {
       if (Array.isArray(v)) {
-        const picked = [...new Set(v.filter(isText).map(clip))].slice(0, MAX_CHOICES)
+        const unique = [...new Set(v.filter(isText).map(clip))].filter(Boolean)
+        const listed = unique.filter((c) => options.includes(c))
+        const other = otherOk ? unique.filter((c) => !options.includes(c)).slice(0, 1) : []
+        const picked = [...listed, ...other].slice(0, MAX_CHOICES)
         if (picked.length) clean[q.id] = picked
       }
     } else if (q.type === 'linearScale' || q.type === 'rating') {
@@ -94,8 +103,10 @@ export function checkSubmission({ form, signInProvider, startedAt, now, answersB
   if (form.status !== 'published') {
     return { code: 'failed-precondition', message: 'This form isn’t accepting responses.' }
   }
+  // Same rule as needsSignIn() in src/lib/formModel.js.
   const uploads = (form.questions ?? []).some((q) => q.type === 'fileUpload')
-  if ((form.settings?.requireSignIn || uploads) && signInProvider === 'anonymous') {
+  const signInNeeded = form.settings?.requireSignIn || form.settings?.collectEmails || uploads
+  if (signInNeeded && signInProvider === 'anonymous') {
     return { code: 'unauthenticated', message: 'Sign in to fill out this form.' }
   }
   if (answersBytes > MAX_ANSWERS_BYTES) {

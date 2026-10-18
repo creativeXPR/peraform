@@ -79,6 +79,18 @@ export default function QuestionCard({
     })
 
   const moreItems = []
+  if (OPTION_TYPES.includes(question.type)) {
+    moreItems.push({
+      label: 'Shuffle option order',
+      checked: Boolean(question.shuffleOptions),
+      onSelect: () =>
+        change('shuffleOptions', (q) => {
+          const next = { ...q, shuffleOptions: !q.shuffleOptions }
+          if (!next.shuffleOptions) delete next.shuffleOptions
+          return next
+        }),
+    })
+  }
   if (canValidate) {
     moreItems.push({
       label: 'Response validation',
@@ -348,44 +360,73 @@ function OptionsEditor({ question, change, targets, renameOption }) {
     return next
   }
 
+  const canOther = type === 'multipleChoice' || type === 'checkboxes'
+  const setOther = (allowOther) =>
+    change('allowOther', (q) => {
+      const next = { ...q, allowOther }
+      if (!allowOther) delete next.allowOther
+      return next
+    })
+
   return (
-    <ListEditor
-      items={options}
-      noun="Option"
-      marker={(i) => <Marker type={type} index={i} />}
-      onSet={renameOption}
-      onAdd={(after) =>
-        change('options', (q) => ({
-          ...q,
-          options: insertAt(q.options, after + 1, `Option ${q.options.length + 1}`),
-          ...(q.goTo && { goTo: insertAt(q.goTo, after + 1, 'next') }),
-        }))
-      }
-      onRemove={(i) =>
-        change('options', (q) => ({
-          ...q,
-          options: q.options.filter((_, j) => j !== i),
-          ...(q.goTo && { goTo: q.goTo.filter((_, j) => j !== i) }),
-        }))
-      }
-      extra={
-        branching
-          ? (i) => (
-              <TargetSelect
-                value={question.goTo?.[i] ?? 'next'}
-                targets={targets}
-                label={`After option ${i + 1}`}
-                onChange={(target) =>
-                  change(`goto-${i}`, (q) => ({
-                    ...q,
-                    goTo: q.options.map((_, j) => (j === i ? target : (q.goTo?.[j] ?? 'next'))),
-                  }))
-                }
-              />
-            )
-          : null
-      }
-    />
+    <>
+      <ListEditor
+        items={options}
+        noun="Option"
+        marker={(i) => <Marker type={type} index={i} />}
+        onSet={renameOption}
+        onAdd={(after) =>
+          change('options', (q) => ({
+            ...q,
+            options: insertAt(q.options, after + 1, `Option ${q.options.length + 1}`),
+            ...(q.goTo && { goTo: insertAt(q.goTo, after + 1, 'next') }),
+          }))
+        }
+        onRemove={(i) =>
+          change('options', (q) => ({
+            ...q,
+            options: q.options.filter((_, j) => j !== i),
+            ...(q.goTo && { goTo: q.goTo.filter((_, j) => j !== i) }),
+          }))
+        }
+        extra={
+          branching
+            ? (i) => (
+                <TargetSelect
+                  value={question.goTo?.[i] ?? 'next'}
+                  targets={targets}
+                  label={`After option ${i + 1}`}
+                  onChange={(target) =>
+                    change(`goto-${i}`, (q) => ({
+                      ...q,
+                      goTo: q.options.map((_, j) => (j === i ? target : (q.goTo?.[j] ?? 'next'))),
+                    }))
+                  }
+                />
+              )
+            : null
+        }
+      />
+      {canOther &&
+        (question.allowOther ? (
+          <div className="q-option q-other">
+            <Marker type={type} index={options.length} />
+            <span className="q-other-label">Other…</span>
+            <button
+              type="button"
+              className="icon-btn q-option-remove"
+              onClick={() => setOther(false)}
+              aria-label="Remove Other option"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        ) : (
+          <button type="button" className="link-btn q-add-other" onClick={() => setOther(true)}>
+            or add “Other”
+          </button>
+        ))}
+    </>
   )
 }
 
@@ -510,6 +551,12 @@ function QuestionPreview({ question, quiz }) {
             <span>{option}</span>
           </li>
         ))}
+        {question.allowOther && (
+          <li className="q-option">
+            <Marker type={type} index={question.options.length} />
+            <span className="muted">Other…</span>
+          </li>
+        )}
       </ol>
     )
   } else if (type === 'linearScale') {

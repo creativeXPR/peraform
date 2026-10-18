@@ -81,7 +81,13 @@ export const submitResponse = onCall({ region: REGION }, async (request) => {
   // fails if they've already answered.
   const ref = form.settings?.limitOneResponse ? responses.doc(uid) : responses.doc()
   try {
-    await ref.create({ respondentId: uid, answers: clean, submittedAt: FieldValue.serverTimestamp() })
+    await ref.create({
+      respondentId: uid,
+      answers: clean,
+      submittedAt: FieldValue.serverTimestamp(),
+      // From the sign-in token, so respondents can't type someone else's.
+      ...(form.settings?.collectEmails && { respondentEmail: request.auth.token.email ?? '' }),
+    })
   } catch (err) {
     if (err.code === 6) throw new HttpsError('already-exists', 'You’ve already responded.')
     throw err

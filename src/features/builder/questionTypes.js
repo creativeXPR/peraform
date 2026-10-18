@@ -63,6 +63,8 @@ export function changeQuestionType(question, type) {
     keep.add('rows').add('columns')
   }
   for (const field of TYPE_FIELDS) if (!keep.has(field)) delete next[field]
+  if (!['multipleChoice', 'checkboxes'].includes(type)) delete next.allowOther
+  if (!OPTION_TYPES.includes(type)) delete next.shuffleOptions
   if (next.validation && !VALIDATION_KINDS[type]?.includes(next.validation.kind)) {
     delete next.validation
   }

@@ -466,6 +466,12 @@ function IndividualResponse({ response, questions, formId, quiz, answerKey, show
               timeStyle: 'short',
             })
           : 'just now'}
+        {response.respondentEmail && (
+          <>
+            {' · '}
+            <strong className="individual-email">{response.respondentEmail}</strong>
+          </>
+        )}
       </p>
       {quiz && (
         <div className="individual-score">

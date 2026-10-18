@@ -199,3 +199,14 @@ describe('pickDraft', () => {
     expect(Object.values(draft)).not.toContain(undefined)
   })
 })
+
+describe('shuffled', () => {
+  it('keeps every item and is stable for the same key', async () => {
+    const { shuffled } = await import('../../src/lib/shuffle.js')
+    const items = ['a', 'b', 'c', 'd', 'e', 'f']
+    const once = shuffled(items, 'q1')
+    expect([...once].sort()).toEqual(items)
+    expect(shuffled(items, 'q1')).toEqual(once)
+    expect(items).toEqual(['a', 'b', 'c', 'd', 'e', 'f']) // input untouched
+  })
+})

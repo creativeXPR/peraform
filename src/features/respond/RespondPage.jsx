@@ -19,7 +19,8 @@ import {
   resolveTarget,
   splitPages,
 } from '../../lib/formLogic.js'
-import { needsSignIn, quizSettings } from '../../lib/formModel.js'
+import { needsSignIn, quizSettings, settingsOf } from '../../lib/formModel.js'
+import { shuffled } from '../../lib/shuffle.js'
 import { loadThemeFont, themeOf, themeStyle } from '../../lib/theme.js'
 import { validateAnswer } from '../../lib/validation.js'
 import { useTheme } from '../../lib/useTheme.js'
@@ -150,7 +151,15 @@ function FormView({ form, user }) {
   const [history, setHistory] = useState([])
   const pages = useMemo(() => splitPages(form.questions), [form.questions])
   const isMember = Boolean(user && form.memberIds.includes(user.uid))
-  const { limitOneResponse } = form.settings
+  const {
+    limitOneResponse,
+    collectEmails,
+    showProgressBar,
+    shuffleQuestions,
+    confirmationMessage,
+    showSubmitAnother,
+  } = settingsOf(form)
+  const doneMessage = confirmationMessage.trim() || 'Your response has been recorded.'
   const title = form.title || 'Untitled form'
   const quiz = quizSettings(form)
   const timed = quiz.enabled && quiz.timeLimit > 0 && form.status === 'published'
@@ -222,15 +231,15 @@ function FormView({ form, user }) {
     )
   }
   if (state === 'sent' && quiz.enabled && sentId) {
-    return <QuizSubmitted form={form} quiz={quiz} responseId={sentId} />
+    return <QuizSubmitted form={form} quiz={quiz} responseId={sentId} message={doneMessage} />
   }
   if (state === 'sent' || state === 'already') {
     return (
       <Notice title={title} icon={<CheckCircle2 size={36} className="respond-done-icon" />}>
         {state === 'sent'
-          ? 'Your response has been recorded.'
+          ? doneMessage
           : 'You’ve already responded to this form.'}
-        {state === 'sent' && !limitOneResponse && (
+        {state === 'sent' && !limitOneResponse && showSubmitAnother && (
           <>
             <br />
             <button
@@ -296,6 +305,12 @@ function FormView({ form, user }) {
   }
 
   const page = pages[pageIndex]
+  let pageItems = page.items
+  if (shuffleQuestions) {
+    const order = shuffled(page.questions, `page-${pageIndex}`)
+    let next = 0
+    pageItems = page.items.map((item) => (CONTENT_TYPES.includes(item.type) ? item : order[next++]))
+  }
   const next = resolveTarget(pages, pageIndex, pageTarget(page, answers))
   const preview = form.status === 'draft'
 
@@ -398,6 +413,18 @@ function FormView({ form, user }) {
 
   return (
     <form className="respond-form" onSubmit={submit} noValidate>
+      {showProgressBar && pages.length > 1 && (
+        <div
+          className="respond-progress"
+          role="progressbar"
+          aria-label="Progress"
+          aria-valuemin={1}
+          aria-valuemax={pages.length}
+          aria-valuenow={pageIndex + 1}
+        >
+          <span style={{ width: `${((pageIndex + 1) / pages.length) * 100}%` }} />
+        </div>
+      )}
       {deadline && (
         <div className={`quiz-timer${secondsLeft <= lowAt ? ' quiz-timer-low' : ''}`} role="timer">
           <Timer size={16} />
@@ -424,6 +451,11 @@ function FormView({ form, user }) {
                 </span>
               )}
               {limitOneResponse && <span>You can respond only once.</span>}
+              {collectEmails && user?.email && (
+                <span>
+                  Your email (<strong>{user.email}</strong>) will be recorded when you submit.
+                </span>
+              )}
             </p>
           </>
         )}
@@ -436,7 +468,7 @@ function FormView({ form, user }) {
         </section>
       )}
 
-      {page.items.map((q) =>
+      {pageItems.map((q) =>
         CONTENT_TYPES.includes(q.type) ? (
           <ContentBlock key={q.id} item={q} />
         ) : (

@@ -1,5 +1,6 @@
 import { Star } from 'lucide-react'
 import AutoTextarea from '../../lib/AutoTextarea.jsx'
+import ChoiceField from './ChoiceField.jsx'
 import FileUploadField from './FileUploadField.jsx'
 
 // One question as respondents see it. `value` shapes per type are listed in
@@ -77,56 +78,9 @@ function Control({ q, name, labelId, value, onChange }) {
         />
       )
     case 'dropdown':
-      return (
-        <select
-          className="respond-input respond-select"
-          aria-labelledby={labelId}
-          value={value ?? ''}
-          onChange={(e) => onChange(e.target.value)}
-        >
-          <option value="">Choose</option>
-          {q.options.map((o, i) => (
-            <option key={i} value={o}>
-              {o}
-            </option>
-          ))}
-        </select>
-      )
     case 'multipleChoice':
-      return (
-        <div role="radiogroup" aria-labelledby={labelId} className="respond-choices">
-          {q.options.map((o, i) => (
-            <label key={i} className="respond-choice">
-              <input type="radio" name={name} checked={value === o} onChange={() => onChange(o)} />
-              <span>{o}</span>
-            </label>
-          ))}
-          {value && !q.required && (
-            <button type="button" className="link-btn respond-clear" onClick={() => onChange('')}>
-              Clear selection
-            </button>
-          )}
-        </div>
-      )
-    case 'checkboxes': {
-      const selected = value ?? []
-      return (
-        <div role="group" aria-labelledby={labelId} className="respond-choices">
-          {q.options.map((o, i) => (
-            <label key={i} className="respond-choice">
-              <input
-                type="checkbox"
-                checked={selected.includes(o)}
-                onChange={(e) =>
-                  onChange(e.target.checked ? [...selected, o] : selected.filter((s) => s !== o))
-                }
-              />
-              <span>{o}</span>
-            </label>
-          ))}
-        </div>
-      )
-    }
+    case 'checkboxes':
+      return <ChoiceField q={q} name={name} labelId={labelId} value={value} onChange={onChange} />
     case 'linearScale': {
       const steps = Array.from({ length: q.max - q.min + 1 }, (_, i) => q.min + i)
       return (

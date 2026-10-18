@@ -86,14 +86,18 @@ function csvCell(value) {
 }
 
 export function responsesToCsv(questions, responses) {
-  const columns = questions.flatMap(csvColumns)
+  const emails = responses.some((r) => r.respondentEmail)
+  const columns = [
+    ...(emails ? [{ header: 'Email address', value: (_, r) => r.respondentEmail }] : []),
+    ...questions.flatMap(csvColumns),
+  ]
   const header = ['Submitted at', ...columns.map((c) => c.header)]
   // Oldest first reads naturally in a spreadsheet.
   const rows = [...responses]
     .reverse()
     .map((r) => [
       r.submittedAt ? r.submittedAt.toISOString() : '',
-      ...columns.map((c) => c.value(r.answers)),
+      ...columns.map((c) => c.value(r.answers, r)),
     ])
   return [header, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n')
 }

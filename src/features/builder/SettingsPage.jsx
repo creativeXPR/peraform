@@ -1,13 +1,22 @@
-import { quizSettings } from '../../lib/formModel.js'
+import AutoTextarea from '../../lib/AutoTextarea.jsx'
+import { quizSettings, settingsOf } from '../../lib/formModel.js'
 import { useFormEditor } from './editorContext.js'
 
-// Settings tab: who can respond and how often, and quiz options. Saved
-// through the same autosave/undo pipeline as the questions.
+// Settings tab: who can respond and how, presentation, and quiz options.
+// Saved through the same autosave/undo pipeline as the questions.
 export default function SettingsPage() {
   const { draft, edit } = useFormEditor()
   if (!draft) return <div className="builder-loading" aria-busy="true" />
 
-  const { requireSignIn, limitOneResponse } = draft.settings
+  const {
+    requireSignIn,
+    limitOneResponse,
+    collectEmails,
+    showProgressBar,
+    shuffleQuestions,
+    confirmationMessage,
+    showSubmitAnother,
+  } = settingsOf(draft)
   const quiz = quizSettings(draft)
   // File-upload questions always need signed-in respondents (as in Google Forms).
   const hasUploads = draft.questions.some((q) => q.type === 'fileUpload')
@@ -50,6 +59,48 @@ export default function SettingsPage() {
           checked={limitOneResponse}
           onChange={(v) => set('limitOneResponse', v)}
         />
+        <Toggle
+          title="Collect email addresses"
+          text="Records each respondent’s account email with their answers. Respondents sign in, so the address can’t be made up."
+          checked={collectEmails}
+          onChange={(v) => set('collectEmails', v)}
+        />
+      </section>
+
+      <section className="settings-group">
+        <h2>Presentation</h2>
+        <Toggle
+          title="Show progress bar"
+          text="Shows how far through the form respondents are (forms with sections)."
+          checked={showProgressBar}
+          onChange={(v) => set('showProgressBar', v)}
+        />
+        <Toggle
+          title="Shuffle question order"
+          text="Each respondent sees the questions within each section in a different order."
+          checked={shuffleQuestions}
+          onChange={(v) => set('shuffleQuestions', v)}
+        />
+        <Toggle
+          title="Show link to submit another response"
+          text="After submitting, respondents can start again (not shown when limited to 1 response)."
+          checked={showSubmitAnother}
+          onChange={(v) => set('showSubmitAnother', v)}
+        />
+        <div className="setting setting-stack">
+          <span className="setting-text">
+            <strong>Confirmation message</strong>
+            <span>Shown after someone submits. Leave empty for “Your response has been recorded.”</span>
+          </span>
+          <AutoTextarea
+            className="setting-textarea"
+            value={confirmationMessage}
+            placeholder="Your response has been recorded."
+            maxLength={500}
+            aria-label="Confirmation message"
+            onChange={(e) => set('confirmationMessage', e.target.value)}
+          />
+        </div>
       </section>
 
       <section className="settings-group">

@@ -61,6 +61,8 @@ export const QUESTION_TYPES = [
 //   rating:       max (3–10)
 //   grids:        rows, columns
 //   fileUpload:   accept (FILE_KINDS keys; empty = any), maxFiles, maxSizeMb
+// Choice questions may also have allowOther (multiple choice, checkboxes)
+// and shuffleOptions.
 // Any question may also carry image: { url, path } shown under its title.
 export const TYPE_DEFAULTS = {
   multipleChoice: () => ({ options: ['Option 1'] }),
@@ -88,8 +90,27 @@ export const MAX_FILES_CHOICES = [1, 5, 10]
 export const MAX_SIZE_CHOICES = [1, 10, 100] // MB
 
 // Respondents must sign in for forms with file uploads (like Google Forms).
+// Respondents must sign in when the form asks for it, collects emails
+// (the email comes from their account), or has file uploads. Kept in step
+// with checkSubmission() in functions/submit.js.
 export function needsSignIn(form) {
-  return Boolean(form.settings?.requireSignIn) || (form.questions ?? []).some((q) => q.type === 'fileUpload')
+  return (
+    Boolean(form.settings?.requireSignIn || form.settings?.collectEmails) ||
+    (form.questions ?? []).some((q) => q.type === 'fileUpload')
+  )
+}
+
+// Presentation and response settings beyond sign-in/one-response.
+export const PRESENTATION_DEFAULTS = {
+  collectEmails: false,
+  showProgressBar: false,
+  shuffleQuestions: false,
+  confirmationMessage: '',
+  showSubmitAnother: true,
+}
+
+export function settingsOf(form) {
+  return { ...PRESENTATION_DEFAULTS, ...form?.settings }
 }
 
 export function newForm(ownerId) {

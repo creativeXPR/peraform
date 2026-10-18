@@ -86,7 +86,7 @@ export default function FormCard({
 
   return (
     <div className="form-card">
-      <FormThumbnail title={form.title} questions={form.questions} />
+      <FormThumbnail title={form.title} questions={form.questions} theme={form.theme} />
       <div className="form-card-info">
         <div className="form-card-text">
           <Link to={`/forms/${form.id}/edit`} className="form-link form-card-title">

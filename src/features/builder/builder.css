@@ -1503,3 +1503,34 @@
   height: 30px;
 }
 
+
+/* "Other" option row / link under choice options. */
+.q-other-label {
+  flex: 1;
+  color: var(--text-muted);
+}
+
+.q-add-other {
+  align-self: flex-start;
+  margin: 2px 0 0 28px;
+  font-size: 14px;
+}
+
+.setting-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  resize: none;
+  overflow: hidden;
+}
+
+.setting-textarea:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
