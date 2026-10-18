@@ -15,13 +15,15 @@ import {
   CircleCheck,
   CircleX,
   Download,
+  FileText,
   MoreVertical,
   Trash2,
 } from 'lucide-react'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { db } from '../../lib/firebase.js'
 import { formatAnswer } from '../../lib/formatAnswer.js'
-import { hasAnswer, isSection, questionsOnly } from '../../lib/formLogic.js'
+import { hasAnswer, isQuestion, isSection, questionsOnly } from '../../lib/formLogic.js'
+import { formatBytes } from '../../lib/upload.js'
 import { quizSettings } from '../../lib/formModel.js'
 import MenuButton from '../../lib/MenuButton.jsx'
 import { useToast } from '../../lib/useToast.jsx'
@@ -308,6 +310,7 @@ function SummaryItem({ item, responses, quiz }) {
   if (isSection(item)) {
     return <h2 className="summary-section">{item.title || 'Untitled section'}</h2>
   }
+  if (!isQuestion(item)) return null // title, image and video blocks
   return <QuestionSummary question={item} responses={responses} quiz={quiz} />
 }
 
@@ -337,6 +340,15 @@ function QuestionSummary({ question, responses, quiz }) {
         <BarList rows={summary.rows} total={summary.answered} />
       ) : summary.kind === 'grid' ? (
         <GridSummary summary={summary} />
+      ) : summary.kind === 'files' ? (
+        <>
+          <FileList files={expanded ? summary.files : summary.files.slice(0, TEXT_PREVIEW)} />
+          {summary.files.length > TEXT_PREVIEW && (
+            <button type="button" className="link-btn" onClick={() => setExpanded((e) => !e)}>
+              {expanded ? 'Show fewer' : `Show all ${summary.files.length} files`}
+            </button>
+          )}
+        </>
       ) : (
         <>
           <ul className="summary-texts">
@@ -391,6 +403,24 @@ function GridSummary({ summary }) {
         </tbody>
       </table>
     </div>
+  )
+}
+
+// Uploaded files as download links (the URLs carry access tokens, and only
+// form members can read responses).
+function FileList({ files }) {
+  return (
+    <ul className="file-list">
+      {files.map((f) => (
+        <li key={f.path}>
+          <a href={f.url} target="_blank" rel="noopener noreferrer">
+            <FileText size={15} />
+            {f.name}
+          </a>
+          <span>{formatBytes(f.size)}</span>
+        </li>
+      ))}
+    </ul>
   )
 }
 
@@ -467,6 +497,7 @@ function IndividualResponse({ response, questions, formId, quiz, answerKey, show
             </h3>
           )
         }
+        if (!isQuestion(q)) return null
         const value = response.answers?.[q.id]
         const empty = !hasAnswer(q, value)
         const max = q.points ?? 0
@@ -499,7 +530,11 @@ function IndividualResponse({ response, questions, formId, quiz, answerKey, show
             <p className={empty ? 'individual-a muted' : `individual-a${status ? ` is-${status}` : ''}`}>
               {status === 'right' && <CircleCheck size={15} aria-label="Correct" />}
               {status === 'wrong' && <CircleX size={15} aria-label="Incorrect" />}
-              <span>{empty ? 'No answer' : formatAnswer(q, value)}</span>
+              {!empty && q.type === 'fileUpload' ? (
+                <FileList files={value} />
+              ) : (
+                <span>{empty ? 'No answer' : formatAnswer(q, value)}</span>
+              )}
             </p>
             {status === 'wrong' && (
               <p className="individual-key">Answer key: {answerKey[q.id].correct.join(', ')}</p>

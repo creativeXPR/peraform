@@ -11,9 +11,43 @@ const SINGLE_CHOICE = ['multipleChoice', 'dropdown']
 const isText = (v) => typeof v === 'string'
 const clip = (v) => v.trim().slice(0, MAX_TEXT)
 
+// File answers must be the respondent's own uploads in this form's folder:
+// [{ name, path, url, size, type }], at most the question's maxFiles.
+function cleanFiles(q, value, ctx) {
+  if (!Array.isArray(value) || !ctx?.uid || !ctx?.formId || !ctx?.bucket) return null
+  const folder = `uploads/${ctx.formId}/${ctx.uid}/`
+  // Download links come from Cloud Storage (or its emulator, in local tests).
+  const origins = ctx.storageOrigins ?? ['https://firebasestorage.googleapis.com']
+  const prefixes = origins.map((o) => `${o}/v0/b/${ctx.bucket}/o/`)
+  const maxBytes = (q.maxSizeMb ?? 10) * 1024 * 1024
+  const files = value
+    .filter(
+      (f) =>
+        f &&
+        isText(f.path) &&
+        f.path.startsWith(folder) &&
+        !f.path.includes('..') &&
+        isText(f.url) &&
+        prefixes.some((p) => f.url.startsWith(p + encodeURIComponent(f.path))) &&
+        Number.isFinite(f.size) &&
+        f.size > 0 &&
+        f.size <= maxBytes,
+    )
+    .slice(0, q.maxFiles ?? 1)
+    .map((f) => ({
+      name: isText(f.name) ? f.name.slice(0, 200) : 'file',
+      path: f.path,
+      url: f.url,
+      size: f.size,
+      type: isText(f.type) ? f.type.slice(0, 100) : '',
+    }))
+  return files.length ? files : null
+}
+
 // Keeps only answers to questions that exist on the form, in the shape that
 // question type expects; anything else is dropped. Returns the clean map.
-export function sanitizeAnswers(form, answers) {
+// ctx: { formId, uid, bucket, storageOrigins? } — needed to check file answers.
+export function sanitizeAnswers(form, answers, ctx) {
   const clean = {}
   if (!answers || typeof answers !== 'object' || Array.isArray(answers)) return clean
 
@@ -31,6 +65,9 @@ export function sanitizeAnswers(form, answers) {
     } else if (q.type === 'linearScale' || q.type === 'rating') {
       const min = q.type === 'rating' ? 1 : (q.min ?? 1)
       if (Number.isInteger(v) && v >= min && v <= (q.max ?? 5)) clean[q.id] = v
+    } else if (q.type === 'fileUpload') {
+      const files = cleanFiles(q, v, ctx)
+      if (files) clean[q.id] = files
     } else if (GRID.includes(q.type)) {
       if (v && typeof v === 'object' && !Array.isArray(v)) {
         const rows = {}
@@ -57,7 +94,8 @@ export function checkSubmission({ form, signInProvider, startedAt, now, answersB
   if (form.status !== 'published') {
     return { code: 'failed-precondition', message: 'This form isn’t accepting responses.' }
   }
-  if (form.settings?.requireSignIn && signInProvider === 'anonymous') {
+  const uploads = (form.questions ?? []).some((q) => q.type === 'fileUpload')
+  if ((form.settings?.requireSignIn || uploads) && signInProvider === 'anonymous') {
     return { code: 'unauthenticated', message: 'Sign in to fill out this form.' }
   }
   if (answersBytes > MAX_ANSWERS_BYTES) {

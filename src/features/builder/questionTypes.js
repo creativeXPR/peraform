@@ -5,6 +5,7 @@ import {
   CircleChevronDown,
   CircleDot,
   Clock,
+  CloudUpload,
   Grid3x3,
   LayoutGrid,
   SlidersHorizontal,
@@ -28,11 +29,25 @@ export const TYPE_INFO = {
   checkboxGrid: { label: 'Checkbox grid', icon: LayoutGrid },
   date: { label: 'Date', icon: Calendar, hint: 'Day, month, year' },
   time: { label: 'Time', icon: Clock, hint: 'Time' },
+  fileUpload: { label: 'File upload', icon: CloudUpload, hint: 'Respondents attach files' },
 }
 
 export const OPTION_TYPES = ['multipleChoice', 'checkboxes', 'dropdown']
 
-const TYPE_FIELDS = ['options', 'branching', 'goTo', 'min', 'max', 'minLabel', 'maxLabel', 'rows', 'columns']
+const TYPE_FIELDS = [
+  'options',
+  'branching',
+  'goTo',
+  'min',
+  'max',
+  'minLabel',
+  'maxLabel',
+  'rows',
+  'columns',
+  'accept',
+  'maxFiles',
+  'maxSizeMb',
+]
 
 // Switching type keeps title/description/required, and keeps whatever
 // carries over: options between choice types, rows/columns between grids.

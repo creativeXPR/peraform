@@ -57,6 +57,48 @@ describe('sanitizeAnswers', () => {
   })
 })
 
+describe('file upload answers', () => {
+  const files = {
+    ...form,
+    questions: [{ id: 'cv', type: 'fileUpload', maxFiles: 2, maxSizeMb: 1 }],
+  }
+  const ctx = { formId: 'f1', uid: 'u1', bucket: 'b' }
+  const file = (path, size = 1000) => ({
+    name: 'cv.pdf',
+    path,
+    url: `https://firebasestorage.googleapis.com/v0/b/b/o/${encodeURIComponent(path)}?alt=media&token=t`,
+    size,
+    type: 'application/pdf',
+  })
+
+  it('keeps the respondent’s own uploads', () => {
+    const clean = sanitizeAnswers(files, { cv: [file('uploads/f1/u1/a-cv.pdf')] }, ctx)
+    expect(clean.cv).toHaveLength(1)
+  })
+
+  it('drops files from other people, other forms, or other buckets', () => {
+    const other = { ...file('uploads/f1/u1/x.pdf'), url: 'https://evil.example/x.pdf' }
+    const clean = sanitizeAnswers(
+      files,
+      { cv: [file('uploads/f1/someone/a.pdf'), file('uploads/f2/u1/a.pdf'), other] },
+      ctx,
+    )
+    expect(clean).toEqual({})
+  })
+
+  it('enforces the size and count limits', () => {
+    const big = file('uploads/f1/u1/big.pdf', 5 * 1024 * 1024)
+    const three = ['a', 'b', 'c'].map((n) => file(`uploads/f1/u1/${n}.pdf`))
+    expect(sanitizeAnswers(files, { cv: [big] }, ctx)).toEqual({})
+    expect(sanitizeAnswers(files, { cv: three }, ctx).cv).toHaveLength(2)
+  })
+
+  it('requires sign-in for forms with file uploads', () => {
+    expect(checkSubmission({ form: files, signInProvider: 'anonymous', now: 0, answersBytes: 1 }).code).toBe('unauthenticated')
+    expect(checkSubmission({ form: files, signInProvider: 'google.com', now: 0, answersBytes: 1 })).toBeNull()
+  })
+})
+
 describe('checkSubmission', () => {
   const base = { form, signInProvider: 'anonymous', now: 1_000_000, answersBytes: 10 }
 

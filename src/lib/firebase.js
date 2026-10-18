@@ -3,7 +3,7 @@ import { ReCaptchaEnterpriseProvider, initializeAppCheck } from 'firebase/app-ch
 import { connectAuthEmulator, getAuth, GoogleAuthProvider } from 'firebase/auth'
 import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore'
 import { connectFunctionsEmulator, getFunctions, httpsCallable } from 'firebase/functions'
-import { getStorage } from 'firebase/storage'
+import { connectStorageEmulator, getStorage } from 'firebase/storage'
 
 // Values come from Vite's VITE_-prefixed env vars — see .env.example.
 // PeraForm lives in the "Quality Tools" Firebase project (quality-toolsx),
@@ -45,6 +45,7 @@ if (useEmulators) connectFirestoreEmulator(db, '127.0.0.1', 8080)
 // Points at PeraForm's own bucket (VITE_FIREBASE_STORAGE_BUCKET), so its
 // storage rules stay separate from other Quality Tools apps.
 export const storage = getStorage(firebaseApp)
+if (useEmulators) connectStorageEmulator(storage, '127.0.0.1', 9199)
 
 // Same region as the database and the functions (functions/index.js).
 export const functions = getFunctions(firebaseApp, 'europe-west1')

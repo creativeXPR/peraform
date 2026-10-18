@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test:rules": "firebase emulators:exec --only firestore --project demo-peraform \"vitest run tests/firestore.rules.test.js\"",
-    "dev:emulators": "firebase emulators:exec --only auth,firestore,functions --project quality-toolsx \"vite --mode emulators\"",
+    "dev:emulators": "firebase emulators:exec --only auth,firestore,functions,storage --project quality-toolsx \"vite --mode emulators\"",
     "test": "vitest run tests/unit"
   },
   "dependencies": {

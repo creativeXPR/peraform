@@ -50,6 +50,7 @@ export const QUESTION_TYPES = [
   'checkboxGrid',
   'date',
   'time',
+  'fileUpload',
 ]
 
 // Type-specific fields each new question starts with.
@@ -57,6 +58,8 @@ export const QUESTION_TYPES = [
 //   linearScale:  min (0|1), max (2–10), minLabel, maxLabel
 //   rating:       max (3–10)
 //   grids:        rows, columns
+//   fileUpload:   accept (FILE_KINDS keys; empty = any), maxFiles, maxSizeMb
+// Any question may also carry image: { url, path } shown under its title.
 export const TYPE_DEFAULTS = {
   multipleChoice: () => ({ options: ['Option 1'] }),
   checkboxes: () => ({ options: ['Option 1'] }),
@@ -65,6 +68,26 @@ export const TYPE_DEFAULTS = {
   rating: () => ({ max: 5 }),
   mcGrid: () => ({ rows: ['Row 1'], columns: ['Column 1'] }),
   checkboxGrid: () => ({ rows: ['Row 1'], columns: ['Column 1'] }),
+  fileUpload: () => ({ accept: [], maxFiles: 1, maxSizeMb: 10 }),
+}
+
+// File kinds a file-upload question can be limited to. accept is used for
+// the file picker; the respondent page also checks it.
+export const FILE_KINDS = {
+  document: { label: 'Document', accept: '.doc,.docx,.odt,.rtf,.txt' },
+  spreadsheet: { label: 'Spreadsheet', accept: '.xls,.xlsx,.ods,.csv' },
+  presentation: { label: 'Presentation', accept: '.ppt,.pptx,.odp' },
+  pdf: { label: 'PDF', accept: '.pdf,application/pdf' },
+  image: { label: 'Image', accept: 'image/*' },
+  video: { label: 'Video', accept: 'video/*' },
+  audio: { label: 'Audio', accept: 'audio/*' },
+}
+export const MAX_FILES_CHOICES = [1, 5, 10]
+export const MAX_SIZE_CHOICES = [1, 10, 100] // MB
+
+// Respondents must sign in for forms with file uploads (like Google Forms).
+export function needsSignIn(form) {
+  return Boolean(form.settings?.requireSignIn) || (form.questions ?? []).some((q) => q.type === 'fileUpload')
 }
 
 export function newForm(ownerId) {
@@ -111,6 +134,22 @@ export function newQuestion(type = 'shortText') {
     required: false,
     ...TYPE_DEFAULTS[type]?.(),
   }
+}
+
+// Non-question blocks: a title-and-description, an image, a YouTube video.
+export function newContent(type) {
+  const base = { id: crypto.randomUUID(), type, title: '', description: '' }
+  if (type === 'image') return { ...base, image: null }
+  if (type === 'video') return { ...base, videoId: '' }
+  return base
+}
+
+// "https://youtu.be/ID", "…watch?v=ID", "…/shorts/ID", "…/embed/ID" or a bare ID.
+export function youtubeId(input) {
+  const text = String(input).trim()
+  if (/^[\w-]{11}$/.test(text)) return text
+  const m = text.match(/(?:youtu\.be\/|[?&]v=|\/(?:embed|shorts|live)\/)([\w-]{11})/)
+  return m ? m[1] : ''
 }
 
 // A page break. `next` is where respondents go after this section:

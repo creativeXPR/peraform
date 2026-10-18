@@ -27,6 +27,17 @@ describe('splitPages', () => {
     ])
   })
 
+  it('keeps content blocks on the page but out of the questions', () => {
+    const [page] = splitPages([
+      { id: 't', type: 'text', title: 'Intro' },
+      q('a'),
+      { id: 'i', type: 'image' },
+      { id: 'v', type: 'video' },
+    ])
+    expect(page.items.map((x) => x.id)).toEqual(['t', 'a', 'i', 'v'])
+    expect(page.questions.map((x) => x.id)).toEqual(['a'])
+  })
+
   it('is a single page without sections', () => {
     expect(splitPages([q('a'), q('b')])).toHaveLength(1)
   })
@@ -159,5 +170,23 @@ describe('summaries', () => {
     const grid = q('g', { type: 'mcGrid', title: 'Rate', rows: ['Food', 'Music'], columns: ['Ok'] })
     const csv = responsesToCsv([grid], [{ submittedAt: null, answers: { g: { 1: 'Ok' } } }])
     expect(csv.split('\r\n')).toEqual(['Submitted at,Rate [Food],Rate [Music]', ',,Ok'])
+  })
+})
+
+describe('youtubeId', () => {
+  it('reads ids from the usual link shapes', async () => {
+    const { youtubeId } = await import('../../src/lib/formModel.js')
+    const id = 'dQw4w9WgXcQ'
+    for (const link of [
+      id,
+      `https://youtu.be/${id}`,
+      `https://www.youtube.com/watch?v=${id}&t=10s`,
+      `https://www.youtube.com/shorts/${id}`,
+      `https://www.youtube.com/embed/${id}`,
+      `  https://m.youtube.com/watch?feature=share&v=${id}  `,
+    ]) {
+      expect(youtubeId(link)).toBe(id)
+    }
+    expect(youtubeId('https://example.com/video')).toBe('')
   })
 })

@@ -2,7 +2,7 @@ import { initializeApp } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { FieldValue, getFirestore } from 'firebase-admin/firestore'
 import { logger } from 'firebase-functions'
-import { defineBoolean } from 'firebase-functions/params'
+import { defineBoolean, defineString } from 'firebase-functions/params'
 import { onDocumentCreated } from 'firebase-functions/v2/firestore'
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
 import { gradeResponse } from './grade.js'
@@ -18,6 +18,16 @@ const REGION = 'europe-west1'
 // Off until the reCAPTCHA key is set up (see README); then set
 // ENFORCE_APP_CHECK=true in functions/.env and redeploy.
 const ENFORCE_APP_CHECK = defineBoolean('ENFORCE_APP_CHECK', { default: false })
+
+// PeraForm's storage bucket; file-upload answers must point into it.
+const UPLOAD_BUCKET = defineString('UPLOAD_BUCKET', { default: 'quality-toolsx-peraform' })
+// Real Cloud Storage, plus the Storage emulator only when running under it.
+const STORAGE_ORIGINS = [
+  'https://firebasestorage.googleapis.com',
+  ...(process.env.FIREBASE_STORAGE_EMULATOR_HOST
+    ? [`http://${process.env.FIREBASE_STORAGE_EMULATOR_HOST}`]
+    : []),
+]
 
 // Per-form limits on submissions: generous per IP (a classroom shares one),
 // tight per respondent session.
@@ -49,7 +59,14 @@ export const submitResponse = onCall({ region: REGION }, async (request) => {
   const form = (await db.doc(`forms/${formId}`).get()).data()
   const timed = form?.settings?.quiz?.enabled && form.settings.quiz.timeLimit > 0
   const start = timed ? (await db.doc(`forms/${formId}/starts/${uid}`).get()).data() : null
-  const clean = form ? sanitizeAnswers(form, answers) : {}
+  const clean = form
+    ? sanitizeAnswers(form, answers, {
+        formId,
+        uid,
+        bucket: UPLOAD_BUCKET.value(),
+        storageOrigins: STORAGE_ORIGINS,
+      })
+    : {}
   const problem = checkSubmission({
     form,
     signInProvider: request.auth.token.firebase?.sign_in_provider,

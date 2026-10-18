@@ -12,11 +12,14 @@ import {
   X,
 } from 'lucide-react'
 import AutoTextarea from '../../lib/AutoTextarea.jsx'
+import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { BRANCHING_TYPES, GRID_TYPES } from '../../lib/formLogic.js'
 import { QUESTION_TYPES } from '../../lib/formModel.js'
 import MenuButton from '../../lib/MenuButton.jsx'
 import { VALIDATION_KINDS, newValidation } from '../../lib/validation.js'
 import AnswerKeyEditor from './AnswerKeyEditor.jsx'
+import FileUploadEditor from './FileUploadEditor.jsx'
+import ImagePicker from './ImagePicker.jsx'
 import TargetSelect from './TargetSelect.jsx'
 import ValidationEditor from './ValidationEditor.jsx'
 import { OPTION_TYPES, TYPE_INFO, changeQuestionType } from './questionTypes.js'
@@ -40,6 +43,7 @@ export default function QuestionCard({
 }) {
   // Quiz forms: the card flips between the question and its answer key.
   const [keyMode, setKeyMode] = useState(false)
+  const [removingImage, setRemovingImage] = useState(false)
   const {
     attributes,
     listeners,
@@ -131,6 +135,7 @@ export default function QuestionCard({
                 change('title', (q) => ({ ...q, title }))
               }}
             />
+            <ImagePicker onPicked={(image) => change('image', (q) => ({ ...q, image }))} />
             <MenuButton
               className="type-menu"
               label={`Question type: ${info.label}`}
@@ -159,6 +164,21 @@ export default function QuestionCard({
               change('description', (q) => ({ ...q, description }))
             }}
           />
+
+          {question.image && (
+            <figure className="q-image">
+              <img src={question.image.url} alt="" />
+              <button
+                type="button"
+                className="icon-btn q-image-remove"
+                onClick={() => setRemovingImage(true)}
+                aria-label="Remove image"
+                title="Remove image"
+              >
+                <X size={16} />
+              </button>
+            </figure>
+          )}
 
           <QuestionBody
             question={question}
@@ -221,6 +241,21 @@ export default function QuestionCard({
       ) : (
         <QuestionPreview question={question} quiz={quiz} />
       )}
+      <ConfirmModal
+        open={removingImage}
+        title="Remove this image?"
+        message="It will no longer show on the question. You can undo this right after."
+        confirmLabel="Remove"
+        onConfirm={() => {
+          change('image', (q) => {
+            const rest = { ...q }
+            delete rest.image
+            return rest
+          })
+          setRemovingImage(false)
+        }}
+        onCancel={() => setRemovingImage(false)}
+      />
     </section>
   )
 }
@@ -242,6 +277,7 @@ function QuestionBody({ question, change, targets, renameOption }) {
   if (type === 'linearScale') return <ScaleEditor question={question} change={change} />
   if (type === 'rating') return <RatingEditor question={question} change={change} />
   if (GRID_TYPES.includes(type)) return <GridEditor question={question} change={change} />
+  if (type === 'fileUpload') return <FileUploadEditor question={question} change={change} />
   return <p className="q-hint">{TYPE_INFO[type].hint}</p>
 }
 
@@ -509,6 +545,7 @@ function QuestionPreview({ question, quiz }) {
         {quiz && <span className="q-points">{pointsLabel(question.points)}</span>}
       </p>
       {question.description && <p className="q-preview-desc">{question.description}</p>}
+      {question.image && <img className="q-image-thumb" src={question.image.url} alt="" />}
       {body}
     </div>
   )

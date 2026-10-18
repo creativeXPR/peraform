@@ -8,6 +8,7 @@ const SCALE_TYPES = ['linearScale', 'rating']
 //   { answered, kind: 'choice', rows: [{ label, count }] }
 //   { answered, kind: 'scale', rows: [{ label, count }], average }
 //   { answered, kind: 'grid', columns, rows: [{ label, counts: [n per column] }] }
+//   { answered, kind: 'files', files: [{ name, url, size }] } (newest first)
 //   { answered, kind: 'text', values: [string] } (newest first)
 export function summarizeQuestion(question, responses) {
   const values = responses
@@ -59,12 +60,17 @@ export function summarizeQuestion(question, responses) {
     return { answered, kind: 'grid', columns: question.columns, rows }
   }
 
+  if (question.type === 'fileUpload') return { answered, kind: 'files', files: values.flat() }
+
   return { answered, kind: 'text', values: values.map(String) }
 }
 
 // Grid answers ({ rowIndex: value }) become one column per row.
 function csvColumns(question) {
   const title = question.title || 'Untitled question'
+  if (question.type === 'fileUpload') {
+    return [{ header: title, value: (answers) => answers?.[question.id]?.map((f) => f.url) }]
+  }
   if (!GRID_TYPES.includes(question.type)) {
     return [{ header: title, value: (answers) => answers?.[question.id] }]
   }

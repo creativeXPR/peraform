@@ -11,5 +11,6 @@ export function formatAnswer(question, value) {
       .join('\n')
   }
   if (question.type === 'rating') return `${value} of ${question.max}`
+  if (question.type === 'fileUpload') return value.map((f) => f.name).join(', ')
   return Array.isArray(value) ? value.join(', ') : String(value)
 }

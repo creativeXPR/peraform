@@ -35,7 +35,7 @@ export function gradeResponse(form, key, answers) {
   let maxScore = 0
 
   for (const q of form.questions ?? []) {
-    if (q.type === 'section') continue
+    if (['section', 'text', 'image', 'video'].includes(q.type)) continue
     const max = Number.isFinite(q.points) ? Math.max(0, q.points) : 0
     maxScore += max
     const entry = key?.questions?.[q.id]

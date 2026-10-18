@@ -10,6 +10,7 @@ import {
 import { CheckCircle2, Moon, Sun, Timer } from 'lucide-react'
 import { callSubmitResponse, db } from '../../lib/firebase.js'
 import {
+  CONTENT_TYPES,
   GRID_TYPES,
   hasAnswer,
   isComplete,
@@ -18,11 +19,12 @@ import {
   resolveTarget,
   splitPages,
 } from '../../lib/formLogic.js'
-import { quizSettings } from '../../lib/formModel.js'
+import { needsSignIn, quizSettings } from '../../lib/formModel.js'
 import { validateAnswer } from '../../lib/validation.js'
 import { useTheme } from '../../lib/useTheme.js'
 import { ensureSignedIn } from '../auth/authActions.js'
 import { isCreator, useAuth } from '../auth/useAuth.js'
+import ContentBlock from './ContentBlock.jsx'
 import QuestionField from './QuestionField.jsx'
 import QuizSubmitted from './QuizSubmitted.jsx'
 import { formatClock, useCountdown } from './useCountdown.js'
@@ -144,7 +146,7 @@ function FormView({ form, user }) {
   const [history, setHistory] = useState([])
   const pages = useMemo(() => splitPages(form.questions), [form.questions])
   const isMember = Boolean(user && form.memberIds.includes(user.uid))
-  const { requireSignIn, limitOneResponse } = form.settings
+  const { limitOneResponse } = form.settings
   const title = form.title || 'Untitled form'
   const quiz = quizSettings(form)
   const timed = quiz.enabled && quiz.timeLimit > 0 && form.status === 'published'
@@ -194,7 +196,7 @@ function FormView({ form, user }) {
       <Notice title="Form not found">The link may be wrong, or the form isn’t published.</Notice>
     )
   }
-  if (requireSignIn && !isCreator(user)) {
+  if (needsSignIn(form) && !isCreator(user)) {
     return (
       <section className="respond-card respond-notice">
         <h1>{title}</h1>
@@ -427,16 +429,21 @@ function FormView({ form, user }) {
         </section>
       )}
 
-      {page.questions.map((q) => (
-        <QuestionField
-          key={q.id}
-          question={q}
-          value={answers[q.id]}
-          onChange={(value) => setAnswer(q.id, value)}
-          error={errors[q.id]}
-          points={quiz.enabled && quiz.showPoints && q.points > 0 ? q.points : null}
-        />
-      ))}
+      {page.items.map((q) =>
+        CONTENT_TYPES.includes(q.type) ? (
+          <ContentBlock key={q.id} item={q} />
+        ) : (
+          <QuestionField
+            key={q.id}
+            question={q}
+            formId={form.id}
+            value={answers[q.id]}
+            onChange={(value) => setAnswer(q.id, value)}
+            error={errors[q.id]}
+            points={quiz.enabled && quiz.showPoints && q.points > 0 ? q.points : null}
+          />
+        ),
+      )}
 
       {error && (
         <p className="form-error" role="alert">

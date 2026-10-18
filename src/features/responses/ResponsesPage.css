@@ -423,3 +423,40 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* ── Uploaded files ──────────────────────────────────────── */
+.file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.file-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.file-list a {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  overflow-wrap: anywhere;
+}
+
+.file-list a:hover {
+  text-decoration: underline;
+}
+
+.file-list span {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}

@@ -9,6 +9,8 @@ export default function SettingsPage() {
 
   const { requireSignIn, limitOneResponse } = draft.settings
   const quiz = quizSettings(draft)
+  // File-upload questions always need signed-in respondents (as in Google Forms).
+  const hasUploads = draft.questions.some((q) => q.type === 'fileUpload')
 
   const set = (key, value) =>
     edit(`settings:${key}`, (d) => {
@@ -33,8 +35,13 @@ export default function SettingsPage() {
         <h2>Responses</h2>
         <Toggle
           title="Require sign-in"
-          text="Respondents must sign in with Google or email before answering."
-          checked={requireSignIn}
+          text={
+            hasUploads
+              ? 'Always on: this form has a file-upload question, which needs signed-in respondents.'
+              : 'Respondents must sign in with Google or email before answering.'
+          }
+          checked={requireSignIn || hasUploads}
+          disabled={hasUploads}
           onChange={(v) => set('requireSignIn', v)}
         />
         <Toggle
@@ -131,9 +138,9 @@ export default function SettingsPage() {
   )
 }
 
-function Toggle({ title, text, checked, onChange }) {
+function Toggle({ title, text, checked, onChange, disabled = false }) {
   return (
-    <label className="setting">
+    <label className={`setting${disabled ? ' setting-disabled' : ''}`}>
       <span className="setting-text">
         <strong>{title}</strong>
         <span>{text}</span>
@@ -143,6 +150,7 @@ function Toggle({ title, text, checked, onChange }) {
           type="checkbox"
           role="switch"
           checked={checked}
+          disabled={disabled}
           onChange={(e) => onChange(e.target.checked)}
         />
       </span>

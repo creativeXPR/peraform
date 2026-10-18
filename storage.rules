@@ -1,10 +1,37 @@
 rules_version = '2';
 
 // Rules for PeraForm's own bucket (quality-toolsx-peraform) only — other
-// Quality Tools apps have their own buckets. Locked down until file-upload
-// questions are built.
+// Quality Tools apps have their own buckets.
 service firebase.storage {
   match /b/{bucket}/o {
+    function isRealUser() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    // Images creators put on forms (header, question and image blocks).
+    // Public, because respondents see them; each creator writes only their
+    // own folder, images only, up to 10 MB.
+    match /creators/{uid}/images/{file} {
+      allow read: if true;
+      allow create: if isRealUser()
+        && request.auth.uid == uid
+        && request.resource.contentType.matches('image/.*')
+        && request.resource.size < 10 * 1024 * 1024;
+      allow delete: if isRealUser() && request.auth.uid == uid;
+    }
+
+    // Files respondents attach to file-upload questions. Like Google Forms,
+    // uploading needs a signed-in account. Respondents write only their own
+    // folder and can't overwrite; creators open files through the download
+    // links saved in the response (readable only by form members).
+    match /uploads/{formId}/{uid}/{file} {
+      allow read, delete: if isRealUser() && request.auth.uid == uid;
+      allow create: if isRealUser()
+        && request.auth.uid == uid
+        && request.resource.size < 100 * 1024 * 1024;
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

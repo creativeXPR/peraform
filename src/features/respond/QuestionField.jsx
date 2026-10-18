@@ -1,9 +1,10 @@
 import { Star } from 'lucide-react'
 import AutoTextarea from '../../lib/AutoTextarea.jsx'
+import FileUploadField from './FileUploadField.jsx'
 
 // One question as respondents see it. `value` shapes per type are listed in
 // lib/formModel.js (answers).
-export default function QuestionField({ question: q, value, onChange, error, points }) {
+export default function QuestionField({ question: q, formId, value, onChange, error, points }) {
   const name = `q-${q.id}`
   const labelId = `${name}-label`
 
@@ -19,7 +20,18 @@ export default function QuestionField({ question: q, value, onChange, error, poi
         )}
       </p>
       {q.description && <p className="respond-q-desc">{q.description}</p>}
-      <Control q={q} name={name} labelId={labelId} value={value} onChange={onChange} />
+      {q.image && <img className="respond-image" src={q.image.url} alt="" loading="lazy" />}
+      {q.type === 'fileUpload' ? (
+        <FileUploadField
+          question={q}
+          formId={formId}
+          value={value}
+          onChange={onChange}
+          labelId={labelId}
+        />
+      ) : (
+        <Control q={q} name={name} labelId={labelId} value={value} onChange={onChange} />
+      )}
       {error && (
         <p className="respond-q-error" role="alert">
           {error}

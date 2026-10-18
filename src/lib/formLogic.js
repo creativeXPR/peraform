@@ -1,9 +1,12 @@
 // Paging, answer checks and skip logic, shared by the builder, the public
 // form and the responses page.
 //
-// A form's `questions` array may contain Section items ({ type: 'section' }).
-// Everything before the first section is page 1 (under the form header);
-// each section starts a new page.
+// A form's `questions` array holds questions plus non-question items:
+//   section — a page break (everything before the first is page 1)
+//   text    — a title-and-description block
+//   image   — an image block
+//   video   — a YouTube video block
+// Only questions take answers.
 //
 // Skip logic, like Google Forms:
 //   - section.next: where to go after that section — 'next', 'submit', or
@@ -16,22 +19,35 @@
 export const BRANCHING_TYPES = ['multipleChoice', 'dropdown']
 export const GRID_TYPES = ['mcGrid', 'checkboxGrid']
 
+export const CONTENT_TYPES = ['text', 'image', 'video']
+
 export function isSection(item) {
   return item.type === 'section'
 }
 
-// [{ section: Section | null, questions: Question[] }]
-export function splitPages(items) {
-  const pages = [{ section: null, questions: [] }]
-  for (const item of items) {
-    if (isSection(item)) pages.push({ section: item, questions: [] })
-    else pages[pages.length - 1].questions.push(item)
+export function isQuestion(item) {
+  return !isSection(item) && !CONTENT_TYPES.includes(item.type)
+}
+
+// [{ section: Section | null, items: (Question | content)[], questions: Question[] }]
+// items is everything shown on the page, in order; questions is the subset
+// that takes answers (required checks, skip logic, submission).
+export function splitPages(all) {
+  const pages = [{ section: null, items: [], questions: [] }]
+  for (const item of all) {
+    if (isSection(item)) {
+      pages.push({ section: item, items: [], questions: [] })
+      continue
+    }
+    const page = pages[pages.length - 1]
+    page.items.push(item)
+    if (isQuestion(item)) page.questions.push(item)
   }
   return pages
 }
 
 export function questionsOnly(items) {
-  return items.filter((item) => !isSection(item))
+  return items.filter(isQuestion)
 }
 
 function filled(value) {

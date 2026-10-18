@@ -14,11 +14,13 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
-import { Plus, Rows3 } from 'lucide-react'
+import { FileInput, Image as ImageIcon, Plus, Rows3, SquarePlay, Type } from 'lucide-react'
 import AutoTextarea from '../../lib/AutoTextarea.jsx'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
-import { dropSectionRefs, isSection } from '../../lib/formLogic.js'
-import { newQuestion, newSection, quizSettings } from '../../lib/formModel.js'
+import { CONTENT_TYPES, dropSectionRefs, isSection } from '../../lib/formLogic.js'
+import { newContent, newQuestion, newSection, quizSettings } from '../../lib/formModel.js'
+import ContentCard from './ContentCard.jsx'
+import ImportQuestionsDialog from './ImportQuestionsDialog.jsx'
 import QuestionCard from './QuestionCard.jsx'
 import SectionCard from './SectionCard.jsx'
 import { useFormEditor } from './editorContext.js'
@@ -30,6 +32,7 @@ export default function BuilderPage() {
   const { draft, edit } = useFormEditor()
   const [activeId, setActiveId] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
+  const [importing, setImporting] = useState(false)
   const sensors = useSensors(
     // A small drag distance so clicks on the handle don't start a drag.
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -85,6 +88,18 @@ export default function BuilderPage() {
   const addQuestion = () => insert(newQuestion('multipleChoice'))
   const addSection = () => insert(newSection())
 
+  // Imported items arrive with fresh ids (see ImportQuestionsDialog).
+  function insertMany(items) {
+    if (!items.length) return
+    setQuestions('import', (qs) => {
+      const at = qs.findIndex((q) => q.id === activeId)
+      const next = [...qs]
+      next.splice(at === -1 ? qs.length : at + 1, 0, ...items)
+      return next
+    })
+    setActiveId(items[items.length - 1].id)
+  }
+
   function duplicateQuestion(id) {
     const copy = { ...questions.find((q) => q.id === id), id: crypto.randomUUID() }
     // The copy gets the original's answer key too.
@@ -111,8 +126,20 @@ export default function BuilderPage() {
     setPendingDelete(null)
   }
 
-  const pendingIsSection =
-    pendingDelete && isSection(questions.find((q) => q.id === pendingDelete) ?? {})
+  const pendingType = pendingDelete && questions.find((q) => q.id === pendingDelete)?.type
+  const DELETE_COPY = {
+    section: [
+      'Delete this section?',
+      'Its questions stay and join the section above. Anything that jumped to this section will continue to the next one instead. You can undo this right after.',
+    ],
+    text: ['Delete this title and description?', 'You can undo this right after.'],
+    image: ['Delete this image?', 'You can undo this right after.'],
+    video: ['Delete this video?', 'You can undo this right after.'],
+  }
+  const [deleteTitle, deleteMessage] = DELETE_COPY[pendingType] ?? [
+    'Delete this question?',
+    'Answers already collected for it will no longer appear in your results. You can undo this right after.',
+  ]
 
   function onDragEnd({ active, over }) {
     if (!over || active.id === over.id) return
@@ -179,6 +206,16 @@ export default function BuilderPage() {
                   change={changeQuestion(item.id)}
                   onDelete={() => setPendingDelete(item.id)}
                 />
+              ) : CONTENT_TYPES.includes(item.type) ? (
+                <ContentCard
+                  key={item.id}
+                  item={item}
+                  active={item.id === activeId}
+                  onActivate={() => setActiveId(item.id)}
+                  change={changeQuestion(item.id)}
+                  onDuplicate={() => duplicateQuestion(item.id)}
+                  onDelete={() => setPendingDelete(item.id)}
+                />
               ) : (
                 <QuestionCard
                   key={item.id}
@@ -208,34 +245,40 @@ export default function BuilderPage() {
       </div>
 
       <aside className="builder-toolbar" aria-label="Add to form">
-        <button
-          type="button"
-          className="icon-btn"
-          onClick={addQuestion}
-          aria-label="Add question"
-          title="Add question"
-        >
-          <Plus size={20} />
-        </button>
-        <button
-          type="button"
-          className="icon-btn"
-          onClick={addSection}
-          aria-label="Add section"
-          title="Add section"
-        >
-          <Rows3 size={20} />
-        </button>
+        {[
+          ['Add question', Plus, addQuestion],
+          ['Import questions', FileInput, () => setImporting(true)],
+          ['Add title and description', Type, () => insert(newContent('text'))],
+          ['Add image', ImageIcon, () => insert(newContent('image'))],
+          ['Add video', SquarePlay, () => insert(newContent('video'))],
+          ['Add section', Rows3, addSection],
+        ].map(([label, Icon, onClick]) => (
+          <button
+            key={label}
+            type="button"
+            className="icon-btn"
+            onClick={onClick}
+            aria-label={label}
+            title={label}
+          >
+            <Icon size={20} />
+          </button>
+        ))}
       </aside>
+
+      <ImportQuestionsDialog
+        open={importing}
+        onClose={() => setImporting(false)}
+        onImport={(items) => {
+          insertMany(items)
+          setImporting(false)
+        }}
+      />
 
       <ConfirmModal
         open={Boolean(pendingDelete)}
-        title={pendingIsSection ? 'Delete this section?' : 'Delete this question?'}
-        message={
-          pendingIsSection
-            ? 'Its questions stay and join the section above. Anything that jumped to this section will continue to the next one instead. You can undo this right after.'
-            : 'Answers already collected for it will no longer appear in your results. You can undo this right after.'
-        }
+        title={deleteTitle}
+        message={deleteMessage}
         onConfirm={() => deleteItem(pendingDelete)}
         onCancel={() => setPendingDelete(null)}
       />
