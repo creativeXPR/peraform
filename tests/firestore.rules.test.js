@@ -342,3 +342,17 @@ describe('grading and released results', () => {
     await assertFails(getDoc(doc(anon('someone-else'), 'forms/f1/responses/mine')))
   })
 })
+
+describe('stars and folders', () => {
+  it('lets people manage their own stars and folders', async () => {
+    await assertSucceeds(setDoc(doc(real(OWNER), `users/${OWNER}/formMeta/f1`), { starred: true }))
+    await assertSucceeds(setDoc(doc(real(OWNER), `users/${OWNER}/folders/x`), { name: 'Work' }))
+    await assertSucceeds(getDoc(doc(real(OWNER), `users/${OWNER}/folders/x`)))
+  })
+
+  it('keeps them private from everyone else', async () => {
+    await assertFails(getDoc(doc(real(EDITOR), `users/${OWNER}/formMeta/f1`)))
+    await assertFails(setDoc(doc(real(EDITOR), `users/${OWNER}/folders/x`), { name: 'Hijack' }))
+    await assertFails(setDoc(doc(anon(), `users/${ANON}/folders/x`), { name: 'Anon' }))
+  })
+})

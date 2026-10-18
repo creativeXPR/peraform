@@ -942,11 +942,6 @@
   width: min(480px, calc(100vw - 32px));
 }
 
-.collab-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
 
 .collab-sub {
   margin-top: -6px;
@@ -1499,3 +1494,12 @@
   font-size: 22px;
   font-weight: 600;
 }
+
+/* ── Folder and star next to the title ───────────────────── */
+.title-field .title-tool,
+.title-field .title-tool > .icon-btn {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+}
+

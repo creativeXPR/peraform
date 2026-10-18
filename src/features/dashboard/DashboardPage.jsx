@@ -1,8 +1,29 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useOutletContext } from 'react-router-dom'
-import { ArrowDownAZ, Filter, LayoutGrid, List, Plus, Upload } from 'lucide-react'
+import {
+  ArrowDownAZ,
+  Filter,
+  Folder,
+  FolderPlus,
+  LayoutGrid,
+  List,
+  MoreVertical,
+  Plus,
+  Star,
+  Upload,
+} from 'lucide-react'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { callAcceptInvites } from '../../lib/firebase.js'
+import {
+  createFolder,
+  deleteFolder,
+  moveToFolder,
+  renameFolder,
+  setStarred,
+  useOrganize,
+} from '../../lib/organize.js'
+import PromptDialog from '../../lib/PromptDialog.jsx'
+import MoveDialog from './MoveDialog.jsx'
 import MenuButton from '../../lib/MenuButton.jsx'
 import { useToast } from '../../lib/useToast.jsx'
 import { resendVerification } from '../auth/authActions.js'
@@ -60,6 +81,15 @@ export default function DashboardPage() {
   const [pendingDelete, setPendingDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const fileRef = useRef(null)
+  // Where the list is looking: 'all', 'starred', or a folder id.
+  const [place, setPlace] = useState('all')
+  const { meta, folders } = useOrganize(user.uid)
+  const [moving, setMoving] = useState(null) // form being moved
+  const [naming, setNaming] = useState(null) // { kind: 'new' | 'rename', folder?, then? }
+  const [deletingFolder, setDeletingFolder] = useState(null)
+  const activeFolder = folders.find((f) => f.id === place)
+  // A deleted folder that was being viewed falls back to "All forms".
+  const where = place === 'all' || place === 'starred' || activeFolder ? place : 'all'
   const [verifySent, setVerifySent] = useState(false)
   // Email/password accounts must verify their address before invites to it
   // can be accepted; Google accounts are verified already.
@@ -89,11 +119,15 @@ export default function DashboardPage() {
 
   const visible = useMemo(() => {
     const list = forms.filter(
-      (f) => FILTERS[filter].test(f, user.uid) && (f.title || '').toLowerCase().includes(search),
+      (f) =>
+        FILTERS[filter].test(f, user.uid) &&
+        (f.title || '').toLowerCase().includes(search) &&
+        (where === 'all' ||
+          (where === 'starred' ? meta[f.id]?.starred : meta[f.id]?.folderId === where)),
     )
     const compare = SORTS[sort].compare
     return compare ? [...list].sort(compare) : list
-  }, [forms, filter, sort, search, user.uid])
+  }, [forms, filter, sort, search, user.uid, where, meta])
 
   function toggleView() {
     const next = view === 'grid' ? 'list' : 'grid'
@@ -252,6 +286,48 @@ export default function DashboardPage() {
           </div>
         </header>
 
+        <nav className="places" aria-label="Show forms from">
+          <button
+            type="button"
+            className={`place${where === 'all' ? ' on' : ''}`}
+            onClick={() => setPlace('all')}
+          >
+            All forms
+          </button>
+          <button
+            type="button"
+            className={`place${where === 'starred' ? ' on' : ''}`}
+            onClick={() => setPlace('starred')}
+          >
+            <Star size={14} /> Starred
+          </button>
+          {folders.map((f) => (
+            <span key={f.id} className={`place-wrap${where === f.id ? ' on' : ''}`}>
+              <button
+                type="button"
+                className={`place${where === f.id ? ' on' : ''}`}
+                onClick={() => setPlace(f.id)}
+              >
+                <Folder size={14} /> {f.name}
+              </button>
+              {where === f.id && (
+                <MenuButton
+                  className="place-menu"
+                  icon={<MoreVertical size={14} />}
+                  label={`Folder ${f.name} options`}
+                  items={[
+                    { label: 'Rename', onSelect: () => setNaming({ kind: 'rename', folder: f }) },
+                    { label: 'Delete folder', danger: true, onSelect: () => setDeletingFolder(f) },
+                  ]}
+                />
+              )}
+            </span>
+          ))}
+          <button type="button" className="place place-new" onClick={() => setNaming({ kind: 'new' })}>
+            <FolderPlus size={14} /> New folder
+          </button>
+        </nav>
+
         {loading ? (
           <div className={`forms forms-${view}`} aria-busy="true">
             {[0, 1, 2].map((i) => (
@@ -268,7 +344,11 @@ export default function DashboardPage() {
               ? 'No forms yet. Start with a blank form or a template above.'
               : search
                 ? `No forms match “${rawSearch.trim()}”.`
-                : 'No forms match this filter.'}
+                : where === 'starred'
+                ? 'No starred forms yet. Use the ☆ on a form to star it.'
+                : activeFolder
+                  ? 'This folder is empty. Use “Move to folder…” on a form to add it here.'
+                  : 'No forms match this filter.'}
           </p>
         ) : (
           <div className={`forms forms-${view}`}>
@@ -281,6 +361,9 @@ export default function DashboardPage() {
                 onOpen={(id, page) => navigate(`/forms/${id}/${page}`)}
                 onCopyLink={copyLink}
                 onDelete={setPendingDelete}
+                starred={Boolean(meta[form.id]?.starred)}
+                onToggleStar={(id, on) => setStarred(user.uid, id, on).catch(() => {})}
+                onMove={setMoving}
               />
             ))}
           </div>
@@ -296,6 +379,71 @@ export default function DashboardPage() {
         onCancel={() => setPendingDelete(null)}
       />
 
+      <MoveDialog
+        form={moving}
+        folders={folders}
+        currentId={moving ? meta[moving.id]?.folderId : null}
+        onClose={() => setMoving(null)}
+        onNewFolder={() => setNaming({ kind: 'new', then: moving })}
+        onMove={async (folderId, name) => {
+          const form = moving
+          setMoving(null)
+          try {
+            await moveToFolder(user.uid, form.id, folderId)
+            showToast(folderId ? `Moved to ${name}` : 'Moved to My forms')
+          } catch {
+            showToast('Couldn’t move the form. Please try again.')
+          }
+        }}
+      />
+
+      <PromptDialog
+        open={Boolean(naming)}
+        title={naming?.kind === 'rename' ? 'Rename folder' : 'New folder'}
+        label="Folder name"
+        initial={naming?.folder?.name ?? ''}
+        confirmLabel={naming?.kind === 'rename' ? 'Rename' : 'Create'}
+        onCancel={() => setNaming(null)}
+        onSubmit={async (name) => {
+          const job = naming
+          setNaming(null)
+          try {
+            if (job.kind === 'rename') {
+              await renameFolder(user.uid, job.folder.id, name)
+              return
+            }
+            const id = await createFolder(user.uid, name)
+            if (job.then) {
+              await moveToFolder(user.uid, job.then.id, id)
+              setMoving(null)
+              showToast(`Moved to ${name}`)
+            } else {
+              setPlace(id)
+            }
+          } catch {
+            showToast('Couldn’t save the folder. Please try again.')
+          }
+        }}
+      />
+
+      <ConfirmModal
+        open={Boolean(deletingFolder)}
+        title={`Delete the folder “${deletingFolder?.name}”?`}
+        message="The forms inside aren’t deleted — they move back to My forms."
+        confirmLabel="Delete folder"
+        onConfirm={async () => {
+          const f = deletingFolder
+          setDeletingFolder(null)
+          setPlace('all')
+          try {
+            await deleteFolder(user.uid, f.id)
+            showToast('Folder deleted')
+          } catch {
+            showToast('Couldn’t delete the folder. Please try again.')
+          }
+        }}
+        onCancel={() => setDeletingFolder(null)}
+      />
       {toast}
     </div>
   )

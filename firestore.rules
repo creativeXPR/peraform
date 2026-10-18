@@ -17,6 +17,14 @@ service cloud.firestore {
         && request.auth.token.firebase.sign_in_provider != 'anonymous';
     }
 
+    // Each person's own organising: starred forms and folders. Private to
+    // them — collaborators organise the same form their own way.
+    //   users/{uid}/formMeta/{formId}  { starred, folderId }
+    //   users/{uid}/folders/{folderId} { name, createdAt }
+    match /users/{uid}/{document=**} {
+      allow read, write: if isRealUser() && request.auth.uid == uid;
+    }
+
     match /forms/{formId} {
       function isMember() {
         return isSignedIn() && request.auth.uid in resource.data.memberIds;

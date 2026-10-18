@@ -176,7 +176,8 @@
 }
 
 .form-card .menu-btn,
-.form-row .menu-btn {
+.form-row .menu-btn,
+.card-star {
   position: relative;
   z-index: 1;
 }
@@ -207,7 +208,7 @@
 .form-row {
   position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto auto;
   align-items: center;
   gap: 16px;
   padding: 8px 6px 8px 12px;
@@ -305,11 +306,118 @@
   }
 
   .form-row {
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
   }
 
   .form-row-owner,
   .form-row .form-meta {
     display: none;
   }
+}
+
+/* ── Places: all / starred / folders ─────────────────────── */
+.places {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: -4px;
+}
+
+.place-wrap {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-pill);
+}
+
+.place-wrap.on {
+  background: var(--accent-soft);
+}
+
+.place {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.place:hover {
+  background: var(--fill);
+  color: var(--text);
+}
+
+.place.on {
+  border-color: transparent;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.place-menu > .icon-btn {
+  width: 28px;
+  height: 28px;
+  margin-left: -6px;
+  color: var(--accent);
+}
+
+.place-new {
+  border-style: dashed;
+}
+
+.card-star {
+  width: 32px;
+  height: 32px;
+}
+
+/* ── Move dialog ─────────────────────────────────────────── */
+.move-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 50vh;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.move-choice {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 8px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.move-choice:hover {
+  background: var(--fill);
+}
+
+.move-choice.on {
+  color: var(--accent);
+}
+
+.move-choice span {
+  flex: 1;
+}
+
+.move-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
 }

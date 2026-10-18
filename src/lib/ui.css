@@ -141,3 +141,19 @@
     transform: translate(-50%, 8px);
   }
 }
+
+/* Star toggle (builder title bar, dashboard cards). */
+.star-btn.on {
+  color: #f59e0b;
+}
+
+.star-btn.on svg {
+  fill: currentColor;
+}
+
+/* Dialog header: title on the left, close button on the right. */
+.collab-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
