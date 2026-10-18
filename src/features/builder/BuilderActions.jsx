@@ -6,6 +6,7 @@ import {
   Eye,
   Link2,
   MoreVertical,
+  Palette,
   Redo2,
   Trash2,
   Undo2,
@@ -17,6 +18,7 @@ import { useToast } from '../../lib/useToast.jsx'
 import { useAuth } from '../auth/useAuth.js'
 import { createForm, deleteForm } from '../dashboard/formActions.js'
 import ShareDialog from './ShareDialog.jsx'
+import ThemePanel from './ThemePanel.jsx'
 import { useFormEditor } from './editorContext.js'
 
 // Text fields have their own native undo; only take Ctrl+Z when focus is
@@ -34,6 +36,7 @@ export default function BuilderActions() {
   const [confirm, setConfirm] = useState(null) // 'delete' | 'unpublish'
   const [busy, setBusy] = useState(false)
   const [collabOpen, setCollabOpen] = useState(false)
+  const [themeOpen, setThemeOpen] = useState(false)
   const isOwner = form.ownerId === user.uid
   const link = `${window.location.origin}/f/${form.id}`
 
@@ -124,6 +127,7 @@ export default function BuilderActions() {
     { label: 'Preview', icon: Eye, onSelect: () => window.open(link, '_blank', 'noopener') },
     { label: 'Copy link', icon: Link2, onSelect: copyLink },
     { label: 'Share', icon: UserPlus, onSelect: () => setCollabOpen(true) },
+    { label: 'Theme', icon: Palette, onSelect: () => setThemeOpen(true) },
     { label: 'Make a copy', icon: Copy, onSelect: makeCopy },
   ]
   if (isOwner) {
@@ -138,6 +142,15 @@ export default function BuilderActions() {
   return (
     <>
       <div className="builder-actions">
+        <button
+          type="button"
+          className="icon-btn desktop-only"
+          onClick={() => setThemeOpen(true)}
+          aria-label="Theme"
+          title="Theme"
+        >
+          <Palette size={18} />
+        </button>
         <button
           type="button"
           className="icon-btn desktop-only"
@@ -219,6 +232,7 @@ export default function BuilderActions() {
         onConfirm={onConfirm}
         onCancel={() => setConfirm(null)}
       />
+      <ThemePanel open={themeOpen} onClose={() => setThemeOpen(false)} />
       <ShareDialog
         formId={form.id}
         open={collabOpen}

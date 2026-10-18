@@ -20,6 +20,7 @@ import {
   splitPages,
 } from '../../lib/formLogic.js'
 import { needsSignIn, quizSettings } from '../../lib/formModel.js'
+import { loadThemeFont, themeOf, themeStyle } from '../../lib/theme.js'
 import { validateAnswer } from '../../lib/validation.js'
 import { useTheme } from '../../lib/useTheme.js'
 import { ensureSignedIn } from '../auth/authActions.js'
@@ -37,6 +38,9 @@ export default function RespondPage() {
   const { user, loading: authLoading } = useAuth()
   const [form, setForm] = useState(null)
   const [loadError, setLoadError] = useState(null) // 'not-found' | 'failed'
+  const { theme: mode, toggleTheme } = useTheme()
+  const formTheme = themeOf(form)
+  useEffect(() => loadThemeFont(formTheme.font), [formTheme.font])
 
   // Wait for auth first: whether a draft is visible depends on who's asking.
   const uid = user?.uid
@@ -58,8 +62,8 @@ export default function RespondPage() {
   }, [formId, authLoading, uid])
 
   return (
-    <div className="respond">
-      <RespondTopBar />
+    <div className="respond themed" style={form ? themeStyle(formTheme, mode === 'dark') : undefined}>
+      <RespondTopBar theme={mode} toggleTheme={toggleTheme} />
       <main className="respond-main">
         {loadError ? (
           <Notice title={loadError === 'not-found' ? 'Form not found' : 'Couldn’t load this form'}>
@@ -80,8 +84,7 @@ export default function RespondPage() {
   )
 }
 
-function RespondTopBar() {
-  const { theme, toggleTheme } = useTheme()
+function RespondTopBar({ theme, toggleTheme }) {
   return (
     <header className="respond-top">
       <span className="logo">PeraForm</span>
@@ -135,6 +138,7 @@ function cleanAnswer(question, value) {
 }
 
 function FormView({ form, user }) {
+  const formTheme = themeOf(form)
   const [answers, setAnswers] = useState({})
   const [errors, setErrors] = useState({}) // questionId → message
   // filling | sending | sent | already | late (timed quiz: arrived after the limit)
@@ -405,6 +409,9 @@ function FormView({ form, user }) {
         <p className="respond-banner">Preview — publish this form to start collecting responses.</p>
       )}
 
+      {formTheme.headerImage && (
+        <img className="form-header-image" src={formTheme.headerImage.url} alt="" />
+      )}
       <header className="respond-card respond-head">
         <h1>{title}</h1>
         {pageIndex === 0 && (

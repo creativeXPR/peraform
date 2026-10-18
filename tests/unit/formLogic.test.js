@@ -190,3 +190,12 @@ describe('youtubeId', () => {
     expect(youtubeId('https://example.com/video')).toBe('')
   })
 })
+
+describe('pickDraft', () => {
+  it('leaves out fields an older form does not have', async () => {
+    const { pickDraft } = await import('../../src/features/builder/editorReducer.js')
+    const draft = pickDraft({ title: 'Old form', description: '', questions: [], settings: {} })
+    expect(draft).not.toHaveProperty('theme')
+    expect(Object.values(draft)).not.toContain(undefined)
+  })
+})

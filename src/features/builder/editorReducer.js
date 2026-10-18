@@ -10,10 +10,14 @@ const HISTORY_LIMIT = 100
 // so undo removes a typed word or sentence, not a single letter.
 const COALESCE_MS = 1000
 
-export const EDITABLE_FIELDS = ['title', 'description', 'questions', 'settings']
+export const EDITABLE_FIELDS = ['title', 'description', 'questions', 'settings', 'theme']
 
+// Fields a form doesn't have yet (e.g. theme on forms made before themes)
+// are left out: Firestore rejects undefined values on save.
 export function pickDraft(form) {
-  return Object.fromEntries(EDITABLE_FIELDS.map((key) => [key, form[key]]))
+  return Object.fromEntries(
+    EDITABLE_FIELDS.filter((key) => form[key] !== undefined).map((key) => [key, form[key]]),
+  )
 }
 
 export const initialEditorState = {

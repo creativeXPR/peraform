@@ -3,6 +3,8 @@ import { Link, useParams } from 'react-router-dom'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase.js'
 import { quizSettings } from '../../lib/formModel.js'
+import { loadThemeFont, themeOf, themeStyle } from '../../lib/theme.js'
+import { useTheme } from '../../lib/useTheme.js'
 import { useAuth } from '../auth/useAuth.js'
 import QuizResult from './QuizResult.jsx'
 import './RespondPage.css'
@@ -13,6 +15,9 @@ export default function ResultPage() {
   const { formId, responseId } = useParams()
   const { loading: authLoading, user } = useAuth()
   const [state, setState] = useState({ status: 'loading' })
+  const { theme: mode } = useTheme()
+  const font = themeOf(state.form).font
+  useEffect(() => loadThemeFont(font), [font])
 
   const uid = user?.uid
   useEffect(() => {
@@ -39,7 +44,10 @@ export default function ResultPage() {
   }, [formId, responseId, authLoading, uid])
 
   return (
-    <div className="respond">
+    <div
+      className="respond themed"
+      style={state.form ? themeStyle(themeOf(state.form), mode === 'dark') : undefined}
+    >
       <header className="respond-top">
         <span className="logo">PeraForm</span>
       </header>

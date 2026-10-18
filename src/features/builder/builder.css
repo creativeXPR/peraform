@@ -1375,3 +1375,127 @@
   opacity: 0.6;
   cursor: default;
 }
+
+/* Builder canvas previews the form's theme (tinted background, font). */
+.builder.themed {
+  padding: 16px;
+  border-radius: var(--radius-card);
+}
+
+/* ── Theme panel (slides in from the right) ──────────────── */
+.theme-panel {
+  width: min(360px, 100vw);
+  height: 100dvh;
+  max-height: none;
+  margin: 0 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: -12px 0 40px rgb(0 0 0 / 0.1);
+  animation: panel-in 0.25s var(--ease);
+}
+
+.theme-panel::backdrop {
+  background: var(--backdrop);
+}
+
+@keyframes panel-in {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+}
+
+.theme-body {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 20px;
+}
+
+.theme-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.theme-group h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.theme-header-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.theme-header-preview img {
+  width: 100%;
+  aspect-ratio: 4 / 1;
+  object-fit: cover;
+  border-radius: var(--radius-control);
+}
+
+.theme-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.theme-swatches {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+}
+
+.theme-swatch {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+}
+
+.theme-swatch[aria-checked='true'] {
+  border-color: var(--surface);
+  box-shadow: 0 0 0 2px var(--text);
+}
+
+.theme-fonts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.theme-font {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.theme-font.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.theme-font-sample {
+  font-size: 22px;
+  font-weight: 600;
+}

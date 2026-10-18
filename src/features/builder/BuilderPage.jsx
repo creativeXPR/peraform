@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   DndContext,
   KeyboardSensor,
@@ -19,6 +19,8 @@ import AutoTextarea from '../../lib/AutoTextarea.jsx'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { CONTENT_TYPES, dropSectionRefs, isSection } from '../../lib/formLogic.js'
 import { newContent, newQuestion, newSection, quizSettings } from '../../lib/formModel.js'
+import { loadThemeFont, themeOf, themeStyle } from '../../lib/theme.js'
+import { useTheme } from '../../lib/useTheme.js'
 import ContentCard from './ContentCard.jsx'
 import ImportQuestionsDialog from './ImportQuestionsDialog.jsx'
 import QuestionCard from './QuestionCard.jsx'
@@ -33,6 +35,9 @@ export default function BuilderPage() {
   const [activeId, setActiveId] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [importing, setImporting] = useState(false)
+  const { theme: mode } = useTheme()
+  const formTheme = themeOf(draft)
+  useEffect(() => loadThemeFont(formTheme.font), [formTheme.font])
   const sensors = useSensors(
     // A small drag distance so clicks on the handle don't start a drag.
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -153,8 +158,11 @@ export default function BuilderPage() {
   }
 
   return (
-    <div className="builder">
+    <div className="builder themed" style={themeStyle(formTheme, mode === 'dark')}>
       <div className="builder-column">
+        {formTheme.headerImage && (
+          <img className="form-header-image" src={formTheme.headerImage.url} alt="" />
+        )}
         <section
           className={`form-head${activeId === 'head' ? ' q-card-active' : ''}`}
           onFocus={() => setActiveId('head')}

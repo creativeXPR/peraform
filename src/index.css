@@ -132,3 +132,20 @@ button {
     animation-duration: 0.01ms !important;
   }
 }
+
+/* Areas that show a form's own theme (lib/theme.js sets the variables
+   inline); they repaint background and font from those variables. */
+.themed {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+}
+
+/* A form's header image: a wide banner above its title card. */
+.form-header-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 1;
+  object-fit: cover;
+  border-radius: var(--radius-card);
+}

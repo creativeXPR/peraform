@@ -1,4 +1,5 @@
 import { serverTimestamp } from 'firebase/firestore'
+import { THEME_DEFAULTS } from './theme.js'
 
 // Firestore layout (database "peraform"):
 //
@@ -12,6 +13,7 @@ import { serverTimestamp } from 'firebase/firestore'
 //     invitedEmails: [email]             — collaborators without an account yet;
 //                                          written by the manageCollaborators function
 //     notify: [uid]                      — members who get an email per new response
+//     theme: { color, background, font, headerImage } — see lib/theme.js
 //     questions: [Question | Section]    — array, so one read loads the whole form.
 //                                          A Section item starts a new page; see
 //                                          lib/formLogic.js for paging + skip logic.
@@ -99,6 +101,7 @@ export function newForm(ownerId) {
     status: 'draft',
     settings: { requireSignIn: false, limitOneResponse: false, quiz: { ...QUIZ_DEFAULTS } },
     questions: [],
+    theme: { ...THEME_DEFAULTS },
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   }
