@@ -8,6 +8,7 @@ import { useTheme } from '../../lib/useTheme.js'
 import { useAuth } from '../auth/useAuth.js'
 import QuizResult from './QuizResult.jsx'
 import './RespondPage.css'
+import LogoMark from '../../lib/LogoMark.jsx'
 
 // /f/:formId/r/:responseId — a respondent's quiz result, readable once the
 // creator releases it (and only by the person who submitted it).
@@ -49,7 +50,7 @@ export default function ResultPage() {
       style={state.form ? themeStyle(themeOf(state.form), mode === 'dark') : undefined}
     >
       <header className="respond-top">
-        <span className="logo">PeraForm</span>
+        <span className="logo"><LogoMark />PeraForm</span>
       </header>
       <main className="respond-main">
         {state.status === 'loading' ? (

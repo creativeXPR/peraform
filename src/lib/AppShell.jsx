@@ -4,6 +4,7 @@ import { LayoutGrid, Menu, Moon, PanelLeft, Search, Sun, X } from 'lucide-react'
 import AccountMenu from '../features/auth/AccountMenu.jsx'
 import { useTheme } from './useTheme.js'
 import './AppShell.css'
+import LogoMark from './LogoMark.jsx'
 
 const NAV_ITEMS = [{ to: '/', label: 'My forms', icon: LayoutGrid }]
 
@@ -52,6 +53,7 @@ export default function AppShell({
             </button>
           )}
           <Link to="/" className="logo">
+            <LogoMark />
             PeraForm
           </Link>
         </div>
@@ -78,7 +80,7 @@ export default function AppShell({
         {sidebar && (
           <aside className="sidebar" aria-label="Main navigation">
             <div className="drawer-head">
-              <span className="logo">PeraForm</span>
+              <span className="logo"><LogoMark />PeraForm</span>
               <button
                 type="button"
                 className="icon-btn"

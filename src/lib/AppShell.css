@@ -94,7 +94,8 @@
 .logo {
   display: inline-flex;
   align-items: center;
-  padding: 4px 14px;
+  gap: 7px;
+  padding: 4px 14px 4px 8px;
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
   background: var(--fill);

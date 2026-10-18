@@ -9,6 +9,7 @@ import {
 } from './authActions.js'
 import { isCreator, useAuth } from './useAuth.js'
 import './SignInPage.css'
+import LogoMark from '../../lib/LogoMark.jsx'
 
 const TITLES = {
   signin: 'Sign in to PeraForm',
@@ -71,6 +72,7 @@ export default function SignInPage() {
   return (
     <div className="signin">
       <Link to="/" className="logo">
+        <LogoMark />
         PeraForm
       </Link>
 

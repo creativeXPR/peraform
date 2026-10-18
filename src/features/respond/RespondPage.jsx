@@ -31,6 +31,7 @@ import QuestionField from './QuestionField.jsx'
 import QuizSubmitted from './QuizSubmitted.jsx'
 import { formatClock, useCountdown } from './useCountdown.js'
 import './RespondPage.css'
+import LogoMark from '../../lib/LogoMark.jsx'
 
 // The public form at /f/:formId. Anyone with the link can read a published
 // form; members can also open drafts here as a preview.
@@ -88,7 +89,7 @@ export default function RespondPage() {
 function RespondTopBar({ theme, toggleTheme }) {
   return (
     <header className="respond-top">
-      <span className="logo">PeraForm</span>
+      <span className="logo"><LogoMark />PeraForm</span>
       <button
         type="button"
         className="icon-btn"
