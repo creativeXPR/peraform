@@ -22,6 +22,9 @@ export const firebaseApp = initializeApp(firebaseConfig)
 // `npm run dev:emulators` sets this, so local testing never touches the
 // real project's data or user list.
 const useEmulators = import.meta.env.VITE_USE_EMULATORS === 'true'
+// Shifts every emulator port, for running alongside another project's
+// emulators (match it in a copy of firebase.json).
+const port = (base) => base + Number(import.meta.env.VITE_EMULATOR_PORT_OFFSET || 0)
 
 // App Check: proves requests come from this site (invisible reCAPTCHA
 // Enterprise). On once VITE_RECAPTCHA_SITE_KEY is set. On localhost, set
@@ -40,16 +43,16 @@ if (recaptchaKey && !useEmulators) {
 // Named database, not the project's default one — that's what separates
 // PeraForm's data (and its security rules) from the other Quality Tools apps.
 export const db = getFirestore(firebaseApp, 'peraform')
-if (useEmulators) connectFirestoreEmulator(db, '127.0.0.1', 8080)
+if (useEmulators) connectFirestoreEmulator(db, '127.0.0.1', port(8080))
 
 // Points at PeraForm's own bucket (VITE_FIREBASE_STORAGE_BUCKET), so its
 // storage rules stay separate from other Quality Tools apps.
 export const storage = getStorage(firebaseApp)
-if (useEmulators) connectStorageEmulator(storage, '127.0.0.1', 9199)
+if (useEmulators) connectStorageEmulator(storage, '127.0.0.1', port(9199))
 
 // Same region as the database and the functions (functions/index.js).
 export const functions = getFunctions(firebaseApp, 'europe-west1')
-if (useEmulators) connectFunctionsEmulator(functions, '127.0.0.1', 5001)
+if (useEmulators) connectFunctionsEmulator(functions, '127.0.0.1', port(5001))
 
 export const callSubmitResponse = httpsCallable(functions, 'submitResponse')
 export const callManageCollaborators = httpsCallable(functions, 'manageCollaborators')
@@ -64,7 +67,7 @@ export function getFirebaseAuth() {
   if (!authInstance) {
     authInstance = getAuth(firebaseApp)
     if (useEmulators) {
-      connectAuthEmulator(authInstance, 'http://127.0.0.1:9099', { disableWarnings: true })
+      connectAuthEmulator(authInstance, `http://127.0.0.1:${port(9099)}`, { disableWarnings: true })
     }
   }
   return authInstance

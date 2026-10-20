@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Check } from 'lucide-react'
 import './MenuButton.css'
 
@@ -7,6 +7,22 @@ import './MenuButton.css'
 export default function MenuButton({ icon, label, items, align = 'right', className = '' }) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef(null)
+  const popRef = useRef(null)
+
+  // Open upwards when the list would run past the bottom of the scrolling
+  // content card (or the window), as long as there's room above.
+  useLayoutEffect(() => {
+    const pop = popRef.current
+    const button = rootRef.current
+    if (!pop || !button) return
+    const area = button.closest('.content-card')?.getBoundingClientRect() ?? {
+      top: 0,
+      bottom: window.innerHeight,
+    }
+    const { top, bottom } = button.getBoundingClientRect()
+    const height = pop.offsetHeight + 6
+    pop.classList.toggle('menu-pop-up', bottom + height > area.bottom && top - height >= area.top)
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -41,7 +57,11 @@ export default function MenuButton({ icon, label, items, align = 'right', classN
         {icon}
       </button>
       {open && (
-        <div className={`menu-pop menu-pop-${align}`} role="menu">
+        <div
+          ref={popRef}
+          className={`menu-pop menu-pop-${align}`}
+          role="menu"
+        >
           {items.map(({ label: itemLabel, onSelect, checked, danger, icon: ItemIcon }) => (
             <button
               key={itemLabel}

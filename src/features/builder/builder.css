@@ -324,6 +324,12 @@
   min-height: 36px;
 }
 
+/* Fills the row beside its marker, even when the row wraps on phones. */
+.q-option input {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
 .q-marker {
   flex-shrink: 0;
   width: 16px;
@@ -637,7 +643,7 @@
     position: fixed;
     top: auto;
     right: 16px;
-    bottom: 20px;
+    bottom: 52px; /* Clear of the fixed footer. */
     z-index: 5;
     padding: 4px;
     border-radius: var(--radius-pill);

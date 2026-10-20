@@ -3,7 +3,10 @@
   --gutter: clamp(16px, 4vw, 48px);
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  /* App-like frame: top bar, sidebar and footer stay put and only the
+     content card scrolls. */
+  height: 100dvh;
+  overflow: hidden;
 }
 
 .shell[data-sidebar='closed'],
@@ -14,6 +17,7 @@
 /* ── Top bar ─────────────────────────────────────────────── */
 .topbar {
   position: relative;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -57,9 +61,9 @@
 .topbar-center::after {
   content: '';
   position: absolute;
-  right: 0;
+  right: 25%;
   bottom: -12px;
-  left: 0;
+  left: 25%;
   border-bottom: 1px solid var(--line);
 }
 
@@ -135,8 +139,10 @@
 .shell-main {
   position: relative;
   flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: var(--sidebar-w) 1fr;
+  grid-template-rows: minmax(0, 1fr);
   gap: 16px;
   padding: 16px var(--gutter);
   transition: grid-template-columns 0.4s var(--ease);
@@ -236,6 +242,8 @@
 
 .content-card {
   min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: clamp(20px, 3vw, 36px);
   border-radius: var(--radius-card);
   background: var(--surface-center);
@@ -244,7 +252,8 @@
 
 /* ── Footer ──────────────────────────────────────────────── */
 .footerbar {
-  padding: 20px var(--gutter);
+  flex-shrink: 0;
+  padding: 14px var(--gutter);
   text-align: center;
   color: var(--text-muted);
   font-size: 12px;
@@ -286,6 +295,10 @@
     grid-template-columns: 1fr;
     gap: 0;
     padding: 8px 16px;
+  }
+
+  .footerbar {
+    padding: 10px 16px;
   }
 
   .sidebar-toggle {
