@@ -8,9 +8,7 @@ export default function FormThumbnail({ title, questions = [], theme }) {
   const formTheme = themeOf({ theme })
   const header = formTheme.headerImage?.url
   const style = themeStyle(formTheme, mode === 'dark')
-  if (formTheme.background === 'tinted') {
-    style.background = 'color-mix(in srgb, var(--accent) 14%, var(--fill))'
-  }
+  style.background = 'var(--bg)'
   return (
     <div className="thumb" aria-hidden="true" style={style}>
       <div className="thumb-sheet">

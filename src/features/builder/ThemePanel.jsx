@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Check, X } from 'lucide-react'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
-import { THEME_COLORS, THEME_FONTS, loadThemeFont, themeOf } from '../../lib/theme.js'
+import {
+  THEME_BACKGROUNDS,
+  THEME_COLORS,
+  THEME_FONTS,
+  loadThemeFont,
+  themeOf,
+} from '../../lib/theme.js'
 import { useTheme } from '../../lib/useTheme.js'
 import { useFormEditor } from './editorContext.js'
 import ImagePicker from './ImagePicker.jsx'
@@ -95,10 +101,7 @@ export default function ThemePanel({ open, onClose }) {
         <section className="theme-group">
           <h3>Background</h3>
           <div className="segmented" role="radiogroup" aria-label="Background">
-            {[
-              ['plain', 'Plain'],
-              ['tinted', 'Tinted'],
-            ].map(([key, label]) => (
+            {Object.entries(THEME_BACKGROUNDS).map(([key, { label }]) => (
               <button
                 key={key}
                 type="button"

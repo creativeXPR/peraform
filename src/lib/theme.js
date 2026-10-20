@@ -2,7 +2,7 @@
 // header image. A theme only overrides the design tokens from index.css,
 // so every component follows it without knowing about themes.
 //
-// form.theme = { color, background: 'plain' | 'tinted', font, headerImage }
+// form.theme = { color, background, font, headerImage }
 
 // Each colour has a light-mode value (white button text ≥4.6:1) and a
 // lighter dark-mode value (dark button text ≥6.4:1). Chart bars use their
@@ -31,11 +31,24 @@ export const THEME_FONTS = {
   mono: { label: 'Technical', family: "'JetBrains Mono', ui-monospace, monospace", google: 'JetBrains+Mono:wght@400;600;700' },
 }
 
-// Tinted by default, like Google Forms' light page colour.
-export const THEME_DEFAULTS = { color: 'indigo', background: 'tinted', font: 'inter', headerImage: null }
+// Page background: a shade of the theme colour (Google Forms style) or grey.
+// Percent of the colour mixed into the page, [light mode, dark mode].
+export const THEME_BACKGROUNDS = {
+  light: { label: 'Light', mix: [10, 10] },
+  medium: { label: 'Medium', mix: [17, 15] },
+  strong: { label: 'Strong', mix: [24, 20] },
+  grey: { label: 'Grey', mix: [0, 0] },
+}
+// Before the shades: 'plain' (the old default) and 'tinted' both show as light.
+const OLD_BACKGROUNDS = { plain: 'light', tinted: 'light' }
+
+export const THEME_DEFAULTS = { color: 'indigo', background: 'light', font: 'inter', headerImage: null }
 
 export function themeOf(form) {
-  return { ...THEME_DEFAULTS, ...form?.theme }
+  const theme = { ...THEME_DEFAULTS, ...form?.theme }
+  theme.background = OLD_BACKGROUNDS[theme.background] ?? theme.background
+  if (!THEME_BACKGROUNDS[theme.background]) theme.background = THEME_DEFAULTS.background
+  return theme
 }
 
 // CSS custom properties for a theme in the current light/dark mode.
@@ -45,16 +58,22 @@ export function themeStyle(theme, dark, { font = true } = {}) {
   const color = THEME_COLORS[theme.color] ?? THEME_COLORS.indigo
   const accent = dark ? color.dark : color.light
   const base = dark ? '#0e0f13' : '#fbfcff'
+  const mix = (THEME_BACKGROUNDS[theme.background] ?? THEME_BACKGROUNDS.light).mix[dark ? 1 : 0]
+  const tint = (pct, over) => `color-mix(in srgb, ${accent} ${pct}%, ${over})`
   const style = {
     '--accent': accent,
-    '--accent-hover': `color-mix(in srgb, ${accent} 85%, ${dark ? 'white' : 'black'})`,
-    '--accent-soft': `color-mix(in srgb, ${accent} ${dark ? 16 : 11}%, transparent)`,
+    '--accent-hover': tint(85, dark ? 'white' : 'black'),
+    '--accent-soft': tint(dark ? 16 : 11, 'transparent'),
     '--chart-bar': color.chart[dark ? 1 : 0],
+    '--bg': tint(mix, base),
+    // Fills, hairlines and the content card pick up the colour too, so the
+    // whole page reads as the theme, not just the accents.
+    '--fill': tint(dark ? 11 : 8, 'transparent'),
+    '--fill-strong': tint(dark ? 18 : 14, 'transparent'),
+    '--line': tint(dark ? 16 : 13, 'transparent'),
+    '--surface-center': dark ? tint(6, '#15161b40') : tint(3, '#ffffff70'),
   }
   if (font) style['--font'] = (THEME_FONTS[theme.font] ?? THEME_FONTS.inter).family
-  if (theme.background === 'tinted') {
-    style['--bg'] = `color-mix(in srgb, ${accent} ${dark ? 10 : 9}%, ${base})`
-  }
   return style
 }
 
