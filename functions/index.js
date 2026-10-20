@@ -22,6 +22,14 @@ const REGION = 'europe-west1'
 // ENFORCE_APP_CHECK=true in functions/.env and redeploy.
 const ENFORCE_APP_CHECK = defineBoolean('ENFORCE_APP_CHECK', { default: false })
 
+// Every callable starts here: refuses requests without a valid App Check
+// token (i.e. not from PeraForm's own site) once enforcement is on.
+function requireApp(request) {
+  if (ENFORCE_APP_CHECK.value() && !request.app) {
+    throw new HttpsError('failed-precondition', 'This request didn’t come from PeraForm.')
+  }
+}
+
 // PeraForm's storage bucket; file-upload answers must point into it.
 const UPLOAD_BUCKET = defineString('UPLOAD_BUCKET', { default: 'quality-toolsx-peraform' })
 // Real Cloud Storage, plus the Storage emulator only when running under it.
@@ -42,9 +50,7 @@ const PER_USER = { limit: 5, windowMs: 60_000 }
 // writes, so every submission passes App Check (when on), rate limits,
 // answer cleaning and the form's own rules here.
 export const submitResponse = onCall({ region: REGION }, async (request) => {
-  if (ENFORCE_APP_CHECK.value() && !request.app) {
-    throw new HttpsError('failed-precondition', 'This request didn’t come from PeraForm.')
-  }
+  requireApp(request)
   if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to respond.')
   const uid = request.auth.uid
   const { formId, answers } = request.data ?? {}
@@ -204,6 +210,7 @@ const normalizeEmail = (email) => (typeof email === 'string' ? email.trim().toLo
 export const manageCollaborators = onCall(
   { region: REGION, secrets: [SMTP_PASS] },
   async (request) => {
+    requireApp(request)
     if (!request.auth || request.auth.token.firebase?.sign_in_provider === 'anonymous') {
       throw new HttpsError('unauthenticated', 'Sign in first.')
     }
@@ -287,6 +294,7 @@ export const manageCollaborators = onCall(
 // membership. Unverified addresses can't claim invites — otherwise anyone
 // could sign up with someone else's email.
 export const acceptInvites = onCall({ region: REGION }, async (request) => {
+  requireApp(request)
   const token = request.auth?.token
   if (!token?.email || !token.email_verified) return { joined: 0 }
   const email = normalizeEmail(token.email)
