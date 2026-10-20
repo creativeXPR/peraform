@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 
 const STORAGE_KEY = 'peraform-theme'
 const darkQuery = '(prefers-color-scheme: dark)'
@@ -11,16 +11,21 @@ function currentTheme() {
   return window.matchMedia(darkQuery).matches ? 'dark' : 'light'
 }
 
-export function useTheme() {
-  const [theme, setTheme] = useState(currentTheme)
+// Every component using the hook sees the same value: it changes when the
+// toggle sets data-theme on <html>, or when the system setting changes.
+function subscribe(onChange) {
+  const media = window.matchMedia(darkQuery)
+  media.addEventListener('change', onChange)
+  const observer = new MutationObserver(onChange)
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+  return () => {
+    media.removeEventListener('change', onChange)
+    observer.disconnect()
+  }
+}
 
-  // Track system changes while the user hasn't picked a theme themselves.
-  useEffect(() => {
-    const media = window.matchMedia(darkQuery)
-    const onChange = () => setTheme(currentTheme())
-    media.addEventListener('change', onChange)
-    return () => media.removeEventListener('change', onChange)
-  }, [])
+export function useTheme() {
+  const theme = useSyncExternalStore(subscribe, currentTheme)
 
   const toggleTheme = useCallback(() => {
     const next = currentTheme() === 'dark' ? 'light' : 'dark'
@@ -30,7 +35,6 @@ export function useTheme() {
     } catch {
       // Storage blocked — the choice just won't survive a reload.
     }
-    setTheme(next)
   }, [])
 
   return { theme, toggleTheme }

@@ -7,6 +7,9 @@
      content card scrolls. */
   height: 100dvh;
   overflow: hidden;
+  /* Its own background, so a form's theme (style prop) repaints the page. */
+  background: var(--bg);
+  transition: background 0.3s var(--ease);
 }
 
 .shell[data-sidebar='closed'],

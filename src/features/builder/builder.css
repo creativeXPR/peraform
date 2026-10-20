@@ -1378,9 +1378,9 @@
 }
 
 /* Builder canvas previews the form's theme (tinted background, font). */
+/* The page behind already shows the theme's background (FormLayout). */
 .builder.themed {
-  padding: 16px;
-  border-radius: var(--radius-card);
+  background: none;
 }
 
 /* ── Theme panel (slides in from the right) ──────────────── */

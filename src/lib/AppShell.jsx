@@ -15,12 +15,14 @@ const NAV_ITEMS = [{ to: '/', label: 'My forms', icon: LayoutGrid }]
 //   search  — centred top-bar search; the page reads useOutletContext().search
 //   center  — any other centred top-bar content (e.g. the form title)
 //   actions — extra top-bar buttons, before the theme toggle and account
+//   style   — CSS variables for the whole frame (a form's theme colours)
 export default function AppShell({
   sidebar = true,
   nav = NAV_ITEMS,
   search = false,
   center = null,
   actions = null,
+  style,
 }) {
   const { theme, toggleTheme } = useTheme()
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -37,6 +39,7 @@ export default function AppShell({
   return (
     <div
       className="shell"
+      style={style}
       data-sidebar={!sidebar ? 'none' : sidebarOpen ? 'open' : 'closed'}
       data-drawer={drawerOpen ? 'open' : 'closed'}
     >

@@ -1,6 +1,8 @@
 import { Link, useParams } from 'react-router-dom'
 import { BarChart3, ListChecks, Settings } from 'lucide-react'
 import AppShell from '../../lib/AppShell.jsx'
+import { themeOf, themeStyle } from '../../lib/theme.js'
+import { useTheme } from '../../lib/useTheme.js'
 import { useAuth } from '../auth/useAuth.js'
 import BuilderActions from './BuilderActions.jsx'
 import FormEditorProvider from './FormEditorProvider.jsx'
@@ -23,6 +25,7 @@ export default function FormLayout() {
 function FormFrame({ formId }) {
   const { form, draft, loadError: error } = useFormEditor()
   const { user } = useAuth()
+  const { theme: mode } = useTheme()
   // Published forms are readable by anyone (respondents load them), so a
   // successful load doesn't mean this person may edit it.
   const loadError = error ?? (form && !form.memberIds.includes(user.uid) ? 'not-found' : null)
@@ -52,6 +55,8 @@ function FormFrame({ formId }) {
   return (
     <AppShell
       nav={nav}
+      // The form's theme colours the whole editor, as in Google Forms.
+      style={draft ? themeStyle(themeOf(draft), mode === 'dark', { font: false }) : undefined}
       center={form && draft ? <FormTitleField /> : null}
       actions={form && draft ? <BuilderActions /> : null}
     />

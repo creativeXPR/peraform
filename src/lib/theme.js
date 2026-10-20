@@ -31,14 +31,17 @@ export const THEME_FONTS = {
   mono: { label: 'Technical', family: "'JetBrains Mono', ui-monospace, monospace", google: 'JetBrains+Mono:wght@400;600;700' },
 }
 
-export const THEME_DEFAULTS = { color: 'indigo', background: 'plain', font: 'inter', headerImage: null }
+// Tinted by default, like Google Forms' light page colour.
+export const THEME_DEFAULTS = { color: 'indigo', background: 'tinted', font: 'inter', headerImage: null }
 
 export function themeOf(form) {
   return { ...THEME_DEFAULTS, ...form?.theme }
 }
 
 // CSS custom properties for a theme in the current light/dark mode.
-export function themeStyle(theme, dark) {
+// font: false leaves the font alone — the editor's frame (top bar, sidebar)
+// takes the form's colours but keeps the app's own type.
+export function themeStyle(theme, dark, { font = true } = {}) {
   const color = THEME_COLORS[theme.color] ?? THEME_COLORS.indigo
   const accent = dark ? color.dark : color.light
   const base = dark ? '#0e0f13' : '#fbfcff'
@@ -47,10 +50,10 @@ export function themeStyle(theme, dark) {
     '--accent-hover': `color-mix(in srgb, ${accent} 85%, ${dark ? 'white' : 'black'})`,
     '--accent-soft': `color-mix(in srgb, ${accent} ${dark ? 16 : 11}%, transparent)`,
     '--chart-bar': color.chart[dark ? 1 : 0],
-    '--font': (THEME_FONTS[theme.font] ?? THEME_FONTS.inter).family,
   }
+  if (font) style['--font'] = (THEME_FONTS[theme.font] ?? THEME_FONTS.inter).family
   if (theme.background === 'tinted') {
-    style['--bg'] = `color-mix(in srgb, ${accent} ${dark ? 10 : 7}%, ${base})`
+    style['--bg'] = `color-mix(in srgb, ${accent} ${dark ? 10 : 9}%, ${base})`
   }
   return style
 }
