@@ -98,17 +98,25 @@
   font: inherit;
 }
 
+/* Same height as the search bar / title field beside it. */
 .logo {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
-  gap: 7px;
-  padding: 4px 14px 4px 8px;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px 0 10px;
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
   background: var(--fill);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   letter-spacing: 0.01em;
+}
+
+.logo .logo-mark {
+  width: 26px;
+  height: 26px;
 }
 
 .topbar-actions {
@@ -282,6 +290,18 @@
   .topbar-center {
     grid-row: 2;
     grid-column: 1 / -1;
+  }
+
+  /* The title/search moves to its own row; keep the bar's first row compact. */
+  .logo {
+    height: 36px;
+    padding: 0 14px 0 8px;
+    font-size: 14px;
+  }
+
+  .logo .logo-mark {
+    width: 22px;
+    height: 22px;
   }
 
   .drawer-btn {
