@@ -86,6 +86,27 @@
   box-sizing: border-box;
 }
 
+/* Scrollbars: thin, no track, and the thumb only fades in while the pointer
+   is over the area that scrolls. The colour is a registered property so it
+   can transition; it doesn't inherit, so a scrolling list inside the page
+   shows its bar only while the pointer is over that list. */
+@property --scroll-thumb {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: transparent;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
+  transition: --scroll-thumb 0.3s var(--ease);
+}
+
+*:hover,
+*:focus-visible {
+  --scroll-thumb: color-mix(in srgb, var(--text) 28%, transparent);
+}
+
 body {
   margin: 0;
   min-height: 100dvh;
