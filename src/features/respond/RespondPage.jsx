@@ -279,21 +279,27 @@ function FormView({ form, user }) {
   async function startQuiz() {
     setStarting(true)
     setError('')
+    // The rules refused the start: either it was already recorded (then
+    // we resume from it) or this account may not take the quiz.
+    let refused = false
     try {
       const respondent = await ensureSignedIn()
       const ref = doc(db, 'forms', form.id, 'starts', respondent.uid)
       try {
         await setDoc(ref, { startedAt: serverTimestamp() })
       } catch (err) {
-        // Already started earlier: the rules refuse a second start, which
-        // is fine — we just resume from the first one.
         if (err.code !== 'permission-denied') throw err
+        refused = true
       }
       const end = (await readStartTime(ref)) + quiz.timeLimit * 60_000
       if (end <= Date.now()) setState('late')
       else setDeadline(end)
     } catch {
-      setError('Couldn’t start the quiz. Check your connection and try again.')
+      setError(
+        refused
+          ? 'This account can’t start the quiz. If it only accepts invited people, sign in with the address you were invited with.'
+          : 'Couldn’t start the quiz. Check your connection and try again.',
+      )
     } finally {
       setStarting(false)
     }

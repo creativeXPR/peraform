@@ -109,7 +109,9 @@ service cloud.firestore {
         allow create: if isSignedIn()
           && request.auth.uid == uid
           && form().status == 'published'
-          && (form().settings.get('restricted', false) != true || isAllowedResponder())
+          && (form().settings.get('restricted', false) != true
+            || isFormMember()
+            || isAllowedResponder())
           && timeLimit() > 0
           && request.resource.data.keys().hasOnly(['startedAt'])
           && request.resource.data.startedAt == request.time;

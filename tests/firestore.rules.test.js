@@ -332,6 +332,28 @@ describe('timed quizzes', () => {
     await assertSucceeds(getDoc(doc(anon(), `forms/f1/starts/${ANON}`)))
   })
 
+  it('on invited-only quizzes, lets members and invited people start, nobody else', async () => {
+    await seed('forms/f3', {
+      ...quizForm({ timeLimit: 10 }),
+      settings: { restricted: true, quiz: { enabled: true, timeLimit: 10 } },
+    })
+    await seed('forms/f3/private/access', { emails: ['ada@example.com'], domains: [] })
+    const person = (uid, email) =>
+      testEnv
+        .authenticatedContext(uid, {
+          email,
+          email_verified: true,
+          firebase: { sign_in_provider: 'password' },
+        })
+        .firestore()
+    const startOn = (db, uid) =>
+      setDoc(doc(db, `forms/f3/starts/${uid}`), { startedAt: serverTimestamp() })
+    await assertSucceeds(startOn(real(OWNER), OWNER))
+    await assertSucceeds(startOn(person('ada', 'ada@example.com'), 'ada'))
+    await assertFails(startOn(person('eve', 'eve@example.com'), 'eve'))
+    await assertFails(startOn(anon(), ANON))
+  })
+
   it('blocks starting for someone else, or with a made-up time', async () => {
     await assertFails(start(anon(), STRANGER))
     await assertFails(
