@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Check, X } from 'lucide-react'
+import { X } from 'lucide-react'
+import ColorPicker from '../../lib/ColorPicker.jsx'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import {
   THEME_BACKGROUNDS,
@@ -75,27 +76,20 @@ export default function ThemePanel({ open, onClose }) {
 
         <section className="theme-group">
           <h3>Colour</h3>
-          <div className="theme-swatches" role="radiogroup" aria-label="Colour">
-            {Object.entries(THEME_COLORS).map(([key, c]) => (
-              <button
-                key={key}
-                type="button"
-                role="radio"
-                aria-checked={theme.color === key}
-                aria-label={c.label}
-                title={c.label}
-                className="theme-swatch"
-                style={{
-                  background: mode === 'dark' ? c.dark : c.light,
-                  // Dark-mode swatches are light, so the check mark goes dark.
-                  color: mode === 'dark' ? '#0e0f13' : '#fff',
-                }}
-                onClick={() => set('color', key)}
-              >
-                {theme.color === key && <Check size={16} />}
-              </button>
-            ))}
-          </div>
+          <ColorPicker
+            value={theme.color}
+            presets={Object.entries(THEME_COLORS).map(([key, c]) => ({
+              value: key,
+              label: c.label,
+              swatch: mode === 'dark' ? c.dark : c.light,
+            }))}
+            onChange={(color) => set('color', color)}
+          />
+          {!THEME_COLORS[theme.color] && (
+            <p className="key-note">
+              Custom colours are adjusted slightly where needed so button text stays readable.
+            </p>
+          )}
         </section>
 
         <section className="theme-group">

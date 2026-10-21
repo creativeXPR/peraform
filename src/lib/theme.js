@@ -1,8 +1,11 @@
+import { accentPair, normalizeHex } from './color.js'
+
 // Per-form themes (Google Forms' palette): colour, background, font,
 // header image. A theme only overrides the design tokens from index.css,
 // so every component follows it without knowing about themes.
 //
 // form.theme = { color, background, font, headerImage }
+//   color: a preset key below, or any custom '#rrggbb'
 
 // Each colour has a light-mode value (white button text ≥4.6:1) and a
 // lighter dark-mode value (dark button text ≥6.4:1). Chart bars use their
@@ -44,8 +47,16 @@ const OLD_BACKGROUNDS = { plain: 'light', tinted: 'light' }
 
 export const THEME_DEFAULTS = { color: 'indigo', background: 'light', font: 'inter', headerImage: null }
 
+// A preset's shades, or ones derived from a custom colour.
+export function colorOf(color) {
+  if (THEME_COLORS[color]) return THEME_COLORS[color]
+  const hex = normalizeHex(color)
+  return hex ? accentPair(hex) : THEME_COLORS.indigo
+}
+
 export function themeOf(form) {
   const theme = { ...THEME_DEFAULTS, ...form?.theme }
+  if (!THEME_COLORS[theme.color]) theme.color = normalizeHex(theme.color) ?? THEME_DEFAULTS.color
   theme.background = OLD_BACKGROUNDS[theme.background] ?? theme.background
   if (!THEME_BACKGROUNDS[theme.background]) theme.background = THEME_DEFAULTS.background
   return theme
@@ -55,7 +66,7 @@ export function themeOf(form) {
 // font: false leaves the font alone — the editor's frame (top bar, sidebar)
 // takes the form's colours but keeps the app's own type.
 export function themeStyle(theme, dark, { font = true } = {}) {
-  const color = THEME_COLORS[theme.color] ?? THEME_COLORS.indigo
+  const color = colorOf(theme.color)
   const accent = dark ? color.dark : color.light
   const base = dark ? '#0e0f13' : '#fbfcff'
   const mix = (THEME_BACKGROUNDS[theme.background] ?? THEME_BACKGROUNDS.light).mix[dark ? 1 : 0]
