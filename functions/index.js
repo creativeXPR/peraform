@@ -7,6 +7,7 @@ import { defineBoolean, defineString } from 'firebase-functions/params'
 import { onDocumentCreated } from 'firebase-functions/v2/firestore'
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
 import { onObjectFinalized } from 'firebase-functions/v2/storage'
+import { isAllowedResponder } from './access.js'
 import { MARK, compressBuffer, compressionFor } from './compress.js'
 import { gradeResponse } from './grade.js'
 import { APP_URL, SMTP_PASS, emailHtml, sendMail } from './mail.js'
@@ -24,8 +25,10 @@ const ENFORCE_APP_CHECK = defineBoolean('ENFORCE_APP_CHECK', { default: false })
 
 // Every callable starts here: refuses requests without a valid App Check
 // token (i.e. not from PeraForm's own site) once enforcement is on.
+// The local emulators run without App Check, so it's never required there.
+const EMULATED = process.env.FUNCTIONS_EMULATOR === 'true'
 function requireApp(request) {
-  if (ENFORCE_APP_CHECK.value() && !request.app) {
+  if (ENFORCE_APP_CHECK.value() && !EMULATED && !request.app) {
     throw new HttpsError('failed-precondition', 'This request didn’t come from PeraForm.')
   }
 }
@@ -67,7 +70,11 @@ export const submitResponse = onCall({ region: REGION }, async (request) => {
 
   const form = (await db.doc(`forms/${formId}`).get()).data()
   const timed = form?.settings?.quiz?.enabled && form.settings.quiz.timeLimit > 0
-  const start = timed ? (await db.doc(`forms/${formId}/starts/${uid}`).get()).data() : null
+  const restricted = Boolean(form?.settings?.restricted)
+  const [start, access] = await Promise.all([
+    timed ? db.doc(`forms/${formId}/starts/${uid}`).get().then((s) => s.data()) : null,
+    restricted ? db.doc(`forms/${formId}/private/access`).get().then((s) => s.data()) : null,
+  ])
   const clean = form
     ? sanitizeAnswers(form, answers, {
         formId,
@@ -82,6 +89,9 @@ export const submitResponse = onCall({ region: REGION }, async (request) => {
     startedAt: start?.startedAt?.toMillis(),
     now: Date.now(),
     answersBytes: JSON.stringify(answers ?? {}).length,
+    email: request.auth.token.email,
+    emailVerified: request.auth.token.email_verified === true,
+    access,
   })
   if (problem) throw new HttpsError(problem.code, problem.message)
 
@@ -95,13 +105,38 @@ export const submitResponse = onCall({ region: REGION }, async (request) => {
       answers: clean,
       submittedAt: FieldValue.serverTimestamp(),
       // From the sign-in token, so respondents can't type someone else's.
-      ...(form.settings?.collectEmails && { respondentEmail: request.auth.token.email ?? '' }),
+      ...((form.settings?.collectEmails || restricted) && {
+        respondentEmail: request.auth.token.email ?? '',
+      }),
     })
   } catch (err) {
     if (err.code === 6) throw new HttpsError('already-exists', 'You’ve already responded.')
     throw err
   }
   return { responseId: ref.id }
+})
+
+// ── Invited-only forms: why can't I open it? ─────────────────
+// Firestore rules hide an invited-only form from everyone not on its list,
+// so a respondent's direct read just fails. This says why, without
+// revealing the list: sign in, verify your email, or you're not invited.
+// state: 'missing' | 'signin' | 'verify' | 'denied' | 'allowed'
+export const formGate = onCall({ region: REGION }, async (request) => {
+  requireApp(request)
+  const { formId } = request.data ?? {}
+  if (typeof formId !== 'string' || !formId) throw new HttpsError('invalid-argument', 'No form.')
+  const form = (await db.doc(`forms/${formId}`).get()).data()
+  if (!form || !['published', 'closed'].includes(form.status) || !form.settings?.restricted) {
+    return { state: 'missing' }
+  }
+  const title = form.title || 'Untitled form'
+  const token = request.auth?.token
+  if (!token?.email || token.firebase?.sign_in_provider === 'anonymous') {
+    return { state: 'signin', title }
+  }
+  if (token.email_verified !== true) return { state: 'verify', title, email: token.email }
+  const access = (await db.doc(`forms/${formId}/private/access`).get()).data()
+  return { state: isAllowedResponder(access, token.email) ? 'allowed' : 'denied', title, email: token.email }
 })
 
 // ── After each response: grade quizzes, notify subscribers ─────

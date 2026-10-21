@@ -8,7 +8,7 @@ import {
   setDoc,
 } from 'firebase/firestore'
 import { CheckCircle2, Moon, Sun, Timer } from 'lucide-react'
-import { callSubmitResponse, db } from '../../lib/firebase.js'
+import { callFormGate, callSubmitResponse, db } from '../../lib/firebase.js'
 import {
   CONTENT_TYPES,
   GRID_TYPES,
@@ -26,6 +26,7 @@ import { validateAnswer } from '../../lib/validation.js'
 import { useTheme } from '../../lib/useTheme.js'
 import { ensureSignedIn } from '../auth/authActions.js'
 import { isCreator, useAuth } from '../auth/useAuth.js'
+import AccessGate from './AccessGate.jsx'
 import ContentBlock from './ContentBlock.jsx'
 import QuestionField from './QuestionField.jsx'
 import QuizSubmitted from './QuizSubmitted.jsx'
@@ -40,6 +41,8 @@ export default function RespondPage() {
   const { user, loading: authLoading } = useAuth()
   const [form, setForm] = useState(null)
   const [loadError, setLoadError] = useState(null) // 'not-found' | 'failed'
+  // Invited-only form this person can't read: { key, state, title, email }.
+  const [gate, setGate] = useState(null)
   const { theme: mode, toggleTheme } = useTheme()
   const formTheme = themeOf(form)
   useEffect(() => loadThemeFont(formTheme.font), [formTheme.font])
@@ -55,19 +58,33 @@ export default function RespondPage() {
         if (snap.exists()) setForm({ id: snap.id, ...snap.data() })
         else setLoadError('not-found')
       })
-      .catch((err) => {
-        if (!cancelled) setLoadError(err.code === 'permission-denied' ? 'not-found' : 'failed')
+      .catch(async (err) => {
+        if (cancelled) return
+        if (err.code !== 'permission-denied') return setLoadError('failed')
+        // Denied: a draft, a missing form, or an invited-only one. Ask why.
+        try {
+          const { data } = await callFormGate({ formId })
+          if (cancelled) return
+          if (data.state === 'missing') setLoadError('not-found')
+          else setGate({ key: `${formId}:${uid}`, ...data })
+        } catch {
+          if (!cancelled) setLoadError('not-found')
+        }
       })
     return () => {
       cancelled = true
     }
   }, [formId, authLoading, uid])
+  // A gate only applies to the account it was checked for.
+  const activeGate = gate?.key === `${formId}:${uid}` ? gate : null
 
   return (
     <div className="respond themed" style={form ? themeStyle(formTheme, mode === 'dark') : undefined}>
       <RespondTopBar theme={mode} toggleTheme={toggleTheme} />
       <main className="respond-main">
-        {loadError ? (
+        {activeGate ? (
+          <AccessGate gate={activeGate} formId={formId} />
+        ) : loadError ? (
           <Notice title={loadError === 'not-found' ? 'Form not found' : 'Couldn’t load this form'}>
             {loadError === 'not-found'
               ? 'The link may be wrong, or the form isn’t published.'
@@ -452,7 +469,7 @@ function FormView({ form, user }) {
                 </span>
               )}
               {limitOneResponse && <span>You can respond only once.</span>}
-              {collectEmails && user?.email && (
+              {(collectEmails || form.settings?.restricted) && user?.email && (
                 <span>
                   Your email (<strong>{user.email}</strong>) will be recorded when you submit.
                 </span>

@@ -9,7 +9,8 @@ import { THEME_DEFAULTS } from './theme.js'
 //     memberIds: [ownerId, ...editorIds] — who can edit and read responses;
 //                                          dashboard queries array-contains on this
 //     status: 'draft' | 'published' | 'closed'
-//     settings: { requireSignIn, limitOneResponse, quiz: QuizSettings }
+//     settings: { requireSignIn, limitOneResponse, restricted, quiz: QuizSettings }
+//       restricted: only the people on private/access may open and respond
 //     invitedEmails: [email]             — collaborators without an account yet;
 //                                          written by the manageCollaborators function
 //     notify: [uid]                      — members who get an email per new response
@@ -91,11 +92,14 @@ export const MAX_SIZE_CHOICES = [1, 10, 100] // MB
 
 // Respondents must sign in for forms with file uploads (like Google Forms).
 // Respondents must sign in when the form asks for it, collects emails
-// (the email comes from their account), or has file uploads. Kept in step
+// (the email comes from their account), has file uploads, or is limited
+// to invited people. Kept in step
 // with checkSubmission() in functions/submit.js.
 export function needsSignIn(form) {
   return (
-    Boolean(form.settings?.requireSignIn || form.settings?.collectEmails) ||
+    Boolean(
+      form.settings?.requireSignIn || form.settings?.collectEmails || form.settings?.restricted,
+    ) ||
     (form.questions ?? []).some((q) => q.type === 'fileUpload')
   )
 }

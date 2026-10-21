@@ -122,6 +122,32 @@
   color: var(--accent);
 }
 
+/* Invited-only forms: sign in / verify / not on the list (AccessGate). */
+.respond-gate {
+  max-width: 520px;
+  margin-inline: auto;
+}
+
+.respond-gate-icon {
+  color: var(--accent);
+}
+
+.respond-gate p strong {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.respond-gate-hint {
+  font-size: 14px;
+}
+
+.respond-gate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
 .respond-again {
   margin-top: 12px;
   font-size: 14px;

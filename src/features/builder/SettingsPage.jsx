@@ -20,6 +20,9 @@ export default function SettingsPage() {
   const quiz = quizSettings(draft)
   // File-upload questions always need signed-in respondents (as in Google Forms).
   const hasUploads = draft.questions.some((q) => q.type === 'fileUpload')
+  // Invited-only: respondents sign in with the address on the list, and it's
+  // always recorded with their answers.
+  const restricted = Boolean(draft.settings?.restricted)
 
   const set = (key, value) =>
     edit(`settings:${key}`, (d) => {
@@ -27,6 +30,7 @@ export default function SettingsPage() {
       // One-per-person is only enforceable with real accounts.
       if (key === 'limitOneResponse' && value) settings.requireSignIn = true
       if (key === 'requireSignIn' && !value) settings.limitOneResponse = false
+      if (key === 'restricted' && value) settings.requireSignIn = true
       return { ...d, settings }
     })
 
@@ -43,14 +47,22 @@ export default function SettingsPage() {
       <section className="settings-group">
         <h2>Responses</h2>
         <Toggle
+          title="Only people you choose"
+          text="Only the people on your list (by email or @domain) can open and answer the form. Manage the list under Share."
+          checked={restricted}
+          onChange={(v) => set('restricted', v)}
+        />
+        <Toggle
           title="Require sign-in"
           text={
-            hasUploads
-              ? 'Always on: this form has a file-upload question, which needs signed-in respondents.'
-              : 'Respondents must sign in with Google or email before answering.'
+            restricted
+              ? 'Always on: only invited people can respond, so they sign in with their invited address.'
+              : hasUploads
+                ? 'Always on: this form has a file-upload question, which needs signed-in respondents.'
+                : 'Respondents must sign in with Google or email before answering.'
           }
-          checked={requireSignIn || hasUploads}
-          disabled={hasUploads}
+          checked={requireSignIn || hasUploads || restricted}
+          disabled={hasUploads || restricted}
           onChange={(v) => set('requireSignIn', v)}
         />
         <Toggle
@@ -61,8 +73,13 @@ export default function SettingsPage() {
         />
         <Toggle
           title="Collect email addresses"
-          text="Records each respondent’s account email with their answers. Respondents sign in, so the address can’t be made up."
-          checked={collectEmails}
+          text={
+            restricted
+              ? 'Always on for invited-only forms, so you can see who has responded.'
+              : 'Records each respondent’s account email with their answers. Respondents sign in, so the address can’t be made up.'
+          }
+          checked={collectEmails || restricted}
+          disabled={restricted}
           onChange={(v) => set('collectEmails', v)}
         />
       </section>

@@ -1127,6 +1127,140 @@
   height: 38px;
 }
 
+/* "Only people you choose" list (AllowedResponders) */
+.allowed {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--bg);
+}
+
+.confirm-body .allowed-intro,
+.confirm-body .allowed-empty {
+  font-size: 13px;
+}
+
+.allowed-intro strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.allowed-add {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.allowed-add textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.allowed-add textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.allowed-add-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.allowed-add-actions .btn {
+  height: 36px;
+}
+
+.allowed-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.allowed-head strong {
+  font-weight: 600;
+}
+
+.allowed-clear {
+  color: var(--danger);
+  font-size: 13px;
+}
+
+.allowed-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  background: var(--fill);
+  color: var(--text-muted);
+}
+
+.allowed-filter input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.allowed-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.allowed-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.allowed-list li span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.allowed-list .icon-btn {
+  width: 30px;
+  height: 30px;
+}
+
+.allowed-domain-icon {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.allowed-list .allowed-none {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
 @media (max-width: 479px) {
   .share-access {
     flex-wrap: wrap;

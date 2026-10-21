@@ -1,5 +1,6 @@
 // Pure checks for submitResponse — no Firebase, unit tested in
 // tests/unit/submit.test.js.
+import { isAllowedResponder } from './access.js'
 
 export const MAX_ANSWERS_BYTES = 100_000
 const MAX_TEXT = 5000
@@ -98,16 +99,41 @@ export function sanitizeAnswers(form, answers, ctx) {
 // Why a submission isn't allowed, as an HttpsError code + message, or null.
 //   signInProvider: request.auth.token.firebase.sign_in_provider
 //   startedAt:      ms of the respondent's recorded quiz start, if any
-export function checkSubmission({ form, signInProvider, startedAt, now, answersBytes }) {
+//   email, emailVerified: from the sign-in token
+//   access:         forms/{id}/private/access, for invited-only forms
+export function checkSubmission({
+  form,
+  signInProvider,
+  startedAt,
+  now,
+  answersBytes,
+  email,
+  emailVerified,
+  access,
+}) {
   if (!form) return { code: 'not-found', message: 'This form doesn’t exist.' }
   if (form.status !== 'published') {
     return { code: 'failed-precondition', message: 'This form isn’t accepting responses.' }
   }
   // Same rule as needsSignIn() in src/lib/formModel.js.
   const uploads = (form.questions ?? []).some((q) => q.type === 'fileUpload')
-  const signInNeeded = form.settings?.requireSignIn || form.settings?.collectEmails || uploads
+  const restricted = Boolean(form.settings?.restricted)
+  const signInNeeded =
+    restricted || form.settings?.requireSignIn || form.settings?.collectEmails || uploads
   if (signInNeeded && signInProvider === 'anonymous') {
     return { code: 'unauthenticated', message: 'Sign in to fill out this form.' }
+  }
+  if (restricted) {
+    // Unverified addresses could be anyone's, so they never count.
+    if (!emailVerified) {
+      return { code: 'permission-denied', message: 'Verify your email address to fill out this form.' }
+    }
+    if (!isAllowedResponder(access, email)) {
+      return {
+        code: 'permission-denied',
+        message: 'Only people the form’s owner invited can fill out this form.',
+      }
+    }
   }
   if (answersBytes > MAX_ANSWERS_BYTES) {
     return { code: 'invalid-argument', message: 'Your answers are too long.' }

@@ -57,6 +57,7 @@ if (useEmulators) connectFunctionsEmulator(functions, '127.0.0.1', port(5001))
 export const callSubmitResponse = httpsCallable(functions, 'submitResponse')
 export const callManageCollaborators = httpsCallable(functions, 'manageCollaborators')
 export const callAcceptInvites = httpsCallable(functions, 'acceptInvites')
+export const callFormGate = httpsCallable(functions, 'formGate')
 
 export const googleProvider = new GoogleAuthProvider()
 

@@ -31,6 +31,7 @@ import { useAuth } from '../auth/useAuth.js'
 import { useFormEditor } from '../builder/editorContext.js'
 import { deleteAllResponses } from '../dashboard/formActions.js'
 import BarList from './BarList.jsx'
+import InviteTracker from './InviteTracker.jsx'
 import { downloadCsv, responsesToCsv, summarizeQuestion } from './summarize.js'
 import { useResponses } from './useResponses.js'
 import './ResponsesPage.css'
@@ -165,6 +166,10 @@ export default function ResponsesPage() {
           />
         </div>
       </header>
+
+      {draft.settings?.restricted && !loading && !error && (
+        <InviteTracker formId={form.id} responses={responses} showToast={showToast} />
+      )}
 
       {loading ? (
         <div className="builder-loading" aria-busy="true" />

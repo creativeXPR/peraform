@@ -34,9 +34,25 @@ service cloud.firestore {
         return isSignedIn() && request.auth.uid == resource.data.ownerId;
       }
 
+      // "Only people you choose": the signed-in, verified account email is on
+      // the form's private list (forms/{id}/private/access), by address or by
+      // domain. Same check as isAllowedResponder() in functions/access.js.
+      function isAllowedResponder() {
+        let email = request.auth.token.get('email', '').lower();
+        let access = get(/databases/$(database)/documents/forms/$(formId)/private/access).data;
+        return isRealUser()
+          && request.auth.token.get('email_verified', false) == true
+          && email != ''
+          && (email in access.get('emails', [])
+            || email.split('@')[1] in access.get('domains', []));
+      }
+
       // Drafts are private; published and closed forms are readable by
-      // anyone with the link (closed so respondents see a "closed" notice).
-      allow read: if isMember() || resource.data.status in ['published', 'closed'];
+      // anyone with the link (closed so respondents see a "closed" notice),
+      // or, for invited-only forms, by the people on the list.
+      allow read: if isMember() || (resource.data.status in ['published', 'closed']
+        && (resource.data.get('settings', {}).get('restricted', false) != true
+          || isAllowedResponder()));
 
       allow create: if isRealUser()
         && request.resource.data.ownerId == request.auth.uid
@@ -93,6 +109,7 @@ service cloud.firestore {
         allow create: if isSignedIn()
           && request.auth.uid == uid
           && form().status == 'published'
+          && (form().settings.get('restricted', false) != true || isAllowedResponder())
           && timeLimit() > 0
           && request.resource.data.keys().hasOnly(['startedAt'])
           && request.resource.data.startedAt == request.time;

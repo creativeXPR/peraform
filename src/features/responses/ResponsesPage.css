@@ -433,3 +433,91 @@
   color: var(--text-muted);
   font-size: 12px;
 }
+
+/* ── Invited responders (InviteTracker) ──────────────────── */
+.invite-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.invite-count {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.invite-count strong {
+  color: var(--text);
+  font-size: 18px;
+}
+
+.invite-bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--fill);
+}
+
+.invite-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 0.4s var(--ease);
+}
+
+.invite-note {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.invite-all {
+  color: var(--success);
+}
+
+.invite-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.invite-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.invite-toggle svg {
+  transition: transform 0.2s var(--ease);
+}
+
+.invite-chevron-open {
+  transform: rotate(180deg);
+}
+
+.invite-copy {
+  height: 34px;
+  font-size: 13px;
+}
+
+.invite-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 240px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  font-size: 14px;
+}
+
+.invite-list li {
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}

@@ -91,6 +91,60 @@ describe('forms: read', () => {
   })
 })
 
+describe('forms: only people you choose', () => {
+  // A signed-in respondent with an (optionally verified) account email.
+  const person = (uid, email, verified = true) =>
+    testEnv
+      .authenticatedContext(uid, {
+        email,
+        email_verified: verified,
+        firebase: { sign_in_provider: 'password' },
+      })
+      .firestore()
+
+  beforeEach(async () => {
+    await seed('forms/f1', form({ settings: { restricted: true } }))
+    await seed('forms/f1/private/access', { emails: ['ada@example.com'], domains: ['school.edu'] })
+  })
+
+  it('lets people on the list read the form, by address or by domain', async () => {
+    await assertSucceeds(getDoc(doc(person('u1', 'ada@example.com'), 'forms/f1')))
+    await assertSucceeds(getDoc(doc(person('u2', 'Grace@School.edu'), 'forms/f1')))
+  })
+
+  it('hides it from everyone else, signed out or anonymous', async () => {
+    await assertFails(getDoc(doc(person('u3', 'eve@example.com'), 'forms/f1')))
+    await assertFails(getDoc(doc(person('u4', 'eve@sub.school.edu'), 'forms/f1')))
+    await assertFails(getDoc(doc(anon(), 'forms/f1')))
+    await assertFails(getDoc(doc(guest(), 'forms/f1')))
+  })
+
+  it('ignores unverified addresses, even ones on the list', async () => {
+    await assertFails(getDoc(doc(person('u5', 'ada@example.com', false), 'forms/f1')))
+  })
+
+  it('still shows it to the owner and editors', async () => {
+    await assertSucceeds(getDoc(doc(real(OWNER), 'forms/f1')))
+    await assertSucceeds(getDoc(doc(real(EDITOR), 'forms/f1')))
+  })
+
+  it('keeps the list itself private to members', async () => {
+    await assertSucceeds(getDoc(doc(real(EDITOR), 'forms/f1/private/access')))
+    await assertFails(getDoc(doc(person('u1', 'ada@example.com'), 'forms/f1/private/access')))
+    await assertFails(
+      setDoc(doc(person('u3', 'eve@example.com'), 'forms/f1/private/access'), {
+        emails: ['eve@example.com'],
+        domains: [],
+      }),
+    )
+  })
+
+  it('hides it when there is no list yet', async () => {
+    await seed('forms/f2', form({ settings: { restricted: true } }))
+    await assertFails(getDoc(doc(person('u1', 'ada@example.com'), 'forms/f2')))
+  })
+})
+
 describe('forms: dashboard list query', () => {
   beforeEach(async () => {
     await seed('forms/mine', form({ status: 'draft', updatedAt: new Date() }))

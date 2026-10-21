@@ -1,22 +1,33 @@
 import { useEffect, useRef, useState } from 'react'
-import { Globe, Info, Link2, Lock, MailPlus, X } from 'lucide-react'
+import { Globe, Info, Link2, Lock, MailPlus, UserCheck, X } from 'lucide-react'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { callManageCollaborators } from '../../lib/firebase.js'
+import AllowedResponders from './AllowedResponders.jsx'
 import { useFormEditor } from './editorContext.js'
 
 // "Share" dialog, modelled on Google Forms': add people by email (owner),
 // who has access, general access (editors restricted; respondents anyone
-// with the link or signed-in users only), publish status and Copy link.
+// with the link, signed-in users only, or only people you choose), publish
+// status and Copy link.
 // Membership changes go through the manageCollaborators function, which can
 // look people up by email.
 export default function ShareDialog({ formId, open, onClose, showToast, onPublish, onCopyLink }) {
   const { form, draft, edit } = useFormEditor()
-  const requireSignIn = Boolean(draft?.settings?.requireSignIn)
-  const setResponderAccess = (signedInOnly) =>
-    edit('settings:requireSignIn', (d) => {
-      const settings = { ...d.settings, requireSignIn: signedInOnly }
+  // 'anyone' | 'signedIn' | 'restricted' (only the people on the list)
+  const responders = draft?.settings?.restricted
+    ? 'restricted'
+    : draft?.settings?.requireSignIn
+      ? 'signedIn'
+      : 'anyone'
+  const setResponders = (value) =>
+    edit('settings:responders', (d) => {
+      const settings = {
+        ...d.settings,
+        restricted: value === 'restricted',
+        requireSignIn: value !== 'anyone',
+      }
       // One-per-person needs real accounts (see SettingsPage).
-      if (!signedInOnly) settings.limitOneResponse = false
+      if (value === 'anyone') settings.limitOneResponse = false
       return { ...d, settings }
     })
   const ref = useRef(null)
@@ -205,27 +216,33 @@ export default function ShareDialog({ formId, open, onClose, showToast, onPublis
           </span>
         </div>
         <div className="share-access">
-          <span className="share-access-icon share-access-open">
-            <Globe size={16} />
+          <span className={`share-access-icon${responders === 'restricted' ? '' : ' share-access-open'}`}>
+            {responders === 'restricted' ? <UserCheck size={16} /> : <Globe size={16} />}
           </span>
           <span className="share-access-text">
             <strong>Responder view</strong>
             <span>
-              {requireSignIn
-                ? 'People must sign in to PeraForm to respond'
-                : 'Anyone on the internet with the link can respond'}
+              {
+                {
+                  anyone: 'Anyone on the internet with the link can respond',
+                  signedIn: 'People must sign in to PeraForm to respond',
+                  restricted: 'Only the people on your list can open and respond',
+                }[responders]
+              }
             </span>
           </span>
           <select
             className="share-select"
-            value={requireSignIn ? 'signedIn' : 'anyone'}
+            value={responders}
             aria-label="Who can respond"
-            onChange={(e) => setResponderAccess(e.target.value === 'signedIn')}
+            onChange={(e) => setResponders(e.target.value)}
           >
             <option value="anyone">Anyone with the link</option>
             <option value="signedIn">Signed-in users only</option>
+            <option value="restricted">Only people you choose</option>
           </select>
         </div>
+        {responders === 'restricted' && open && <AllowedResponders formId={formId} />}
 
         {form?.status !== 'published' && (
           <div className="share-status">
