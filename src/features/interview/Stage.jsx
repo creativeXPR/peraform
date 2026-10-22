@@ -1,3 +1,5 @@
+import { useEffect, useLayoutEffect, useRef } from 'react'
+import { designedProps, play, prefersReducedMotion } from '../../lib/animations.js'
 import { THEME_FONTS } from '../../lib/theme.js'
 import { DEVICES, childrenOf, colorCss, frameOf, stageHeight } from '../../lib/interview.js'
 // Question fields look exactly as on the normal form, in the editor too.
@@ -78,9 +80,51 @@ export function StageNode({ node, ctx }) {
     renderHandles,
     renderGuides,
     overrides,
+    preview, // edit: { nodeId, anim, nonce } plays one animation on the canvas
   } = ctx
   const frame = frameOf(node, device)
   const editing = mode === 'edit'
+  const override = overrides?.[node.id]
+  const elRef = useRef(null)
+  const playedRef = useRef({}) // animation id → plays seen (action triggers)
+  const animations = node.animations
+
+  // Live: entrances and loops start with the screen (not for respondents who
+  // asked their device for reduced motion). Before the first paint, so an
+  // entrance never flashes the block in its final place first.
+  useLayoutEffect(() => {
+    if (editing || !animations?.length || prefersReducedMotion()) return
+    const el = elRef.current
+    for (const a of animations) {
+      if (a.when === 'start' || a.when === 'loop') play(el, a, { r: frame.r ?? 0 }, designedProps(node))
+    }
+    return () => el?.getAnimations?.().forEach((a) => a.cancel())
+    // Once per screen: `animations` only changes when the design does.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing, animations])
+
+  // Live: an action asked for an animation (its play count went up).
+  const plays = override?.plays
+  useEffect(() => {
+    if (editing || !plays) return
+    for (const [id, count] of Object.entries(plays)) {
+      const anim = animations?.find((a) => a.id === id)
+      if (anim && count > (playedRef.current[id] ?? 0) && !prefersReducedMotion()) {
+        // From the block as it is now: designed look plus action changes.
+        const r = override?.props?.rotate ?? frame.r ?? 0
+        play(elRef.current, anim, { ...override?.props, r, rotate: 0 }, designedProps(node, override))
+      }
+      playedRef.current[id] = count
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing, plays])
+
+  // Canvas: the Inspector's Preview button.
+  useEffect(() => {
+    if (!editing || preview?.nodeId !== node.id) return
+    play(elRef.current, preview.anim, { r: frame.r ?? 0 }, designedProps(node))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing, preview?.nonce])
   const className = [
     'stage-node',
     `stage-${node.type}`,
@@ -156,9 +200,10 @@ export function StageNode({ node, ctx }) {
 
   return (
     <div
+      ref={elRef}
       className={className}
       data-node-id={node.id}
-      style={nodeStyle(node, frame, editing, overrides?.[node.id])}
+      style={nodeStyle(node, frame, editing, override)}
       onPointerDown={editing ? (e) => onNodePointerDown?.(e, node) : undefined}
     >
       {content}

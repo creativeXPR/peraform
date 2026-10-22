@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Trash2, Zap } from 'lucide-react'
+import { Plus, Trash2, X, Zap } from 'lucide-react'
 import ColorPicker from '../../lib/ColorPicker.jsx'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { EASINGS, EFFECTS, SET_PROPS, TRANSITION_DEFAULTS, newAction } from '../../lib/actions.js'
@@ -23,7 +23,8 @@ export default function ActionsEditor({ actions = [], onChange, trigger, options
         : { type: 'match', pattern: '' }
 
   const update = (id, fn) => onChange(actions.map((a) => (a.id === id ? fn(a) : a)))
-  const effects = Object.entries(EFFECTS).filter(([key]) => allowSet || key !== 'set')
+  // Changing looks and playing animations are interview-only.
+  const effects = Object.entries(EFFECTS).filter(([key]) => allowSet || (key !== 'set' && key !== 'play'))
 
   return (
     <div className="actions-editor">
@@ -86,7 +87,12 @@ export default function ActionsEditor({ actions = [], onChange, trigger, options
                 onChange={(e) =>
                   update(a.id, (x) => ({
                     ...x,
-                    effect: e.target.value === 'set' ? { type: 'set', props: x.effect.props ?? { opacity: 100 } } : { type: e.target.value },
+                    effect:
+                      e.target.value === 'set'
+                        ? { type: 'set', props: x.effect.props ?? { opacity: 100 } }
+                        : e.target.value === 'play'
+                          ? { type: 'play', animation: null }
+                          : { type: e.target.value },
                   }))
                 }
                 aria-label="What happens"
@@ -111,6 +117,36 @@ export default function ActionsEditor({ actions = [], onChange, trigger, options
                 ))}
               </select>
             </div>
+
+            {a.effect.type === 'play' && (
+              <div className="action-row">
+                <span className="action-word" />
+                {(() => {
+                  const anims = targets.find((x) => x.id === a.target)?.animations ?? []
+                  return anims.length ? (
+                    <select
+                      value={a.effect.animation ?? ''}
+                      onChange={(e) =>
+                        update(a.id, (x) => ({ ...x, effect: { type: 'play', animation: e.target.value || null } }))
+                      }
+                      aria-label="Which animation"
+                      className={a.effect.animation ? '' : 'action-missing'}
+                    >
+                      <option value="">Choose an animation…</option>
+                      {anims.map((anim) => (
+                        <option key={anim.id} value={anim.id}>
+                          {anim.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="action-fixed">
+                      {a.target ? 'That block has no animations yet: add one to it first.' : 'Choose a block first.'}
+                    </span>
+                  )
+                })()}
+              </div>
+            )}
 
             {a.effect.type === 'set' && (
               <div className="action-props">
@@ -141,8 +177,8 @@ export default function ActionsEditor({ actions = [], onChange, trigger, options
                           <em>{def.unit}</em>
                         </label>
                       )}
-                      <button type="button" className="link-btn" onClick={dropProp}>
-                        Remove
+                      <button type="button" className="icon-btn action-x" onClick={dropProp} aria-label={`Remove ${def.label}`} title="Remove">
+                        <X size={14} />
                       </button>
                     </div>
                   )

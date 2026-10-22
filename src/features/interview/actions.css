@@ -121,3 +121,41 @@
   height: 34px;
   font-size: 13px;
 }
+
+.anim-name {
+  flex: 1;
+  min-width: 0;
+  height: 28px !important;
+  border-color: transparent !important;
+  background: transparent !important;
+  font-weight: 600 !important;
+}
+
+.anim-name:focus {
+  border-color: var(--line) !important;
+  background: var(--surface) !important;
+}
+
+.anim-side {
+  padding-left: 0;
+}
+
+.anim-side-title {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.action-title {
+  flex-wrap: nowrap;
+}
+
+.action-prop .action-x {
+  width: 24px;
+  height: 24px;
+  margin-left: auto;
+}
+
+.action-prop > span {
+  flex: 1;
+}

@@ -194,6 +194,10 @@ function FormView({ form, user }) {
   const [sentId, setSentId] = useState(null)
   // When time runs out, submit whatever has been answered so far.
   const sendRef = useRef(null)
+  // Interview mode: plays the screen's "before leaving" animations (set by
+  // InterviewView), and whether that's in progress (ignore extra clicks).
+  const leaveRef = useRef(null)
+  const leavingRef = useRef(false)
   const secondsLeft = useCountdown(deadline, () => sendRef.current?.({ auto: true }))
 
   // A timed quiz already started in this browser (e.g. after a reload):
@@ -490,28 +494,42 @@ function FormView({ form, user }) {
   if (interview) {
     // Designed buttons drive navigation: next (following skip logic, and
     // submitting from the last screen), back, submit, or a chosen screen.
+    // Leaving a screen: answers are checked first, then the screen's "before
+    // leaving" animations play, then it changes.
+    const leave = async (go) => {
+      if (leavingRef.current) return
+      leavingRef.current = true
+      try {
+        await leaveRef.current?.()
+        go()
+      } finally {
+        leavingRef.current = false
+      }
+    }
     const finish = () => {
       if (preview) return setError('This is a preview. Publish the form to submit responses.')
-      if (pageIsValid()) send({ auto: false })
+      if (pageIsValid()) leave(() => send({ auto: false }))
     }
     const onButton = (action, node) => {
-      if (state === 'sending') return
+      if (state === 'sending' || leavingRef.current) return
       // The button's effects on other blocks first, then where it goes.
       if (node?.actions?.length) setClickState((cs) => applyClick(cs, node.actions, nodeHidden))
       if (action.type === 'none') return
       if (action.type === 'back') {
-        if (history.length) goBack()
+        if (history.length) leave(goBack)
       } else if (action.type === 'submit') {
         finish()
       } else if (action.type === 'goto') {
         const target = screens.findIndex((s) => s.key === action.screen)
         if (target < 0 || target === pageIndex || !pageIsValid()) return
-        setHistory((h) => [...h, pageIndex])
-        setPageIndex(target)
+        leave(() => {
+          setHistory((h) => [...h, pageIndex])
+          setPageIndex(target)
+        })
       } else if (next === 'submit') {
         finish()
-      } else {
-        goNext()
+      } else if (pageIsValid()) {
+        leave(goNext)
       }
     }
     return (
@@ -532,6 +550,7 @@ function FormView({ form, user }) {
         )}
         onButton={onButton}
         overrides={overrides}
+        leaveRef={leaveRef}
         overlay={
           (preview || deadline || error || state === 'sending' || (showProgressBar && pages.length > 1)) && (
             <div className="interview-overlay">

@@ -1,5 +1,6 @@
-import { useLayoutEffect, useRef, useState } from 'react'
-import { DEVICES, stageHeight } from '../../lib/interview.js'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { MAX_END_WAIT, designedProps, play, prefersReducedMotion } from '../../lib/animations.js'
+import { DEVICES, frameOf, stageHeight } from '../../lib/interview.js'
 import Stage from '../interview/Stage.jsx'
 
 // A designed screen for respondents (interview mode), scaled to the width
@@ -14,6 +15,7 @@ export default function InterviewView({
   onButton,
   overrides,
   overlay,
+  leaveRef, // set to a function that plays the "before leaving" animations
 }) {
   const ref = useRef(null)
   const [width, setWidth] = useState(0)
@@ -23,6 +25,27 @@ export default function InterviewView({
     observer.observe(ref.current)
     return () => observer.disconnect()
   }, [])
+
+  // Before the screen changes: play every "before leaving" animation and wait
+  // for them (at most MAX_END_WAIT, so a long one can't trap anyone).
+  useEffect(() => {
+    if (!leaveRef) return
+    leaveRef.current = async () => {
+      if (prefersReducedMotion() || !ref.current) return
+      const runs = []
+      for (const el of ref.current.querySelectorAll('[data-node-id]')) {
+        const node = design.nodes[el.dataset.nodeId]
+        const ov = overrides?.[node?.id]
+        for (const anim of node?.animations ?? []) {
+          if (anim.when !== 'end') continue
+          const r = ov?.props?.rotate ?? frameOf(node, device).r ?? 0
+          runs.push(play(el, anim, { ...ov?.props, r, rotate: 0 }, designedProps(node, ov)))
+        }
+      }
+      if (!runs.length) return
+      await Promise.race([Promise.all(runs), new Promise((done) => setTimeout(done, MAX_END_WAIT))])
+    }
+  })
 
   const W = DEVICES[device].width
   const scale = width ? Math.min(1, width / W) : 0

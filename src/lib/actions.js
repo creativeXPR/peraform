@@ -6,7 +6,7 @@
 //          | { type: 'select', option }            — an option is chosen
 //          | { type: 'match', pattern }            — the typed answer matches
 //   target:  id of the block to change (interview: a node; normal: an item)
-//   effect:  { type: 'show' | 'hide' | 'toggle' | 'set', props? }
+//   effect:  { type: 'show' | 'hide' | 'toggle' | 'set' | 'play', props?, animation? }
 //            props (interview 'set'): opacity, bg, color, size, radius,
 //            rotate, scale, moveX, moveY
 //   transition: { duration (ms), easing, display (fade show/hide) }
@@ -27,6 +27,7 @@ export const EFFECTS = {
   hide: 'Hide',
   toggle: 'Toggle (show ↔ hide)',
   set: 'Change how it looks',
+  play: 'Play an animation',
 }
 
 export const EASINGS = {
@@ -89,6 +90,10 @@ export function applyEffect(state, action, baseHidden) {
   else if (effect.type === 'hide') next.hidden = true
   else if (effect.type === 'toggle') next.hidden = !hidden
   else if (effect.type === 'set') next.props = { ...state.props, ...effect.props }
+  // A count per animation: each time it goes up, the animation plays once.
+  else if (effect.type === 'play' && effect.animation) {
+    next.plays = { ...state.plays, [effect.animation]: (state.plays?.[effect.animation] ?? 0) + 1 }
+  }
   return next
 }
 

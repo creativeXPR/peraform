@@ -27,6 +27,7 @@ export default function Canvas({
   onSelect,
   onFrame, // (id, patch) — commit a frame change for this device
   onKey, // keyboard shortcuts the editor handles (delete, duplicate…)
+  preview, // { nodeId, anim, nonce }: play an animation on the canvas
 }) {
   const viewportRef = useRef(null)
   const [width, setWidth] = useState(0)
@@ -207,6 +208,7 @@ export default function Canvas({
               onNodePointerDown={startMove}
               renderHandles={renderHandles}
               renderGuides={renderGuides}
+              preview={preview}
             />
           </div>
         </div>

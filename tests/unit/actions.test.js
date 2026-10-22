@@ -86,3 +86,18 @@ describe('normal forms', () => {
     expect([...shownByActions(items)]).toEqual(['q2'])
   })
 })
+
+describe('playing animations', () => {
+  const play = { trigger: { type: 'click' }, target: 'logo', effect: { type: 'play', animation: 'wiggle' } }
+  it('counts up on every click, so each click plays it again', () => {
+    const once = applyClick({}, [play], notHidden)
+    expect(once.logo.plays).toEqual({ wiggle: 1 })
+    expect(applyClick(once, [play], notHidden).logo.plays).toEqual({ wiggle: 2 })
+  })
+
+  it('answer conditions play it as they become true', () => {
+    const sources = [{ questionId: 'q', actions: [{ ...play, trigger: { type: 'select', option: 'A' } }] }]
+    expect(resolveActions({ sources, answers: { q: 'A' }, baseHidden: notHidden }).logo.plays).toEqual({ wiggle: 1 })
+    expect(resolveActions({ sources, answers: { q: 'B' }, baseHidden: notHidden }).logo).toBeUndefined()
+  })
+})

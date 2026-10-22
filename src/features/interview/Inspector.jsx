@@ -6,6 +6,7 @@ import { THEME_FONTS } from '../../lib/theme.js'
 import ImagePicker from '../builder/ImagePicker.jsx'
 import { triggerKindFor } from '../../lib/actions.js'
 import ActionsEditor from './ActionsEditor.jsx'
+import AnimationsEditor from './AnimationsEditor.jsx'
 
 // Colour choices on the canvas: transparent, the theme's own colours (so the
 // design follows theme changes), black and white — plus any custom colour.
@@ -65,6 +66,7 @@ export default function Inspector({
   onDuplicate,
   onDelete,
   onLevel,
+  onPreview, // (animation) plays it on the canvas
 }) {
   const f = frameOf(node, device)
   const s = node.style ?? {}
@@ -254,6 +256,15 @@ export default function Inspector({
           />
         </Group>
       )}
+
+      <Group title="Animations">
+        <AnimationsEditor
+          animations={node.animations}
+          onChange={(animations) => onContent({ animations })}
+          onPreview={onPreview}
+          colorPresets={COLOR_PRESETS}
+        />
+      </Group>
 
       <Group title="Appearance">
         <span className="insp-label">Background</span>

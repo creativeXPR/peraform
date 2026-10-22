@@ -48,6 +48,8 @@ export default function InterviewEditor({ viewSwitch }) {
   const [device, setDevice] = useState('phone')
   const [selectedId, setSelectedId] = useState(null)
   const [pending, setPending] = useState(null) // { kind: 'delete', id } | { kind: 'reset' }
+  // Inspector → Preview: { nodeId, anim, nonce } plays it on the canvas.
+  const [preview, setPreview] = useState(null)
 
   const screens = screensOf(draft)
   const screen = screens.find((s) => s.key === screenKey) ?? screens[0]
@@ -166,6 +168,7 @@ export default function InterviewEditor({ viewSwitch }) {
           renderQuestion={renderQuestion}
           selectedId={selectedId}
           onSelect={setSelectedId}
+          preview={preview}
           onFrame={(id, patch) => change(`frame:${id}:${device}`, (dsn) => setFrame(dsn, id, device, patch))}
           onKey={(e, node) => {
             if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -189,7 +192,11 @@ export default function InterviewEditor({ viewSwitch }) {
               questions={questions}
               actionTargets={Object.values(design.nodes)
                 .filter((n) => n.id !== selected.id)
-                .map((n) => ({ id: n.id, label: nodeLabel(n, questions) }))}
+                .map((n) => ({
+                  id: n.id,
+                  label: nodeLabel(n, questions),
+                  animations: (n.animations ?? []).map((a) => ({ id: a.id, name: a.name })),
+                }))}
               onFrame={(patch) =>
                 change(`frame:${selected.id}:${device}`, (dsn) => setFrame(dsn, selected.id, device, patch))
               }
@@ -201,6 +208,7 @@ export default function InterviewEditor({ viewSwitch }) {
                   setContent(dsn, selected.id, patch),
                 )
               }
+              onPreview={(anim) => setPreview({ nodeId: selected.id, anim, nonce: Date.now() })}
               onDuplicate={() => duplicate(selected.id)}
               onDelete={() => setPending({ kind: 'delete', id: selected.id })}
               onLevel={(delta) => {
