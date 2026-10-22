@@ -22,6 +22,7 @@
   --success: #16a34a;
   --danger: #dc2626;
   --danger-soft: rgb(220 38 38 / 0.1);
+  --scrollbar-rgb: 100 100 100;
 
   --font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --radius-pill: 999px;
@@ -53,6 +54,7 @@
     --success: #4ade80;
     --danger: #f87171;
     --danger-soft: rgb(248 113 113 / 0.14);
+    --scrollbar-rgb: 121 121 121;
     color-scheme: dark;
   }
 }
@@ -77,6 +79,7 @@
   --success: #4ade80;
   --danger: #f87171;
   --danger-soft: rgb(248 113 113 / 0.14);
+  --scrollbar-rgb: 121 121 121;
   color-scheme: dark;
 }
 
@@ -86,25 +89,42 @@
   box-sizing: border-box;
 }
 
-/* Scrollbars: thin, no track, and the thumb only fades in while the pointer
-   is over the area that scrolls. The colour is a registered property so it
-   can transition; it doesn't inherit, so a scrolling list inside the page
-   shows its bar only while the pointer is over that list. */
-@property --scroll-thumb {
-  syntax: '<color>';
-  inherits: false;
-  initial-value: transparent;
+/* Scrollbars, VS Code-sized (the rule for all apps): a 14px transparent
+   track with an 8px rounded grey thumb, no arrow buttons. In PeraForm the
+   thumb only shows while the pointer is over the area that scrolls.
+   No scrollbar-width / scrollbar-color here: in Chromium 121+ those
+   override these styles and bring back the thin bar and arrows. */
+::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
 }
 
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--scroll-thumb) transparent;
-  transition: --scroll-thumb 0.3s var(--ease);
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
-*:hover,
-*:focus-visible {
-  --scroll-thumb: color-mix(in srgb, var(--text) 28%, transparent);
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 7px;
+  background-clip: content-box;
+  background-color: transparent;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+  background-color: rgb(var(--scrollbar-rgb) / 0.4);
+}
+
+*:hover::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(var(--scrollbar-rgb) / 0.7);
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background-color: rgb(var(--scrollbar-rgb) / 0.8);
 }
 
 body {
