@@ -8,7 +8,7 @@ import RequireCreator from './features/auth/RequireCreator.jsx'
 const SignInPage = lazy(() => import('./features/auth/SignInPage.jsx'))
 const DashboardPage = lazy(() => import('./features/dashboard/DashboardPage.jsx'))
 const FormLayout = lazy(() => import('./features/builder/FormLayout.jsx'))
-const BuilderPage = lazy(() => import('./features/builder/BuilderPage.jsx'))
+const QuestionsTab = lazy(() => import('./features/builder/QuestionsTab.jsx'))
 const SettingsPage = lazy(() => import('./features/builder/SettingsPage.jsx'))
 const ResponsesPage = lazy(() => import('./features/responses/ResponsesPage.jsx'))
 const RespondPage = lazy(() => import('./features/respond/RespondPage.jsx'))
@@ -27,7 +27,7 @@ export default function App() {
             {/* One editing session per form; the tabs share it. */}
             <Route path="/forms/:formId" element={<FormLayout />}>
               <Route index element={<Navigate to="edit" replace />} />
-              <Route path="edit" element={<BuilderPage />} />
+              <Route path="edit" element={<QuestionsTab />} />
               <Route path="responses" element={<ResponsesPage />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>

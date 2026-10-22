@@ -1,0 +1,608 @@
+/* ── Stage: one designed screen (shared by the canvas and respondents) ── */
+.stage {
+  position: relative;
+  overflow: hidden;
+  color: var(--text);
+  font-family: var(--font);
+}
+
+.stage-node {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+.stage-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.stage-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.stage-video iframe,
+.stage-embed iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: inherit;
+}
+
+.stage-button-el {
+  width: 100%;
+  height: 100%;
+  padding: 0 16px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: filter 0.2s var(--ease), transform 0.1s var(--ease);
+}
+
+.stage-button-el:hover {
+  filter: brightness(1.08);
+}
+
+.stage-button-el:active {
+  transform: scale(0.98);
+}
+
+/* A question inside a designed card: no card of its own. */
+.stage-question .respond-card {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.stage-placeholder {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  min-height: 24px;
+  border: 1px dashed var(--line);
+  border-radius: inherit;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ── Canvas (edit mode) ─────────────────────────────────────── */
+.canvas-stage .stage-node {
+  cursor: move;
+  user-select: none;
+}
+
+.canvas-stage .stage-question > *,
+.canvas-stage .stage-video iframe,
+.canvas-stage .stage-embed iframe,
+.canvas-stage .stage-button-el {
+  pointer-events: none;
+}
+
+.canvas-stage .stage-node.is-hidden {
+  outline: 1px dashed var(--text-muted);
+}
+
+.canvas-stage .stage-node:hover:not(.is-selected) {
+  outline: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+.stage-card-inner {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.stage-card-inner.is-clipped {
+  overflow: hidden;
+}
+
+/* Selection: outline, resize handles and the rotate knob keep a constant
+   on-screen size whatever the zoom (--inv = 1 / zoom). */
+.canvas-stage .stage-node.is-selected {
+  outline: calc(2px * var(--inv)) solid var(--accent);
+}
+
+.canvas-handles {
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.canvas-handle,
+.canvas-rotate {
+  position: absolute;
+  width: calc(10px * var(--inv));
+  height: calc(10px * var(--inv));
+  border: calc(1.5px * var(--inv)) solid var(--accent);
+  border-radius: calc(2px * var(--inv));
+  background: #fff;
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+}
+
+.canvas-handle-nw { left: 0; top: 0; cursor: nwse-resize; }
+.canvas-handle-n { left: 50%; top: 0; cursor: ns-resize; }
+.canvas-handle-ne { left: 100%; top: 0; cursor: nesw-resize; }
+.canvas-handle-e { left: 100%; top: 50%; cursor: ew-resize; }
+.canvas-handle-se { left: 100%; top: 100%; cursor: nwse-resize; }
+.canvas-handle-s { left: 50%; top: 100%; cursor: ns-resize; }
+.canvas-handle-sw { left: 0; top: 100%; cursor: nesw-resize; }
+.canvas-handle-w { left: 0; top: 50%; cursor: ew-resize; }
+
+.canvas-rotate {
+  left: 50%;
+  top: calc(-24px * var(--inv));
+  border-radius: 50%;
+  cursor: grab;
+}
+
+.canvas-rotate::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  height: calc(14px * var(--inv));
+  border-left: calc(1.5px * var(--inv)) solid var(--accent);
+}
+
+.canvas-guides {
+  position: absolute;
+  inset: 0;
+  z-index: 999;
+  pointer-events: none;
+}
+
+.canvas-guide {
+  position: absolute;
+  background: #ec4899;
+}
+
+.canvas-guide-x {
+  top: 0;
+  bottom: 0;
+  width: calc(1px * var(--inv));
+}
+
+.canvas-guide-y {
+  left: 0;
+  right: 0;
+  height: calc(1px * var(--inv));
+}
+
+.canvas-viewport {
+  position: relative;
+  min-width: 0;
+  padding: 16px;
+  border-radius: var(--radius-card);
+  background: var(--fill);
+  outline: none;
+}
+
+.canvas-viewport:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.canvas-frame {
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: var(--shadow), 0 0 0 1px var(--line);
+}
+
+.canvas-stage {
+  transform-origin: 0 0;
+}
+
+/* ── Interview editor layout ──────────────────────────────────── */
+.interview-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ie-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ie-toolbar .segmented button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ie-body {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr) 270px;
+  align-items: start;
+  gap: 12px;
+}
+
+.layers,
+.ie-side {
+  position: sticky;
+  top: 0;
+  max-height: calc(100dvh - 220px);
+  overflow-y: auto;
+}
+
+.layers {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.layers-section h3,
+.insp-group h3 {
+  margin: 0 0 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.screens-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.screens-list button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.screens-list button:hover {
+  background: var(--fill);
+}
+
+.screens-list button.is-current {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.screen-num {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: var(--fill-strong);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.screen-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layers-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.layers-head h3 {
+  margin: 0;
+}
+
+.layers-head .icon-btn {
+  width: auto;
+  padding: 0 10px;
+  color: var(--accent);
+}
+
+.layers-add {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.layers-tree {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.layer {
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+}
+
+.layer:hover {
+  background: var(--fill);
+}
+
+.layer.is-selected {
+  background: var(--accent-soft);
+}
+
+.layer.is-hidden .layer-name {
+  opacity: 0.5;
+}
+
+.layer-name {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 30px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.layer-name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layer.is-selected .layer-name {
+  color: var(--accent);
+}
+
+.layer-eye.icon-btn {
+  width: 26px;
+  height: 26px;
+}
+
+.layers-note,
+.insp-note {
+  margin: 4px 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.layers-unplaced ul {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.layers-unplaced li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.layers-unplaced li span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Inspector (properties of the selected block) */
+.inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.insp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.insp-tools {
+  display: flex;
+}
+
+.insp-tools .icon-btn {
+  width: 30px;
+  height: 30px;
+}
+
+.insp-danger:hover {
+  color: var(--danger);
+}
+
+.insp-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.insp-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.insp-num,
+.insp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.insp-num {
+  position: relative;
+}
+
+.insp-num input,
+.insp-field select,
+.insp-input {
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+textarea.insp-input {
+  height: auto;
+  padding: 8px;
+  resize: vertical;
+}
+
+.insp-num em {
+  position: absolute;
+  right: 22px;
+  bottom: 8px;
+  font-style: normal;
+  font-size: 12px;
+}
+
+.insp-label {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.insp-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.insp-toggle.is-on {
+  color: var(--text);
+}
+
+.insp-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.inspector .btn {
+  height: 36px;
+}
+
+.questions-switch {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 1100px) {
+  .ie-body {
+    grid-template-columns: minmax(0, 1fr) 260px;
+  }
+
+  .layers {
+    position: static;
+    grid-column: 1 / -1;
+    max-height: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .layers-section {
+    flex: 1 1 200px;
+  }
+}
+
+@media (max-width: 767px) {
+  .ie-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ie-side {
+    position: static;
+    max-height: none;
+  }
+}
+
+/* ── Respondent view (interview mode) ─────────────────────────── */
+.interview-view {
+  /* Full width of the window, out of the page's narrow column. */
+  position: relative;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+}
+
+.interview-frame {
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.interview-desktop .interview-frame {
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.interview-scale {
+  transform-origin: 0 0;
+}
+
+.interview-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 640px;
+  margin: 0 auto 12px;
+  padding: 0 16px;
+}
+
+.interview-overlay > * {
+  width: 100%;
+}

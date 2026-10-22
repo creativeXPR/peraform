@@ -18,6 +18,7 @@ export default function SettingsPage() {
     showSubmitAnother,
   } = settingsOf(draft)
   const quiz = quizSettings(draft)
+  const mode = draft.mode === 'interview' ? 'interview' : 'normal'
   // File-upload questions always need signed-in respondents (as in Google Forms).
   const hasUploads = draft.questions.some((q) => q.type === 'fileUpload')
   // Invited-only: respondents sign in with the address on the list, and it's
@@ -43,6 +44,36 @@ export default function SettingsPage() {
   return (
     <div className="settings">
       <h1>Settings</h1>
+
+      <section className="settings-group">
+        <h2>Form type</h2>
+        <div className="form-type" role="radiogroup" aria-label="Form type">
+          {[
+            ['normal', 'Normal form', 'Questions on one page per section, like Google Forms.'],
+            [
+              'interview',
+              'Interview mode',
+              'Each section is a screen you design, like an app’s onboarding. Design it under Questions.',
+            ],
+          ].map(([value, title, text]) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={mode === value}
+              className={`form-type-option${mode === value ? ' active' : ''}`}
+              onClick={() => edit('mode', (d) => ({ ...d, mode: value }))}
+            >
+              <strong>{title}</strong>
+              <span>{text}</span>
+            </button>
+          ))}
+        </div>
+        <p className="form-type-note">
+          Switching keeps both: the questions are shared, and your screen designs stay saved while
+          you use the normal form (and the other way round).
+        </p>
+      </section>
 
       <section className="settings-group">
         <h2>Responses</h2>

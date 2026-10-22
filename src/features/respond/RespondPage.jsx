@@ -20,6 +20,8 @@ import {
   splitPages,
 } from '../../lib/formLogic.js'
 import { needsSignIn, quizSettings, settingsOf } from '../../lib/formModel.js'
+import { screenDesign, screensOf, visibleQuestionIds } from '../../lib/interview.js'
+import { useViewportDevice } from '../../lib/useViewportDevice.js'
 import { shuffled } from '../../lib/shuffle.js'
 import { loadThemeFont, themeOf, themeStyle } from '../../lib/theme.js'
 import { validateAnswer } from '../../lib/validation.js'
@@ -28,6 +30,7 @@ import { ensureSignedIn } from '../auth/authActions.js'
 import { isCreator, useAuth } from '../auth/useAuth.js'
 import AccessGate from './AccessGate.jsx'
 import ContentBlock from './ContentBlock.jsx'
+import InterviewView from './InterviewView.jsx'
 import QuestionField from './QuestionField.jsx'
 import QuizSubmitted from './QuizSubmitted.jsx'
 import { formatClock, useCountdown } from './useCountdown.js'
@@ -168,6 +171,8 @@ function FormView({ form, user }) {
   const [pageIndex, setPageIndex] = useState(0)
   const [history, setHistory] = useState([])
   const pages = useMemo(() => splitPages(form.questions), [form.questions])
+  // Interview mode: which design (phone/desktop) fits this screen.
+  const device = useViewportDevice()
   const isMember = Boolean(user && form.memberIds.includes(user.uid))
   const {
     limitOneResponse,
@@ -338,6 +343,14 @@ function FormView({ form, user }) {
   const next = resolveTarget(pages, pageIndex, pageTarget(page, answers))
   const preview = form.status === 'draft'
 
+  // Interview mode: each page is a designed screen, and only the questions
+  // shown on it (on this device) are asked.
+  const interview = form.mode === 'interview'
+  const screens = interview ? screensOf(form) : null
+  const design = interview ? screenDesign(form, screens[pageIndex], screens) : null
+  const shownIds = interview ? visibleQuestionIds(design, device) : null
+  const asked = interview ? page.questions.filter((q) => shownIds.has(q.id)) : page.questions
+
   const setAnswer = (id, value) => {
     setAnswers((a) => ({ ...a, [id]: value }))
     if (errors[id]) {
@@ -353,7 +366,7 @@ function FormView({ form, user }) {
   // response validation before moving on.
   function pageIsValid() {
     const found = {}
-    for (const q of page.questions) {
+    for (const q of asked) {
       const value = answers[q.id]
       if (q.required && !isComplete(q, value)) {
         found[q.id] = GRID_TYPES.includes(q.type)
@@ -364,7 +377,7 @@ function FormView({ form, user }) {
         if (message) found[q.id] = message
       }
     }
-    const first = page.questions.find((q) => found[q.id])
+    const first = asked.find((q) => found[q.id])
     if (!first) return true
     setErrors(found)
     document.getElementById(`q-${first.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -434,6 +447,85 @@ function FormView({ form, user }) {
   sendRef.current = send
   // "Running low": the last minute, or the last quarter of a short quiz.
   const lowAt = Math.min(60, quiz.timeLimit * 15)
+
+  if (interview) {
+    // Designed buttons drive navigation: next (following skip logic, and
+    // submitting from the last screen), back, submit, or a chosen screen.
+    const finish = () => {
+      if (preview) return setError('This is a preview. Publish the form to submit responses.')
+      if (pageIsValid()) send({ auto: false })
+    }
+    const onButton = (action) => {
+      if (state === 'sending') return
+      if (action.type === 'back') {
+        if (history.length) goBack()
+      } else if (action.type === 'submit') {
+        finish()
+      } else if (action.type === 'goto') {
+        const target = screens.findIndex((s) => s.key === action.screen)
+        if (target < 0 || target === pageIndex || !pageIsValid()) return
+        setHistory((h) => [...h, pageIndex])
+        setPageIndex(target)
+      } else if (next === 'submit') {
+        finish()
+      } else {
+        goNext()
+      }
+    }
+    return (
+      <InterviewView
+        key={pageIndex}
+        design={design}
+        device={device}
+        questions={questionsOnly(form.questions)}
+        renderQuestion={(q) => (
+          <QuestionField
+            question={q}
+            formId={form.id}
+            value={answers[q.id]}
+            onChange={(value) => setAnswer(q.id, value)}
+            error={errors[q.id]}
+            points={quiz.enabled && quiz.showPoints && q.points > 0 ? q.points : null}
+          />
+        )}
+        onButton={onButton}
+        overlay={
+          (preview || deadline || error || state === 'sending' || (showProgressBar && pages.length > 1)) && (
+            <div className="interview-overlay">
+              {preview && (
+                <p className="respond-banner">Preview — publish this form to start collecting responses.</p>
+              )}
+              {showProgressBar && pages.length > 1 && (
+                <div
+                  className="respond-progress"
+                  role="progressbar"
+                  aria-label="Progress"
+                  aria-valuemin={1}
+                  aria-valuemax={pages.length}
+                  aria-valuenow={pageIndex + 1}
+                >
+                  <span style={{ width: `${((pageIndex + 1) / pages.length) * 100}%` }} />
+                </div>
+              )}
+              {deadline && (
+                <div className={`quiz-timer${secondsLeft <= lowAt ? ' quiz-timer-low' : ''}`} role="timer">
+                  <Timer size={16} />
+                  <span>{formatClock(secondsLeft)}</span>
+                  <span className="quiz-timer-label">left</span>
+                </div>
+              )}
+              {state === 'sending' && <p className="respond-banner">Submitting…</p>}
+              {error && (
+                <p className="form-error" role="alert">
+                  {error}
+                </p>
+              )}
+            </div>
+          )
+        }
+      />
+    )
+  }
 
   return (
     <form className="respond-form" onSubmit={submit} noValidate>

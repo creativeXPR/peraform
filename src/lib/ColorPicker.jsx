@@ -6,14 +6,17 @@ import './ColorPicker.css'
 // Preset swatches plus "Custom colour": the system colour picker, or a hex
 // typed in. Used for form themes, and anywhere else a colour is chosen.
 //   value    — a preset's value, or a '#rrggbb'
-//   presets  — [{ value, label, swatch }] (swatch: the colour to show)
+//   presets  — [{ value, label, swatch }] (swatch: the colour to show — a
+//              hex, a CSS colour such as a theme variable, or 'transparent')
 //   onChange — called with a preset value or a '#rrggbb'
 export default function ColorPicker({ value, presets, onChange, label = 'Colour' }) {
   const custom = presets.some((p) => p.value === value) ? null : normalizeHex(value)
   const [typed, setTyped] = useState(null) // hex text while it's being typed
 
   // Check mark that stays visible on light and dark colours alike.
-  const tick = (hex) => (contrast(hex, '#ffffff') >= 2.5 ? '#ffffff' : '#0e0f13')
+  // (Non-hex swatches get a white tick with a shadow, see ColorPicker.css.)
+  const tick = (hex) =>
+    !normalizeHex(hex) ? '#ffffff' : contrast(hex, '#ffffff') >= 2.5 ? '#ffffff' : '#0e0f13'
 
   function commitTyped() {
     const hex = normalizeHex(typed ?? '')
@@ -32,8 +35,8 @@ export default function ColorPicker({ value, presets, onChange, label = 'Colour'
             aria-checked={value === p.value}
             aria-label={p.label}
             title={p.label}
-            className="color-swatch"
-            style={{ background: p.swatch, color: tick(p.swatch) }}
+            className={`color-swatch${p.swatch === 'transparent' ? ' color-swatch-clear' : ''}${normalizeHex(p.swatch) ? '' : ' color-swatch-var'}`}
+            style={{ background: p.swatch === 'transparent' ? undefined : p.swatch, color: tick(p.swatch) }}
             onClick={() => onChange(p.value)}
           >
             {value === p.value && <Check size={16} />}
