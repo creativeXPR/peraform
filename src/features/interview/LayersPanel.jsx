@@ -10,7 +10,7 @@ import {
   Video,
 } from 'lucide-react'
 import MenuButton from '../../lib/MenuButton.jsx'
-import { NODE_TYPES, childrenOf, frameOf } from '../../lib/interview.js'
+import { NODE_TYPES, childrenOf, frameOf, nodeLabel } from '../../lib/interview.js'
 
 const NODE_ICONS = {
   card: Square,
@@ -20,15 +20,6 @@ const NODE_ICONS = {
   embed: AppWindow,
   question: CircleHelp,
   button: MousePointerClick,
-}
-
-function nodeName(node, questions) {
-  if (node.type === 'text') return node.text?.split('\n')[0] || 'Text'
-  if (node.type === 'button') return node.label || 'Button'
-  if (node.type === 'question') {
-    return questions.find((q) => q.id === node.questionId)?.title || 'Question'
-  }
-  return NODE_TYPES[node.type].label
 }
 
 function Tree({ nodes, parentId, device, depth, ctx }) {
@@ -48,7 +39,7 @@ function Tree({ nodes, parentId, device, depth, ctx }) {
             >
               <button type="button" className="layer-name" onClick={() => ctx.onSelect(node.id)}>
                 <Icon size={14} />
-                <span>{nodeName(node, ctx.questions)}</span>
+                <span>{nodeLabel(node, ctx.questions)}</span>
               </button>
               <button
                 type="button"

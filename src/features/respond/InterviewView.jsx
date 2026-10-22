@@ -6,7 +6,15 @@ import Stage from '../interview/Stage.jsx'
 // available — the phone design on phones, the desktop design elsewhere.
 // Buttons call onButton(action); everything about answers, validation and
 // submitting stays in RespondPage, shared with the normal form.
-export default function InterviewView({ design, device, questions, renderQuestion, onButton, overlay }) {
+export default function InterviewView({
+  design,
+  device,
+  questions,
+  renderQuestion,
+  onButton,
+  overrides,
+  overlay,
+}) {
   const ref = useRef(null)
   const [width, setWidth] = useState(0)
 
@@ -33,6 +41,7 @@ export default function InterviewView({ design, device, questions, renderQuestio
               questions={questions}
               renderQuestion={renderQuestion}
               onButton={onButton}
+              overrides={overrides}
             />
           </div>
         </div>

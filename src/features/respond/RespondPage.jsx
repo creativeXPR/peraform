@@ -20,7 +20,8 @@ import {
   splitPages,
 } from '../../lib/formLogic.js'
 import { needsSignIn, quizSettings, settingsOf } from '../../lib/formModel.js'
-import { screenDesign, screensOf, visibleQuestionIds } from '../../lib/interview.js'
+import { applyClick, isHiddenNow, resolveActions, shownByActions } from '../../lib/actions.js'
+import { frameOf, screenDesign, screensOf, visibleQuestionIds } from '../../lib/interview.js'
 import { useViewportDevice } from '../../lib/useViewportDevice.js'
 import { shuffled } from '../../lib/shuffle.js'
 import { loadThemeFont, themeOf, themeStyle } from '../../lib/theme.js'
@@ -162,6 +163,8 @@ function cleanAnswer(question, value) {
 function FormView({ form, user }) {
   const formTheme = themeOf(form)
   const [answers, setAnswers] = useState({})
+  // Interview mode: what button clicks have changed so far (lib/actions.js).
+  const [clickState, setClickState] = useState({})
   const [errors, setErrors] = useState({}) // questionId → message
   // filling | sending | sent | already | late (timed quiz: arrived after the limit)
   const [state, setState] = useState('filling')
@@ -219,6 +222,7 @@ function FormView({ form, user }) {
 
   function reset() {
     setAnswers({})
+    setClickState({})
     setErrors({})
     setPageIndex(0)
     setHistory([])
@@ -334,11 +338,28 @@ function FormView({ form, user }) {
   }
 
   const page = pages[pageIndex]
-  let pageItems = page.items
+  // Normal forms: questions' actions show and hide other items; an item some
+  // action can show starts hidden. Hidden questions aren't asked.
+  const startsHidden = shownByActions(form.questions)
+  const itemOverrides =
+    form.mode === 'interview'
+      ? {}
+      : resolveActions({
+          sources: questionsOnly(form.questions)
+            .filter((q) => q.actions?.length)
+            .map((q) => ({ actions: q.actions, questionId: q.id })),
+          answers,
+          baseHidden: (id) => startsHidden.has(id),
+        })
+  const itemHidden = (id) => isHiddenNow(id, itemOverrides, (x) => startsHidden.has(x))
+  let pageItems = page.items.filter((item) => !itemHidden(item.id))
   if (shuffleQuestions) {
-    const order = shuffled(page.questions, `page-${pageIndex}`)
+    const order = shuffled(
+      page.questions.filter((q) => !itemHidden(q.id)),
+      `page-${pageIndex}`,
+    )
     let next = 0
-    pageItems = page.items.map((item) => (CONTENT_TYPES.includes(item.type) ? item : order[next++]))
+    pageItems = pageItems.map((item) => (CONTENT_TYPES.includes(item.type) ? item : order[next++]))
   }
   const next = resolveTarget(pages, pageIndex, pageTarget(page, answers))
   const preview = form.status === 'draft'
@@ -348,8 +369,22 @@ function FormView({ form, user }) {
   const interview = form.mode === 'interview'
   const screens = interview ? screensOf(form) : null
   const design = interview ? screenDesign(form, screens[pageIndex], screens) : null
-  const shownIds = interview ? visibleQuestionIds(design, device) : null
-  const asked = interview ? page.questions.filter((q) => shownIds.has(q.id)) : page.questions
+  // Blocks' state from actions: button clicks so far + answer conditions.
+  const nodeHidden = (id) => (design?.nodes[id] ? frameOf(design.nodes[id], device).hidden ?? false : false)
+  const overrides = interview
+    ? resolveActions({
+        sources: Object.values(design.nodes)
+          .filter((n) => n.actions?.length)
+          .map((n) => ({ actions: n.actions, questionId: n.type === 'question' ? n.questionId : null })),
+        answers,
+        clickState,
+        baseHidden: nodeHidden,
+      })
+    : null
+  const shownIds = interview ? visibleQuestionIds(design, device, overrides) : null
+  const asked = interview
+    ? page.questions.filter((q) => shownIds.has(q.id))
+    : page.questions.filter((q) => !itemHidden(q.id))
 
   const setAnswer = (id, value) => {
     setAnswers((a) => ({ ...a, [id]: value }))
@@ -410,6 +445,8 @@ function FormView({ form, user }) {
     const clean = {}
     for (const i of visited) {
       for (const q of pages[i].questions) {
+        // Hidden by an action now: its old answer doesn't count.
+        if (!interview && itemHidden(q.id)) continue
         const value = cleanAnswer(q, answers[q.id])
         if (value !== undefined) clean[q.id] = value
       }
@@ -444,6 +481,8 @@ function FormView({ form, user }) {
     }
   }
 
+  // The countdown's expiry calls the latest send (with this render's answers).
+  // eslint-disable-next-line react-hooks/refs -- deliberate: kept current every render
   sendRef.current = send
   // "Running low": the last minute, or the last quarter of a short quiz.
   const lowAt = Math.min(60, quiz.timeLimit * 15)
@@ -455,8 +494,11 @@ function FormView({ form, user }) {
       if (preview) return setError('This is a preview. Publish the form to submit responses.')
       if (pageIsValid()) send({ auto: false })
     }
-    const onButton = (action) => {
+    const onButton = (action, node) => {
       if (state === 'sending') return
+      // The button's effects on other blocks first, then where it goes.
+      if (node?.actions?.length) setClickState((cs) => applyClick(cs, node.actions, nodeHidden))
+      if (action.type === 'none') return
       if (action.type === 'back') {
         if (history.length) goBack()
       } else if (action.type === 'submit') {
@@ -489,6 +531,7 @@ function FormView({ form, user }) {
           />
         )}
         onButton={onButton}
+        overrides={overrides}
         overlay={
           (preview || deadline || error || state === 'sending' || (showProgressBar && pages.length > 1)) && (
             <div className="interview-overlay">
@@ -584,8 +627,8 @@ function FormView({ form, user }) {
         </section>
       )}
 
-      {pageItems.map((q) =>
-        CONTENT_TYPES.includes(q.type) ? (
+      {pageItems.map((q) => {
+        const block = CONTENT_TYPES.includes(q.type) ? (
           <ContentBlock key={q.id} item={q} />
         ) : (
           <QuestionField
@@ -597,8 +640,21 @@ function FormView({ form, user }) {
             error={errors[q.id]}
             points={quiz.enabled && quiz.showPoints && q.points > 0 ? q.points : null}
           />
-        ),
-      )}
+        )
+        // Revealed by an action: fades in (unless its action turned that off).
+        const t = itemOverrides[q.id]?.transition
+        return t && startsHidden.has(q.id) && t.display ? (
+          <div
+            key={q.id}
+            className="respond-reveal"
+            style={{ animationDuration: `${t.duration}ms`, animationTimingFunction: t.easing }}
+          >
+            {block}
+          </div>
+        ) : (
+          block
+        )
+      })}
 
       {error && (
         <p className="form-error" role="alert">

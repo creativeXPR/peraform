@@ -13,6 +13,7 @@ import {
   frameOf,
   growToFit,
   interviewOf,
+  nodeLabel,
   placeNew,
   placedQuestionIds,
   questionHeight,
@@ -185,6 +186,10 @@ export default function InterviewEditor({ viewSwitch }) {
               device={device}
               screens={screens}
               pageQuestions={pageQuestions}
+              questions={questions}
+              actionTargets={Object.values(design.nodes)
+                .filter((n) => n.id !== selected.id)
+                .map((n) => ({ id: n.id, label: nodeLabel(n, questions) }))}
               onFrame={(patch) =>
                 change(`frame:${selected.id}:${device}`, (dsn) => setFrame(dsn, selected.id, device, patch))
               }

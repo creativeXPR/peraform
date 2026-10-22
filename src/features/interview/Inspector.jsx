@@ -4,6 +4,8 @@ import { youtubeId } from '../../lib/formModel.js'
 import { BUTTON_ACTIONS, COLOR_TOKENS, DEVICES, NODE_TYPES, frameOf } from '../../lib/interview.js'
 import { THEME_FONTS } from '../../lib/theme.js'
 import ImagePicker from '../builder/ImagePicker.jsx'
+import { triggerKindFor } from '../../lib/actions.js'
+import ActionsEditor from './ActionsEditor.jsx'
 
 // Colour choices on the canvas: transparent, the theme's own colours (so the
 // design follows theme changes), black and white — plus any custom colour.
@@ -55,6 +57,8 @@ export default function Inspector({
   device,
   screens,
   pageQuestions,
+  questions,
+  actionTargets, // [{ id, label }] other blocks on this screen
   onFrame,
   onStyle,
   onContent,
@@ -66,6 +70,9 @@ export default function Inspector({
   const s = node.style ?? {}
   const type = NODE_TYPES[node.type].label
   const otherDevice = device === 'phone' ? 'desktop' : 'phone'
+  // Question blocks react to answers: choosing an option, or matching text.
+  const question = node.type === 'question' ? questions.find((q) => q.id === node.questionId) : null
+  const trigger = triggerKindFor(question)
 
   return (
     <div className="inspector">
@@ -233,6 +240,20 @@ export default function Inspector({
           </label>
         )}
       </Group>
+
+      {(node.type === 'button' || trigger) && (
+        <Group title="Actions">
+          <ActionsEditor
+            actions={node.actions}
+            onChange={(actions) => onContent({ actions })}
+            trigger={node.type === 'button' ? 'click' : trigger}
+            options={question?.options ?? []}
+            targets={actionTargets}
+            allowSet
+            colorPresets={COLOR_PRESETS}
+          />
+        </Group>
+      )}
 
       <Group title="Appearance">
         <span className="insp-label">Background</span>

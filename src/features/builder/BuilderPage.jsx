@@ -17,7 +17,7 @@ import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import { FileInput, Image as ImageIcon, Plus, Rows3, SquarePlay, Type } from 'lucide-react'
 import AutoTextarea from '../../lib/AutoTextarea.jsx'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
-import { CONTENT_TYPES, dropSectionRefs, isSection } from '../../lib/formLogic.js'
+import { CONTENT_TYPES, dropSectionRefs, isQuestion, isSection } from '../../lib/formLogic.js'
 import { newContent, newQuestion, newSection, quizSettings } from '../../lib/formModel.js'
 import { loadThemeFont, themeOf, themeStyle } from '../../lib/theme.js'
 import { useTheme } from '../../lib/useTheme.js'
@@ -238,6 +238,9 @@ export default function BuilderPage() {
                   quiz={quiz}
                   keyEntry={draft.answerKey?.[item.id]}
                   changeKey={changeKey(item.id)}
+                  actionTargets={questions
+                    .filter((x) => x.id !== item.id && !isSection(x))
+                    .map((x) => ({ id: x.id, label: x.title || (isQuestion(x) ? 'Untitled question' : 'Untitled block') }))}
                 />
               ),
             )}

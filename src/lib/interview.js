@@ -42,6 +42,7 @@ export const canBeRoot = (type) => type === 'card'
 
 export const BUTTON_ACTIONS = {
   next: 'Next screen',
+  none: 'Stay on this screen (effects only)',
   back: 'Previous screen',
   submit: 'Submit',
   goto: 'Go to screen…',
@@ -166,7 +167,7 @@ export function newNode(type, { parentId = null, frames, seq, ...content } = {})
 export function questionHeight(q) {
   const options = (q.options?.length ?? 0) + (q.allowOther ? 1 : 0)
   switch (q.type) {
-    case 'paragraph':
+    case 'longText':
       return 150
     case 'multipleChoice':
     case 'checkboxes':
@@ -410,15 +411,15 @@ export const COLOR_TOKENS = {
 export const colorCss = (value) => (value ? (COLOR_TOKENS[value]?.css ?? value) : undefined)
 
 // Questions a respondent actually sees on a screen: placed, and neither the
-// block nor any card around it hidden on this device. Only these are
-// required before moving on.
-export function visibleQuestionIds(design, device) {
+// block nor any card around it hidden on this device (or by an action:
+// overrides from lib/actions.js). Only these are required before moving on.
+export function visibleQuestionIds(design, device, overrides = {}) {
   const ids = new Set()
   for (const node of Object.values(design.nodes)) {
     if (node.type !== 'question') continue
     let shown = true
     for (let n = node; n; n = n.parentId ? design.nodes[n.parentId] : null) {
-      if (frameOf(n, device).hidden) {
+      if (overrides[n.id]?.hidden ?? frameOf(n, device).hidden) {
         shown = false
         break
       }
@@ -426,4 +427,14 @@ export function visibleQuestionIds(design, device) {
     if (shown) ids.add(node.questionId)
   }
   return ids
+}
+
+// A short, human name for a block (layers list, action targets).
+export function nodeLabel(node, questions = []) {
+  if (node.type === 'text') return node.text?.split('\n')[0] || 'Text'
+  if (node.type === 'button') return `Button: ${node.label || 'Button'}`
+  if (node.type === 'question') {
+    return questions.find((q) => q.id === node.questionId)?.title || 'Question'
+  }
+  return NODE_TYPES[node.type].label
 }

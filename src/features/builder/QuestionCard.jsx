@@ -23,6 +23,8 @@ import ImagePicker from './ImagePicker.jsx'
 import TargetSelect from './TargetSelect.jsx'
 import ValidationEditor from './ValidationEditor.jsx'
 import { OPTION_TYPES, TYPE_INFO, changeQuestionType } from './questionTypes.js'
+import { newAction, triggerKindFor } from '../../lib/actions.js'
+import ActionsEditor from '../interview/ActionsEditor.jsx'
 
 // One question in the builder. Inactive: a read-only preview, click to edit.
 // Active: full editor. `change(field, updater)` edits this question with
@@ -40,10 +42,12 @@ export default function QuestionCard({
   quiz,
   keyEntry,
   changeKey,
+  actionTargets = [], // [{ id, label }] other items its actions can show or hide
 }) {
   // Quiz forms: the card flips between the question and its answer key.
   const [keyMode, setKeyMode] = useState(false)
   const [removingImage, setRemovingImage] = useState(false)
+  const [clearingActions, setClearingActions] = useState(false)
   const {
     attributes,
     listeners,
@@ -96,6 +100,27 @@ export default function QuestionCard({
       label: 'Response validation',
       checked: Boolean(question.validation),
       onSelect: toggleValidation,
+    })
+  }
+  // Actions: choosing an option / typing a match shows or hides other items.
+  const actionTrigger = triggerKindFor(question)
+  if (actionTrigger && actionTargets.length) {
+    moreItems.push({
+      label: 'Show or hide other questions',
+      checked: Boolean(question.actions?.length),
+      onSelect: () =>
+        question.actions?.length
+          ? setClearingActions(true)
+          : change('actions', (q) => ({
+              ...q,
+              actions: [
+                newAction(
+                  actionTrigger === 'select'
+                    ? { type: 'select', option: q.options?.[0] ?? '' }
+                    : { type: 'match', pattern: '' },
+                ),
+              ],
+            })),
     })
   }
   if (canBranch) {
@@ -198,6 +223,20 @@ export default function QuestionCard({
             targets={targets}
             renameOption={renameOption}
           />
+          {actionTrigger && question.actions?.length > 0 && (
+            <div className="q-actions">
+              <p className="q-actions-note">
+                Questions an action shows stay hidden until it happens; hidden questions aren’t required.
+              </p>
+              <ActionsEditor
+                actions={question.actions}
+                onChange={(actions) => change('actions', (q) => ({ ...q, actions }))}
+                trigger={actionTrigger}
+                options={question.options ?? []}
+                targets={actionTargets}
+              />
+            </div>
+          )}
           {question.validation && canValidate && (
             <ValidationEditor question={question} change={change} onRemove={toggleValidation} />
           )}
@@ -253,6 +292,21 @@ export default function QuestionCard({
       ) : (
         <QuestionPreview question={question} quiz={quiz} />
       )}
+      <ConfirmModal
+        open={clearingActions}
+        title="Remove all of this question’s actions?"
+        message="The questions they show or hide go back to always showing. You can undo this."
+        confirmLabel="Remove all"
+        onConfirm={() => {
+          change('actions', (q) => {
+            const rest = { ...q }
+            delete rest.actions
+            return rest
+          })
+          setClearingActions(false)
+        }}
+        onCancel={() => setClearingActions(false)}
+      />
       <ConfirmModal
         open={removingImage}
         title="Remove this image?"

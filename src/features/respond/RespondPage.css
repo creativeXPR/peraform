@@ -752,3 +752,23 @@ textarea.respond-input {
   background: var(--accent);
   transition: width 0.3s var(--ease);
 }
+
+/* A question or block shown by another question's action. */
+.respond-reveal {
+  display: flex;
+  flex-direction: column;
+  animation: respond-reveal 300ms ease both;
+}
+
+@keyframes respond-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .respond-reveal {
+    animation: none;
+  }
+}

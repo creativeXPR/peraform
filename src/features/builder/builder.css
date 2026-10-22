@@ -1701,3 +1701,19 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Normal-form question actions (show/hide other questions) */
+.q-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.q-actions-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
