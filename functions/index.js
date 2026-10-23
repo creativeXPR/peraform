@@ -92,6 +92,7 @@ export const submitResponse = onCall({ region: REGION }, async (request) => {
     email: request.auth.token.email,
     emailVerified: request.auth.token.email_verified === true,
     access,
+    isMember: Boolean(form?.memberIds?.includes(uid)),
   })
   if (problem) throw new HttpsError(problem.code, problem.message)
 

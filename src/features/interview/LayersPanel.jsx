@@ -112,7 +112,7 @@ export default function LayersPanel({
           <MenuButton
             icon={<span className="layers-add">+ Add</span>}
             label="Add a block"
-            align="left"
+            align="right"
             items={needsCard ? addItems.slice(0, 1) : addItems}
           />
         </div>

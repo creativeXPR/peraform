@@ -110,6 +110,7 @@ export function checkSubmission({
   email,
   emailVerified,
   access,
+  isMember = false, // the respondent is the form's owner or an editor
 }) {
   if (!form) return { code: 'not-found', message: 'This form doesn’t exist.' }
   if (form.status !== 'published') {
@@ -123,7 +124,8 @@ export function checkSubmission({
   if (signInNeeded && signInProvider === 'anonymous') {
     return { code: 'unauthenticated', message: 'Sign in to fill out this form.' }
   }
-  if (restricted) {
+  // The form's own owner and editors can always try it out.
+  if (restricted && !isMember) {
     // Unverified addresses could be anyone's, so they never count.
     if (!emailVerified) {
       return { code: 'permission-denied', message: 'Verify your email address to fill out this form.' }

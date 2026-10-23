@@ -476,7 +476,14 @@ function FormView({ form, user }) {
       }
       // Server errors carry a readable message (closed form, too many
       // submissions, sign-in needed…); network failures don't.
-      const readable = ['failed-precondition', 'resource-exhausted', 'unauthenticated', 'invalid-argument', 'not-found']
+      const readable = [
+        'failed-precondition',
+        'resource-exhausted',
+        'unauthenticated',
+        'invalid-argument',
+        'not-found',
+        'permission-denied', // e.g. not on an invited-only form's list
+      ]
       setError(
         readable.includes(code)
           ? err.message.replace(/\s*\[\d+\]$/, '') // the SDK appends the HTTP status

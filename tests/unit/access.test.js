@@ -90,3 +90,12 @@ describe('checkSubmission: only people you choose', () => {
     )
   })
 })
+
+describe('checkSubmission: members on their own invited-only form', () => {
+  it('lets the owner and editors submit without being on the list', () => {
+    const form = { status: 'published', settings: { restricted: true }, questions: [] }
+    const base = { form, now: 0, answersBytes: 1, access: { emails: [], domains: [] }, signInProvider: 'google.com' }
+    expect(checkSubmission({ ...base, email: 'owner@example.com', emailVerified: true, isMember: true })).toBeNull()
+    expect(checkSubmission({ ...base, email: 'owner@example.com', emailVerified: true }).code).toBe('permission-denied')
+  })
+})
