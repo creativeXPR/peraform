@@ -521,3 +521,8 @@
   border-top: 1px solid var(--line);
   overflow-wrap: anywhere;
 }
+
+.sheets-open {
+  height: 34px;
+  font-size: 13px;
+}

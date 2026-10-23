@@ -3,13 +3,15 @@ import { getAuth } from 'firebase-admin/auth'
 import { FieldValue, getFirestore } from 'firebase-admin/firestore'
 import { getStorage } from 'firebase-admin/storage'
 import { logger } from 'firebase-functions'
-import { defineBoolean, defineString } from 'firebase-functions/params'
+import { defineBoolean, defineSecret, defineString } from 'firebase-functions/params'
 import { onDocumentCreated } from 'firebase-functions/v2/firestore'
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
 import { onObjectFinalized } from 'firebase-functions/v2/storage'
 import { isAllowedResponder } from './access.js'
 import { MARK, compressBuffer, compressionFor } from './compress.js'
 import { gradeResponse } from './grade.js'
+import { responseTable } from './responseTable.js'
+import { accessToken, appendRow, createSpreadsheet, exchangeCode, revoke, writeAll } from './sheets.js'
 import { APP_URL, SMTP_PASS, emailHtml, sendMail } from './mail.js'
 import { allow, clientIp } from './rateLimit.js'
 import { checkSubmission, sanitizeAnswers } from './submit.js'
@@ -140,18 +142,141 @@ export const formGate = onCall({ region: REGION }, async (request) => {
   return { state: isAllowedResponder(access, token.email) ? 'allowed' : 'denied', title, email: token.email }
 })
 
+// ── Google Sheets ───────────────────────────────────────────
+// The OAuth client (Google Cloud console → Credentials). The id is public;
+// the secret lives in Secret Manager.
+const GOOGLE_OAUTH_CLIENT_ID = defineString('GOOGLE_OAUTH_CLIENT_ID', { default: '' })
+const GOOGLE_OAUTH_CLIENT_SECRET = defineSecret('GOOGLE_OAUTH_CLIENT_SECRET')
+const oauth = () => ({ clientId: GOOGLE_OAUTH_CLIENT_ID.value(), clientSecret: GOOGLE_OAUTH_CLIENT_SECRET.value() })
+
+// sheetLinks/{formId} = { refreshToken, spreadsheetId, uid, header } — the
+// Google key; no Firestore rule opens it, so only functions can read it.
+// forms/{formId}/private/sheets = { spreadsheetId, url, email, linkedAt,
+// syncedAt, error } — what the form's members see in Settings.
+const linkRef = (formId) => db.doc(`sheetLinks/${formId}`)
+const statusRef = (formId) => db.doc(`forms/${formId}/private/sheets`)
+
+async function allResponses(formId) {
+  const snap = await db.collection(`forms/${formId}/responses`).orderBy('submittedAt', 'desc').get()
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+}
+
+const wantsEmail = (form, link) =>
+  Boolean(form.settings?.collectEmails || form.settings?.restricted || link?.header?.includes('Email address'))
+
+// Rewrites the whole sheet from the responses (link, re-sync).
+async function syncSheet(formId, form, link, token) {
+  const responses = await allResponses(formId)
+  const table = responseTable(form.questions ?? [], responses, { withEmail: wantsEmail(form, link) || undefined })
+  await writeAll(fetch, token, link.spreadsheetId, table)
+  return table
+}
+
+async function appendToSheet(formId, form, response) {
+  const snap = await linkRef(formId).get()
+  if (!snap.exists) return
+  const link = snap.data()
+  try {
+    const token = await accessToken(fetch, { refreshToken: link.refreshToken, ...oauth() })
+    const { header, rowFor } = responseTable(form.questions ?? [], [response], { withEmail: wantsEmail(form, link) })
+    await appendRow(fetch, token, link.spreadsheetId, { header, row: rowFor(response), previousHeader: link.header })
+    await Promise.all([
+      linkRef(formId).update({ header }),
+      statusRef(formId).set({ syncedAt: FieldValue.serverTimestamp(), error: null }, { merge: true }),
+    ])
+  } catch (err) {
+    const error = err.revoked
+      ? 'Google access was removed. Link the sheet again to keep it updated.'
+      : 'The last response couldn’t be added to the sheet. Use Re-sync to catch up.'
+    await statusRef(formId).set({ error }, { merge: true })
+    throw err
+  }
+}
+
+// action: 'link' (with the popup's code) | 'resync' | 'unlink'
+export const sheetsLink = onCall({ region: REGION, secrets: [GOOGLE_OAUTH_CLIENT_SECRET] }, async (request) => {
+  requireApp(request)
+  if (!request.auth || request.auth.token.firebase?.sign_in_provider === 'anonymous') {
+    throw new HttpsError('unauthenticated', 'Sign in first.')
+  }
+  const { action, formId, code } = request.data ?? {}
+  if (typeof formId !== 'string') throw new HttpsError('invalid-argument', 'No form.')
+  if (!GOOGLE_OAUTH_CLIENT_ID.value()) {
+    throw new HttpsError('failed-precondition', 'Google Sheets isn’t set up for PeraForm yet.')
+  }
+  const { form } = await memberForm(formId, request.auth.uid)
+  const title = form.title || 'Untitled form'
+
+  try {
+    if (action === 'link') {
+      if (typeof code !== 'string' || !code) throw new HttpsError('invalid-argument', 'No approval code.')
+      const tokens = await exchangeCode(fetch, { code, ...oauth() })
+      if (!tokens.refresh_token) {
+        throw new HttpsError('failed-precondition', 'Google didn’t grant lasting access. Please try again.')
+      }
+      const sheet = await createSpreadsheet(fetch, tokens.access_token, `${title} (Responses)`)
+      const link = { refreshToken: tokens.refresh_token, spreadsheetId: sheet.spreadsheetId, uid: request.auth.uid }
+      const table = await syncSheet(formId, form, link, tokens.access_token)
+      // Replacing an earlier link: let go of its key.
+      const old = (await linkRef(formId).get()).data()
+      if (old?.refreshToken) await revoke(fetch, old.refreshToken)
+      await linkRef(formId).set({ ...link, header: table.header })
+      await statusRef(formId).set({
+        spreadsheetId: sheet.spreadsheetId,
+        url: sheet.url,
+        email: request.auth.token.email ?? '',
+        linkedAt: FieldValue.serverTimestamp(),
+        syncedAt: FieldValue.serverTimestamp(),
+        error: null,
+      })
+      return { url: sheet.url, rows: table.rows.length }
+    }
+
+    const link = (await linkRef(formId).get()).data()
+    if (action === 'resync') {
+      if (!link) throw new HttpsError('failed-precondition', 'This form isn’t linked to a sheet.')
+      const token = await accessToken(fetch, { refreshToken: link.refreshToken, ...oauth() })
+      const table = await syncSheet(formId, form, link, token)
+      await linkRef(formId).update({ header: table.header })
+      await statusRef(formId).set({ syncedAt: FieldValue.serverTimestamp(), error: null }, { merge: true })
+      return { rows: table.rows.length }
+    }
+
+    if (action === 'unlink') {
+      if (link?.refreshToken) await revoke(fetch, link.refreshToken)
+      await Promise.all([linkRef(formId).delete(), statusRef(formId).delete()])
+      return { status: 'unlinked' }
+    }
+  } catch (err) {
+    if (err instanceof HttpsError) throw err
+    logger.error('Sheets link failed', { formId, action, err: err.message })
+    if (err.revoked) {
+      await statusRef(formId).set({ error: 'Google access was removed. Link the sheet again.' }, { merge: true })
+      throw new HttpsError('failed-precondition', 'Google access was removed. Link the sheet again.')
+    }
+    throw new HttpsError('unavailable', 'Google Sheets didn’t respond. Please try again.')
+  }
+  throw new HttpsError('invalid-argument', 'Unknown action.')
+})
+
 // ── After each response: grade quizzes, notify subscribers ─────
 export const onResponseCreated = onDocumentCreated(
   {
     document: 'forms/{formId}/responses/{responseId}',
     database: 'peraform',
     region: REGION,
-    secrets: [SMTP_PASS],
+    secrets: [SMTP_PASS, GOOGLE_OAUTH_CLIENT_SECRET],
   },
   async (event) => {
     const { formId } = event.params
     const form = (await db.doc(`forms/${formId}`).get()).data()
     if (!form) return
+
+    // Linked Google Sheet: add this response as a row (never blocks grading
+    // or emails — problems are shown to the owner in Settings instead).
+    await appendToSheet(formId, form, { id: event.params.responseId, ...event.data.data() }).catch((err) =>
+      logger.error('Sheets append failed', { formId, err: err.message }),
+    )
 
     if (form.settings?.quiz?.enabled) {
       const key = (await db.doc(`forms/${formId}/private/answerKey`).get()).data()

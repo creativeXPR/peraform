@@ -58,6 +58,7 @@ export const callSubmitResponse = httpsCallable(functions, 'submitResponse')
 export const callManageCollaborators = httpsCallable(functions, 'manageCollaborators')
 export const callAcceptInvites = httpsCallable(functions, 'acceptInvites')
 export const callFormGate = httpsCallable(functions, 'formGate')
+export const callSheetsLink = httpsCallable(functions, 'sheetsLink')
 
 export const googleProvider = new GoogleAuthProvider()
 

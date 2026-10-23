@@ -1,4 +1,5 @@
 // Turns raw responses into per-question summaries and CSV.
+import { responseTable } from '../../../functions/responseTable.js'
 import { GRID_TYPES, hasAnswer } from '../../lib/formLogic.js'
 
 const CHOICE_TYPES = ['multipleChoice', 'checkboxes', 'dropdown']
@@ -65,40 +66,14 @@ export function summarizeQuestion(question, responses) {
   return { answered, kind: 'text', values: values.map(String) }
 }
 
-// Grid answers ({ rowIndex: value }) become one column per row.
-function csvColumns(question) {
-  const title = question.title || 'Untitled question'
-  if (question.type === 'fileUpload') {
-    return [{ header: title, value: (answers) => answers?.[question.id]?.map((f) => f.url) }]
-  }
-  if (!GRID_TYPES.includes(question.type)) {
-    return [{ header: title, value: (answers) => answers?.[question.id] }]
-  }
-  return question.rows.map((row, i) => ({
-    header: `${title} [${row}]`,
-    value: (answers) => answers?.[question.id]?.[i],
-  }))
-}
-
-function csvCell(value) {
-  const text = Array.isArray(value) ? value.join('; ') : String(value ?? '')
+function csvCell(text) {
   return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text
 }
 
+// CSV of all responses: the same table the Google Sheets sync writes
+// (functions/responseTable.js), so both always have the same columns.
 export function responsesToCsv(questions, responses) {
-  const emails = responses.some((r) => r.respondentEmail)
-  const columns = [
-    ...(emails ? [{ header: 'Email address', value: (_, r) => r.respondentEmail }] : []),
-    ...questions.flatMap(csvColumns),
-  ]
-  const header = ['Submitted at', ...columns.map((c) => c.header)]
-  // Oldest first reads naturally in a spreadsheet.
-  const rows = [...responses]
-    .reverse()
-    .map((r) => [
-      r.submittedAt ? r.submittedAt.toISOString() : '',
-      ...columns.map((c) => c.value(r.answers, r)),
-    ])
+  const { header, rows } = responseTable(questions, responses)
   return [header, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n')
 }
 

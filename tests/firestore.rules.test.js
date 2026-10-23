@@ -432,3 +432,21 @@ describe('stars and folders', () => {
     await assertFails(setDoc(doc(anon(), `users/${ANON}/folders/x`), { name: 'Anon' }))
   })
 })
+
+describe('Google Sheets link', () => {
+  it('keeps the Google key out of everyone’s reach, the owner included', async () => {
+    await seed('forms/f1', form())
+    await seed('sheetLinks/f1', { refreshToken: 'secret', spreadsheetId: 's' })
+    await assertFails(getDoc(doc(real(OWNER), 'sheetLinks/f1')))
+    await assertFails(getDoc(doc(real(EDITOR), 'sheetLinks/f1')))
+    await assertFails(setDoc(doc(real(OWNER), 'sheetLinks/f1'), { refreshToken: 'mine' }))
+  })
+
+  it('shows the link status to members only', async () => {
+    await seed('forms/f1', form())
+    await seed('forms/f1/private/sheets', { url: 'https://docs.google.com/x' })
+    await assertSucceeds(getDoc(doc(real(EDITOR), 'forms/f1/private/sheets')))
+    await assertFails(getDoc(doc(real(STRANGER), 'forms/f1/private/sheets')))
+    await assertFails(getDoc(doc(guest(), 'forms/f1/private/sheets')))
+  })
+})

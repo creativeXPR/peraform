@@ -171,6 +171,11 @@ export default function SignInPage() {
           )}
         </p>
       </section>
+
+      <footer className="signin-legal">
+        <Link to="/privacy">Privacy</Link>
+        <Link to="/terms">Terms</Link>
+      </footer>
     </div>
   )
 }

@@ -13,6 +13,7 @@ const SettingsPage = lazy(() => import('./features/builder/SettingsPage.jsx'))
 const ResponsesPage = lazy(() => import('./features/responses/ResponsesPage.jsx'))
 const RespondPage = lazy(() => import('./features/respond/RespondPage.jsx'))
 const ResultPage = lazy(() => import('./features/respond/ResultPage.jsx'))
+const LegalPage = lazy(() => import('./features/legal/LegalPage.jsx'))
 
 export default function App() {
   return (
@@ -37,6 +38,9 @@ export default function App() {
           <Route path="/f/:formId" element={<RespondPage />} />
           {/* A respondent's released quiz score. */}
           <Route path="/f/:formId/r/:responseId" element={<ResultPage />} />
+          {/* Public: linked from Google's consent screen and the sign-in page. */}
+          <Route path="/privacy" element={<LegalPage page="privacy" />} />
+          <Route path="/terms" element={<LegalPage page="terms" />} />
         </Routes>
       </Suspense>
     </BrowserRouter>

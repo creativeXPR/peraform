@@ -1,11 +1,12 @@
 import AutoTextarea from '../../lib/AutoTextarea.jsx'
 import { quizSettings, settingsOf } from '../../lib/formModel.js'
 import { useFormEditor } from './editorContext.js'
+import SheetsSettings from './SheetsSettings.jsx'
 
 // Settings tab: who can respond and how, presentation, and quiz options.
 // Saved through the same autosave/undo pipeline as the questions.
 export default function SettingsPage() {
-  const { draft, edit } = useFormEditor()
+  const { form, draft, edit } = useFormEditor()
   if (!draft) return <div className="builder-loading" aria-busy="true" />
 
   const {
@@ -113,6 +114,11 @@ export default function SettingsPage() {
           disabled={restricted}
           onChange={(v) => set('collectEmails', v)}
         />
+      </section>
+
+      <section className="settings-group">
+        <h2>Google Sheets</h2>
+        <SheetsSettings formId={form.id} />
       </section>
 
       <section className="settings-group">

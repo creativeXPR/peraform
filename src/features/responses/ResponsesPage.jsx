@@ -17,9 +17,11 @@ import {
   Download,
   FileText,
   MoreVertical,
+  Sheet,
   Trash2,
 } from 'lucide-react'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
+import { useSheetsStatus } from '../../lib/googleSheets.js'
 import { db } from '../../lib/firebase.js'
 import { formatAnswer } from '../../lib/formatAnswer.js'
 import { hasAnswer, isQuestion, isSection, questionsOnly } from '../../lib/formLogic.js'
@@ -49,6 +51,7 @@ export default function ResponsesPage() {
   const [busy, setBusy] = useState(false)
   const [toast, showToast] = useToast()
   const { user } = useAuth()
+  const sheets = useSheetsStatus(form?.id) // linked Google Sheet, if any
 
   if (!form || !draft) return <div className="builder-loading" aria-busy="true" />
 
@@ -123,6 +126,12 @@ export default function ResponsesPage() {
       <header className="responses-head">
         <h1>{loading ? 'Responses' : `${count} ${count === 1 ? 'response' : 'responses'}`}</h1>
         <div className="responses-tools">
+          {sheets?.url && (
+            <a className="btn btn-outline sheets-open" href={sheets.url} target="_blank" rel="noreferrer">
+              <Sheet size={15} />
+              Open in Sheets
+            </a>
+          )}
           {form.status !== 'draft' && (
             <label className="switch">
               <span>Accepting responses</span>
