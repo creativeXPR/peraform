@@ -180,28 +180,117 @@
   height: calc(1px * var(--inv));
 }
 
+/* The workspace: a fixed window onto a dotted plane the screen sits on;
+   zoom and pan move the screen (and the dots) inside it. */
 .canvas-viewport {
   position: relative;
   min-width: 0;
-  padding: 16px;
+  height: max(480px, calc(100dvh - 250px));
+  overflow: hidden;
   border-radius: var(--radius-card);
-  background: var(--fill);
+  background-color: var(--fill);
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--text) 18%, transparent) 1px, transparent 1.2px);
   outline: none;
+  touch-action: none;
+  overscroll-behavior: contain;
 }
 
 .canvas-viewport:focus-visible {
   box-shadow: 0 0 0 2px var(--accent);
 }
 
-.canvas-frame {
-  margin: 0 auto;
-  overflow: hidden;
-  border-radius: 12px;
-  box-shadow: var(--shadow), 0 0 0 1px var(--line);
+/* While the hand is active, blocks don't react to the pointer. */
+.canvas-viewport.is-hand .stage-node {
+  cursor: inherit;
 }
 
 .canvas-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
   transform-origin: 0 0;
+}
+
+.canvas-frame {
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: var(--shadow), 0 0 0 calc(1px * var(--inv)) var(--line);
+}
+
+/* Floating toolbar (bottom centre), like Figma's. */
+.canvas-tools {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.12);
+  transform: translateX(-50%);
+}
+
+.canvas-tools button {
+  display: inline-grid;
+  place-items: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.canvas-tools button:hover {
+  background: var(--fill);
+  color: var(--text);
+}
+
+.canvas-tools button.active {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.canvas-tool-group {
+  display: flex;
+  gap: 2px;
+}
+
+.canvas-zoom {
+  min-width: 52px !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.canvas-tool-sep {
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+  background: var(--line);
+}
+
+/* Full screen: the whole editor (panels included) fills the display. */
+.interview-editor:fullscreen {
+  padding: 12px;
+  overflow: auto;
+  background: var(--bg);
+}
+
+.interview-editor:fullscreen .canvas-viewport {
+  height: calc(100dvh - 76px);
+}
+
+.interview-editor:fullscreen .layers,
+.interview-editor:fullscreen .ie-side {
+  max-height: calc(100dvh - 76px);
 }
 
 /* ── Interview editor layout ──────────────────────────────────── */

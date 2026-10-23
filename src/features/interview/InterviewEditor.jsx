@@ -162,6 +162,8 @@ export default function InterviewEditor({ viewSwitch }) {
         />
 
         <Canvas
+          // A fresh view (fitted) when switching between phone and desktop.
+          key={device}
           design={design}
           device={device}
           questions={questions}
@@ -235,7 +237,8 @@ export default function InterviewEditor({ viewSwitch }) {
                 <p className="insp-note">
                   Click a block to edit it. Drag to move — it snaps to the left, centre, right, top
                   and bottom (hold Alt to place freely). Drag the corners to resize and the round
-                  knob to rotate.
+                  knob to rotate. Ctrl + scroll zooms; hold Space (or press H) and drag to move
+                  around.
                 </p>
                 <button type="button" className="btn btn-outline" onClick={() => setPending({ kind: 'reset' })}>
                   <RotateCcw size={15} />
