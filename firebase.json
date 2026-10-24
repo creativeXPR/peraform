@@ -20,6 +20,18 @@
         "source": "**",
         "destination": "/index.html"
       }
+    ],
+    "redirects": [
+      {
+        "source": "/privacy",
+        "destination": "https://quality-toolsx.web.app/privacy",
+        "type": 301
+      },
+      {
+        "source": "/terms",
+        "destination": "https://quality-toolsx.web.app/terms",
+        "type": 301
+      }
     ]
   },
   "emulators": {

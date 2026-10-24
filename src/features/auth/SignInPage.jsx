@@ -173,8 +173,9 @@ export default function SignInPage() {
       </section>
 
       <footer className="signin-legal">
-        <Link to="/privacy">Privacy</Link>
-        <Link to="/terms">Terms</Link>
+        {/* Shared by every Quality Tools app (quality-tools/ site). */}
+        <a href="https://quality-toolsx.web.app/privacy">Privacy</a>
+        <a href="https://quality-toolsx.web.app/terms">Terms</a>
       </footer>
     </div>
   )
