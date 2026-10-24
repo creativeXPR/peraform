@@ -17,6 +17,8 @@ export default function SettingsPage() {
     shuffleQuestions,
     confirmationMessage,
     showSubmitAnother,
+    topTitleOn,
+    topTitle,
   } = settingsOf(draft)
   const quiz = quizSettings(draft)
   const mode = draft.mode === 'interview' ? 'interview' : 'normal'
@@ -123,6 +125,34 @@ export default function SettingsPage() {
 
       <section className="settings-group">
         <h2>Presentation</h2>
+        <Toggle
+          title="Show a title at the top"
+          text="Replaces the PeraForm logo at the top of the form with a title of your own: the form’s name, unless you change it."
+          checked={topTitleOn}
+          onChange={(on) =>
+            edit('settings:topTitleOn', (d) => ({
+              ...d,
+              settings: {
+                ...d.settings,
+                topTitleOn: on,
+                // Starts as the form's name; yours to change.
+                topTitle: on && !settingsOf(d).topTitle.trim() ? d.title || '' : settingsOf(d).topTitle,
+              },
+            }))
+          }
+        />
+        {topTitleOn && (
+          <label className="setting-field">
+            <span>Title at the top</span>
+            <input
+              className="setting-input"
+              value={topTitle}
+              maxLength={80}
+              placeholder={draft.title || 'Untitled form'}
+              onChange={(e) => set('topTitle', e.target.value)}
+            />
+          </label>
+        )}
         <Toggle
           title="Show progress bar"
           text="Shows how far through the form respondents are (forms with sections)."

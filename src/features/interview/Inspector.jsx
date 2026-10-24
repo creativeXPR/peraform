@@ -1,4 +1,4 @@
-import { ArrowDownToLine, ArrowUpToLine, Copy, Eye, EyeOff, Sparkle, Trash2 } from 'lucide-react'
+import { ArrowDownToLine, ArrowUpToLine, Copy, Eye, EyeOff, FolderInput, Sparkle, Trash2 } from 'lucide-react'
 import ColorPicker from '../../lib/ColorPicker.jsx'
 import { youtubeId } from '../../lib/formModel.js'
 import {
@@ -72,6 +72,7 @@ export default function Inspector({
   onStyle,
   onContent,
   onDuplicate,
+  onMove, // opens "Move to…"
   onDelete,
   onLevel,
   onPreview, // (animation) plays it on the canvas
@@ -95,8 +96,11 @@ export default function Inspector({
           <button type="button" className="icon-btn" onClick={() => onLevel(-1)} title="Send backward" aria-label="Send backward">
             <ArrowDownToLine size={16} />
           </button>
-          <button type="button" className="icon-btn" onClick={onDuplicate} title="Duplicate" aria-label="Duplicate">
+          <button type="button" className="icon-btn" onClick={onDuplicate} title="Duplicate (Ctrl+D)" aria-label="Duplicate">
             <Copy size={16} />
+          </button>
+          <button type="button" className="icon-btn" onClick={onMove} title="Move to another card or screen" aria-label="Move to…">
+            <FolderInput size={16} />
           </button>
           <button type="button" className="icon-btn insp-danger" onClick={onDelete} title="Delete" aria-label="Delete">
             <Trash2 size={16} />

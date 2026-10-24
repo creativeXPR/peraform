@@ -111,10 +111,21 @@ export const PRESENTATION_DEFAULTS = {
   shuffleQuestions: false,
   confirmationMessage: '',
   showSubmitAnother: true,
+  // The respondent page's top bar: the PeraForm logo, or (when on) a title
+  // of the creator's own, which starts as the form's name.
+  topTitleOn: false,
+  topTitle: '',
 }
 
 export function settingsOf(form) {
   return { ...PRESENTATION_DEFAULTS, ...form?.settings }
+}
+
+// What the respondent page shows at the top instead of the logo, or null.
+export function topBarTitle(form) {
+  const { topTitleOn, topTitle } = settingsOf(form)
+  if (!topTitleOn) return null
+  return topTitle.trim() || form?.title || 'Untitled form'
 }
 
 export function newForm(ownerId) {

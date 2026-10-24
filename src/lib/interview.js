@@ -459,3 +459,125 @@ export function backgroundCss(bg, alpha = 100) {
   if (!css || alpha >= 100) return css
   return `color-mix(in srgb, ${css} ${Math.max(0, alpha)}%, transparent)`
 }
+
+// ── Duplicating and moving blocks (whole-form operations) ─────────────
+// These work on the form draft, because blocks can carry questions, and
+// questions belong to sections of the (shared) question list.
+
+function withDesign(form, key, design) {
+  const iv = interviewOf(form)
+  return { ...form, interview: { ...iv, screens: { ...iv.screens, [key]: design } } }
+}
+
+function designFor(form, key) {
+  const screens = screensOf(form)
+  const screen = screens.find((s) => s.key === key)
+  return screen ? screenDesign(form, screen, screens) : null
+}
+
+// Where a moved/new top-level card or child goes on each device: inside a
+// card, below what's there; on a screen, centred below the other cards.
+function placeIn(design, parent, node) {
+  const frames = {}
+  for (const device of Object.keys(DEVICES)) {
+    const f = frameOf(node, device)
+    const siblings = childrenOf(design.nodes, parent?.id ?? null, device).filter((n) => n.id !== node.id)
+    const below = siblings.reduce((max, n) => {
+      const sf = frameOf(n, device)
+      return Math.max(max, sf.y + sf.h + 16)
+    }, parent ? 16 : 48)
+    const box = parent ? frameOf(parent, device) : { w: DEVICES[device].width }
+    const w = Math.min(f.w, Math.max(MIN_SIZE, box.w - 32))
+    frames[device] = { ...f, w, x: parent ? Math.min(f.x, Math.max(0, box.w - w)) : Math.round((box.w - w) / 2), y: below }
+  }
+  return frames
+}
+
+// Copies a block (and what's inside it) on its screen. Question blocks get
+// their own new question — a copy placed right after the original — so the
+// copy isn't a second input for the same answer.
+// Returns { form, id } (the copy's id).
+export function duplicateBlock(form, key, id) {
+  const design = designFor(form, key)
+  if (!design?.nodes[id]) return { form, id: null }
+  const { design: copied, id: copyId } = duplicateNode(design, id)
+  let questions = [...(form.questions ?? [])]
+  const nodes = { ...copied.nodes }
+  for (const nid of descendantIds(copied.nodes, copyId)) {
+    const n = nodes[nid]
+    if (n.type !== 'question') continue
+    const at = questions.findIndex((q) => q.id === n.questionId)
+    if (at < 0) continue
+    const q = { ...structuredClone(questions[at]), id: newId() }
+    questions = [...questions.slice(0, at + 1), q, ...questions.slice(at + 1)]
+    nodes[nid] = { ...n, questionId: q.id }
+  }
+  const next = growToFit({ ...copied, nodes }, copyId)
+  return { form: withDesign({ ...form, questions }, key, next), id: copyId }
+}
+
+// A card named by the first text inside it ("Card · Welcome"), so cards
+// can be told apart in lists.
+function cardName(design, card) {
+  const text = descendantIds(design.nodes, card.id)
+    .map((id) => design.nodes[id])
+    .find((n) => n.type === 'text' && n.text?.trim())
+  return text ? `Card · ${text.text.trim().split(/\s*\n/)[0].slice(0, 40)}` : 'Card'
+}
+
+// Where a block may go: { key (screen), parentId (card id, or null for the
+// screen itself — cards only) }. Not into itself or its own contents.
+export function moveTargets(form, key, id) {
+  const fromDesign = designFor(form, key)
+  const node = fromDesign?.nodes[id]
+  if (!node) return []
+  const inside = new Set(descendantIds(fromDesign.nodes, id))
+  return screensOf(form).map((screen) => {
+    const design = screen.key === key ? fromDesign : designFor(form, screen.key)
+    const cards = Object.values(design.nodes)
+      .filter((n) => n.type === 'card' && !(screen.key === key && inside.has(n.id)))
+      .map((n) => ({ id: n.id, depth: ancestorsOf(design.nodes, n.id).length, label: cardName(design, n) }))
+    return { screen, top: node.type === 'card', cards }
+  })
+}
+
+// Moves a block (with its contents) into a card — on this screen or
+// another — or, for cards, onto a screen's top level. Questions inside move
+// with it: to the end of the target screen's section in the question list.
+export function moveBlock(form, fromKey, id, toKey, parentId) {
+  const from = designFor(form, fromKey)
+  const node = from?.nodes[id]
+  if (!node || (!parentId && node.type !== 'card')) return form
+  const ids = descendantIds(from.nodes, id)
+  if (fromKey === toKey && ids.includes(parentId)) return form
+
+  const moving = Object.fromEntries(ids.map((nid) => [nid, from.nodes[nid]]))
+  let source = deleteNode(from, id)
+  let target = fromKey === toKey ? source : designFor(form, toKey)
+  const parent = parentId ? target.nodes[parentId] : null
+  if (parentId && !parent) return form
+  const root = { ...moving[id], parentId: parentId ?? null }
+  root.frames = placeIn(target, parent, root)
+  target = { ...target, nodes: { ...target.nodes, ...moving, [id]: root } }
+  target = growToFit(target, id)
+  if (fromKey === toKey) source = target
+
+  let next = withDesign(form, toKey, target)
+  if (fromKey !== toKey) next = withDesign(next, fromKey, source)
+
+  // Questions follow their blocks into the target screen's section.
+  if (fromKey !== toKey) {
+    const qids = new Set(ids.map((nid) => moving[nid]).filter((n) => n.type === 'question').map((n) => n.questionId))
+    if (qids.size) {
+      const items = next.questions.filter((q) => !qids.has(q.id))
+      const moved = next.questions.filter((q) => qids.has(q.id))
+      const pages = splitPages(items)
+      const targetIndex = screensOf({ ...next, questions: items }).findIndex((s) => s.key === toKey)
+      // Insert at the end of the target section (before the next section).
+      const nextSection = pages[targetIndex + 1]?.section
+      const at = nextSection ? items.findIndex((q) => q.id === nextSection.id) : items.length
+      next = { ...next, questions: [...items.slice(0, at), ...moved, ...items.slice(at)] }
+    }
+  }
+  return next
+}

@@ -772,3 +772,12 @@ textarea.respond-input {
     animation: none;
   }
 }
+
+/* The creator's own title in place of the PeraForm logo. */
+.respond-top-title {
+  max-width: min(70vw, 520px);
+  overflow: hidden;
+  padding: 0 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

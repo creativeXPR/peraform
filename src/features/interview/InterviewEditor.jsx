@@ -9,8 +9,10 @@ import {
   addNode,
   canHoldChildren,
   deleteNode,
-  duplicateNode,
+  duplicateBlock,
   frameOf,
+  moveBlock,
+  moveTargets,
   growToFit,
   interviewOf,
   nodeLabel,
@@ -29,6 +31,7 @@ import { useFormEditor } from '../builder/editorContext.js'
 import Canvas from './Canvas.jsx'
 import Inspector from './Inspector.jsx'
 import LayersPanel from './LayersPanel.jsx'
+import MoveBlockDialog from './MoveBlockDialog.jsx'
 
 const SCREEN_BG_PRESETS = [
   { value: 'bg', label: 'Page (theme)', swatch: COLOR_TOKENS.bg.css },
@@ -50,6 +53,7 @@ export default function InterviewEditor({ viewSwitch }) {
   const [pending, setPending] = useState(null) // { kind: 'delete', id } | { kind: 'reset' }
   // Inspector → Preview: { nodeId, anim, nonce } plays it on the canvas.
   const [preview, setPreview] = useState(null)
+  const [moving, setMoving] = useState(null) // block id for "Move to…"
 
   const screens = screensOf(draft)
   const screen = screens.find((s) => s.key === screenKey) ?? screens[0]
@@ -104,13 +108,30 @@ export default function InterviewEditor({ viewSwitch }) {
     setSelectedId(null)
   }
 
-  // The copy is made once, here, so its new ids are known (and selected);
-  // the change just adds those nodes.
+  // Copies a block (question blocks get their own new question). Worked out
+  // once, here, so the copy's id is known and can be selected.
   function duplicate(id) {
-    const copied = duplicateNode(design, id)
-    const added = pick(copied.design.nodes, design.nodes)
-    change(`duplicate:${copied.id}`, (dsn) => ({ ...dsn, nodes: { ...dsn.nodes, ...added } }))
-    setSelectedId(copied.id)
+    const { form: next, id: copyId } = duplicateBlock(draft, screen.key, id)
+    if (!copyId) return
+    edit(`interview:${screen.key}:duplicate:${copyId}`, (d) => ({
+      ...d,
+      questions: next.questions,
+      interview: next.interview,
+    }))
+    setSelectedId(copyId)
+  }
+
+  // "Move to…": into another card here or on another screen.
+  function move(toKey, parentId) {
+    const id = moving
+    const from = screen.key
+    edit(`interview:move:${id}`, (d) => {
+      const next = moveBlock(d, from, id, toKey, parentId)
+      return next === d ? d : { ...d, questions: next.questions, interview: next.interview }
+    })
+    setMoving(null)
+    if (toKey !== from) setScreenKey(toKey)
+    setSelectedId(id)
   }
 
   const renderQuestion = (q) => (
@@ -159,6 +180,9 @@ export default function InterviewEditor({ viewSwitch }) {
             )
           }
           onAdd={add}
+          onDuplicate={duplicate}
+          onMove={setMoving}
+          onDelete={(id) => setPending({ kind: 'delete', id })}
         />
 
         <Canvas
@@ -212,6 +236,7 @@ export default function InterviewEditor({ viewSwitch }) {
               }
               onPreview={(anim) => setPreview({ nodeId: selected.id, anim, nonce: Date.now() })}
               onDuplicate={() => duplicate(selected.id)}
+              onMove={() => setMoving(selected.id)}
               onDelete={() => setPending({ kind: 'delete', id: selected.id })}
               onLevel={(delta) => {
                 const z = Math.max(0, (frameOf(selected, device).z || 0) + delta)
@@ -250,6 +275,18 @@ export default function InterviewEditor({ viewSwitch }) {
         </div>
       </div>
 
+      {moving && design.nodes[moving] && (
+        <MoveBlockDialog
+          open
+          blockLabel={nodeLabel(design.nodes[moving], questions)}
+          targets={moveTargets(draft, screen.key, moving)}
+          currentKey={screen.key}
+          currentParent={design.nodes[moving].parentId}
+          onMove={move}
+          onClose={() => setMoving(null)}
+        />
+      )}
+
       <ConfirmModal
         open={Boolean(pending)}
         title={
@@ -279,7 +316,3 @@ export default function InterviewEditor({ viewSwitch }) {
   )
 }
 
-// The entries of `from` that aren't in `existing` (the newly copied nodes).
-function pick(from, existing) {
-  return Object.fromEntries(Object.entries(from).filter(([id]) => !existing[id]))
-}

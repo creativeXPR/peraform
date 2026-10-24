@@ -1,11 +1,15 @@
 import {
   AppWindow,
   CircleHelp,
+  Copy,
   Eye,
   EyeOff,
+  FolderInput,
   Image,
+  MoreHorizontal,
   MousePointerClick,
   Square,
+  Trash2,
   Type,
   Video,
 } from 'lucide-react'
@@ -50,6 +54,16 @@ function Tree({ nodes, parentId, device, depth, ctx }) {
               >
                 {hidden ? <EyeOff size={14} /> : <Eye size={14} />}
               </button>
+              <MenuButton
+                className="layer-menu"
+                icon={<MoreHorizontal size={14} />}
+                label={`More for ${nodeLabel(node, ctx.questions)}`}
+                items={[
+                  { label: 'Duplicate', icon: Copy, onSelect: () => ctx.onDuplicate(node.id) },
+                  { label: 'Move to…', icon: FolderInput, onSelect: () => ctx.onMove(node.id) },
+                  { label: 'Delete', icon: Trash2, danger: true, onSelect: () => ctx.onDelete(node.id) },
+                ]}
+              />
             </div>
             {node.type === 'card' && (
               <Tree nodes={nodes} parentId={node.id} device={device} depth={depth + 1} ctx={ctx} />
@@ -75,6 +89,9 @@ export default function LayersPanel({
   onSelect,
   onToggleHidden,
   onAdd, // (type, extra?)
+  onDuplicate, // (id)
+  onMove, // (id) opens "Move to…"
+  onDelete, // (id) asks first
 }) {
   const needsCard = !targetCard
   const addItems = [
@@ -124,7 +141,7 @@ export default function LayersPanel({
           parentId={null}
           device={device}
           depth={0}
-          ctx={{ selectedId, onSelect, onToggleHidden, questions }}
+          ctx={{ selectedId, onSelect, onToggleHidden, questions, onDuplicate, onMove, onDelete }}
         />
         {!Object.keys(design.nodes).length && (
           <p className="layers-note">This screen is empty. Add a card to start.</p>

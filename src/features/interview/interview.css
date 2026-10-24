@@ -701,3 +701,50 @@ textarea.insp-input {
   height: 32px !important;
   font-size: 13px;
 }
+
+/* Move to… */
+.move-block {
+  width: min(440px, calc(100vw - 32px));
+}
+
+.move-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 50dvh;
+  overflow-y: auto;
+}
+
+.move-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.move-screen strong {
+  font-size: 13px;
+}
+
+.move-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.move-option:hover {
+  background: var(--fill);
+}
+
+.move-none {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.layer-menu .icon-btn {
+  width: 26px;
+  height: 26px;
+}

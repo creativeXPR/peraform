@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase.js'
-import { quizSettings } from '../../lib/formModel.js'
+import { quizSettings, topBarTitle } from '../../lib/formModel.js'
 import { loadThemeFont, themeOf, themeStyle } from '../../lib/theme.js'
 import { useTheme } from '../../lib/useTheme.js'
 import { useAuth } from '../auth/useAuth.js'
@@ -50,7 +50,14 @@ export default function ResultPage() {
       style={state.form ? themeStyle(themeOf(state.form), mode === 'dark') : undefined}
     >
       <header className="respond-top">
-        <span className="logo"><LogoMark />PeraForm</span>
+        {state.form && topBarTitle(state.form) ? (
+          <span className="logo respond-top-title">{topBarTitle(state.form)}</span>
+        ) : (
+          <span className="logo">
+            <LogoMark />
+            PeraForm
+          </span>
+        )}
       </header>
       <main className="respond-main">
         {state.status === 'loading' ? (

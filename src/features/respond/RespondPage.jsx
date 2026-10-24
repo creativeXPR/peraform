@@ -19,7 +19,7 @@ import {
   resolveTarget,
   splitPages,
 } from '../../lib/formLogic.js'
-import { needsSignIn, quizSettings, settingsOf } from '../../lib/formModel.js'
+import { needsSignIn, quizSettings, settingsOf, topBarTitle } from '../../lib/formModel.js'
 import { applyClick, isHiddenNow, resolveActions, shownByActions } from '../../lib/actions.js'
 import { frameOf, screenDesign, screensOf, visibleQuestionIds } from '../../lib/interview.js'
 import { useViewportDevice } from '../../lib/useViewportDevice.js'
@@ -84,7 +84,7 @@ export default function RespondPage() {
 
   return (
     <div className="respond themed" style={form ? themeStyle(formTheme, mode === 'dark') : undefined}>
-      <RespondTopBar theme={mode} toggleTheme={toggleTheme} />
+      <RespondTopBar theme={mode} toggleTheme={toggleTheme} title={form ? topBarTitle(form) : null} />
       <main className="respond-main">
         {activeGate ? (
           <AccessGate gate={activeGate} formId={formId} />
@@ -107,10 +107,19 @@ export default function RespondPage() {
   )
 }
 
-function RespondTopBar({ theme, toggleTheme }) {
+// title: the creator's own title (Settings → "Show a title at the top"),
+// shown instead of the PeraForm logo.
+function RespondTopBar({ theme, toggleTheme, title }) {
   return (
     <header className="respond-top">
-      <span className="logo"><LogoMark />PeraForm</span>
+      {title ? (
+        <span className="logo respond-top-title">{title}</span>
+      ) : (
+        <span className="logo">
+          <LogoMark />
+          PeraForm
+        </span>
+      )}
       <button
         type="button"
         className="icon-btn"

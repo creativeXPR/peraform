@@ -210,3 +210,13 @@ describe('shuffled', () => {
     expect(items).toEqual(['a', 'b', 'c', 'd', 'e', 'f']) // input untouched
   })
 })
+
+describe('top bar title', () => {
+  it('is off by default (the logo shows), and uses the form name until changed', async () => {
+    const { topBarTitle } = await import('../../src/lib/formModel.js')
+    expect(topBarTitle({ title: 'Trip', settings: {} })).toBeNull()
+    expect(topBarTitle({ title: 'Trip', settings: { topTitleOn: true } })).toBe('Trip')
+    expect(topBarTitle({ title: 'Trip', settings: { topTitleOn: true, topTitle: '  Acme survey ' } })).toBe('Acme survey')
+    expect(topBarTitle({ title: '', settings: { topTitleOn: true } })).toBe('Untitled form')
+  })
+})

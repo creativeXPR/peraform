@@ -1785,3 +1785,30 @@
     transform: rotate(360deg);
   }
 }
+
+/* Settings → a labelled text field under a toggle (e.g. the top title) */
+.setting-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 20px 14px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.setting-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.setting-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}

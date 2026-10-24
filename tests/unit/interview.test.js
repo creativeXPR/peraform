@@ -167,3 +167,55 @@ describe('see-through backgrounds (glass)', () => {
     expect(backgroundCss(undefined, 20)).toBeUndefined()
   })
 })
+
+describe('duplicating and moving blocks', () => {
+  const twoScreens = {
+    title: 'Trip',
+    questions: [
+      { id: 'q1', type: 'shortText', title: 'Name' },
+      { id: 's1', type: 'section', title: 'Details' },
+      { id: 'q3', type: 'longText', title: 'Notes' },
+    ],
+  }
+
+  it('duplicates a question block with its own new question, right after the original', async () => {
+    const { duplicateBlock } = await import('../../src/lib/interview.js')
+    const node = Object.values(screenDesign(twoScreens, screensOf(twoScreens)[0]).nodes).find((n) => n.questionId === 'q1')
+    const { form, id } = duplicateBlock(twoScreens, 'start', node.id)
+    expect(form.questions.map((q) => q.title)).toEqual(['Name', 'Name', 'Details', 'Notes'])
+    const copy = form.interview.screens.start.nodes[id]
+    expect(copy.questionId).toBe(form.questions[1].id)
+    expect(copy.questionId).not.toBe('q1')
+  })
+
+  it('moves a block into another card on the same screen', async () => {
+    const { moveBlock, addNode } = await import('../../src/lib/interview.js')
+    const design = screenDesign(twoScreens, screensOf(twoScreens)[0])
+    const card = childrenOf(design.nodes, null, 'phone')[0]
+    const second = placeNew(design, 'card', null)
+    const form = { ...twoScreens, interview: { screens: { start: addNode(design, second) } } }
+    const text = childrenOf(design.nodes, card.id, 'phone').find((n) => n.type === 'text')
+    const moved = moveBlock(form, 'start', text.id, 'start', second.id)
+    expect(moved.interview.screens.start.nodes[text.id].parentId).toBe(second.id)
+  })
+
+  it('won’t move a card into itself, or a non-card onto the screen’s top level', async () => {
+    const { moveBlock } = await import('../../src/lib/interview.js')
+    const design = screenDesign(twoScreens, screensOf(twoScreens)[0])
+    const card = childrenOf(design.nodes, null, 'phone')[0]
+    const text = childrenOf(design.nodes, card.id, 'phone').find((n) => n.type === 'text')
+    expect(moveBlock(twoScreens, 'start', card.id, 'start', card.id)).toBe(twoScreens)
+    expect(moveBlock(twoScreens, 'start', text.id, 's1', null)).toBe(twoScreens)
+  })
+
+  it('moving a question block to another screen moves the question into that section', async () => {
+    const { moveBlock, moveTargets } = await import('../../src/lib/interview.js')
+    const node = Object.values(screenDesign(twoScreens, screensOf(twoScreens)[0]).nodes).find((n) => n.questionId === 'q1')
+    const targets = moveTargets(twoScreens, 'start', node.id)
+    const details = targets.find((t) => t.screen.key === 's1')
+    const moved = moveBlock(twoScreens, 'start', node.id, 's1', details.cards[0].id)
+    expect(moved.questions.map((q) => q.id)).toEqual(['s1', 'q3', 'q1'])
+    expect(moved.interview.screens.s1.nodes[node.id].parentId).toBe(details.cards[0].id)
+    expect(moved.interview.screens.start.nodes[node.id]).toBeUndefined()
+  })
+})
