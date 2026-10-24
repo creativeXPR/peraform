@@ -25,7 +25,8 @@ function safeNext(next) {
 export default function SignInPage() {
   const { user, loading } = useAuth()
   const [params] = useSearchParams()
-  const [mode, setMode] = useState('signin')
+  // ?mode=signup (e.g. Get started on the Quality Tools site) opens on Create an account.
+  const [mode, setMode] = useState(() => (params.get('mode') === 'signup' ? 'signup' : 'signin'))
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
