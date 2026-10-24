@@ -695,3 +695,9 @@ textarea.insp-input {
 .interview-overlay > * {
   width: 100%;
 }
+
+.insp-glass {
+  align-self: flex-start;
+  height: 32px !important;
+  font-size: 13px;
+}

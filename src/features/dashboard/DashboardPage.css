@@ -140,12 +140,6 @@
   background: var(--fill);
 }
 
-/* While its menu is open, lift the card above the cards after it. */
-.form-card:has(.menu-pop),
-.form-row:has(.menu-pop) {
-  z-index: 3;
-}
-
 .form-card-info {
   display: flex;
   align-items: flex-start;

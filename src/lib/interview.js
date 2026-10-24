@@ -438,3 +438,24 @@ export function nodeLabel(node, questions = []) {
   }
   return NODE_TYPES[node.type].label
 }
+
+// Block shadows (style.shadow). Glow follows the theme colour.
+export const SHADOWS = {
+  none: { label: 'None', css: 'none' },
+  soft: { label: 'Soft', css: '0 2px 10px rgb(0 0 0 / 0.08)' },
+  medium: { label: 'Medium', css: '0 10px 30px rgb(0 0 0 / 0.14)' },
+  strong: { label: 'Strong', css: '0 22px 56px rgb(0 0 0 / 0.26)' },
+  glow: { label: 'Glow', css: '0 0 28px color-mix(in srgb, var(--accent) 55%, transparent)' },
+}
+
+// One-click glassmorphism: see-through background, blur behind, a thin
+// light edge and a soft shadow.
+export const GLASS = { bgAlpha: 35, blur: 16, borderWidth: 1, borderColor: '#ffffff', shadow: 'medium' }
+
+// A background colour at an opacity (style.bgAlpha, %), for see-through
+// blocks without fading their content.
+export function backgroundCss(bg, alpha = 100) {
+  const css = colorCss(bg)
+  if (!css || alpha >= 100) return css
+  return `color-mix(in srgb, ${css} ${Math.max(0, alpha)}%, transparent)`
+}

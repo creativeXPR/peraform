@@ -157,3 +157,13 @@ describe('adding inside a full card', () => {
     }
   })
 })
+
+describe('see-through backgrounds (glass)', () => {
+  it('mixes the colour with transparency, theme tokens included', async () => {
+    const { backgroundCss } = await import('../../src/lib/interview.js')
+    expect(backgroundCss('#ffffff', 35)).toBe('color-mix(in srgb, #ffffff 35%, transparent)')
+    expect(backgroundCss('accent', 50)).toBe('color-mix(in srgb, var(--accent) 50%, transparent)')
+    expect(backgroundCss('surface')).toBe('var(--surface)')
+    expect(backgroundCss(undefined, 20)).toBeUndefined()
+  })
+})

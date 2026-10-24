@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import { designedProps, play, prefersReducedMotion } from '../../lib/animations.js'
 import { THEME_FONTS } from '../../lib/theme.js'
-import { DEVICES, childrenOf, colorCss, frameOf, stageHeight } from '../../lib/interview.js'
+import { DEVICES, SHADOWS, backgroundCss, childrenOf, colorCss, frameOf, stageHeight } from '../../lib/interview.js'
 // Question fields look exactly as on the normal form, in the editor too.
 import '../respond/RespondPage.css'
 import './interview.css'
@@ -30,7 +30,12 @@ function nodeStyle(node, frame, editing, override) {
     [node.type === 'question' || node.type === 'text' ? 'minHeight' : 'height']: frame.h,
     transform: transform || undefined,
     zIndex: frame.z || undefined,
-    background: colorCss(p.bg ?? s.bg),
+    background: backgroundCss(p.bg ?? s.bg, s.bgAlpha ?? 100),
+    boxShadow: s.shadow && s.shadow !== 'none' ? SHADOWS[s.shadow]?.css : undefined,
+    // Glass: blur whatever is behind the block.
+    backdropFilter: s.blur ? `blur(${s.blur}px)` : undefined,
+    WebkitBackdropFilter: s.blur ? `blur(${s.blur}px)` : undefined,
+    border: s.borderWidth ? `${s.borderWidth}px solid ${colorCss(s.borderColor ?? 'text')}` : undefined,
     color: colorCss(p.color ?? s.color),
     borderRadius: p.radius ?? s.radius ?? undefined,
     padding: node.type === 'card' ? undefined : s.padding || undefined,

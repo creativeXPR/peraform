@@ -1,7 +1,15 @@
-import { ArrowDownToLine, ArrowUpToLine, Copy, Eye, EyeOff, Trash2 } from 'lucide-react'
+import { ArrowDownToLine, ArrowUpToLine, Copy, Eye, EyeOff, Sparkle, Trash2 } from 'lucide-react'
 import ColorPicker from '../../lib/ColorPicker.jsx'
 import { youtubeId } from '../../lib/formModel.js'
-import { BUTTON_ACTIONS, COLOR_TOKENS, DEVICES, NODE_TYPES, frameOf } from '../../lib/interview.js'
+import {
+  BUTTON_ACTIONS,
+  COLOR_TOKENS,
+  DEVICES,
+  GLASS,
+  NODE_TYPES,
+  SHADOWS,
+  frameOf,
+} from '../../lib/interview.js'
 import { THEME_FONTS } from '../../lib/theme.js'
 import ImagePicker from '../builder/ImagePicker.jsx'
 import { triggerKindFor } from '../../lib/actions.js'
@@ -287,7 +295,58 @@ export default function Inspector({
             suffix="%"
             onChange={(v) => onStyle({ opacity: v / 100 })}
           />
+          <NumberField
+            label="Background opacity"
+            value={s.bgAlpha ?? 100}
+            min={0}
+            max={100}
+            suffix="%"
+            onChange={(bgAlpha) => onStyle({ bgAlpha })}
+          />
+          <NumberField label="Blur behind" value={s.blur ?? 0} min={0} max={60} suffix="px" onChange={(blur) => onStyle({ blur })} />
+          <label className="insp-field">
+            <span>Shadow</span>
+            <select value={s.shadow ?? 'none'} onChange={(e) => onStyle({ shadow: e.target.value })}>
+              {Object.entries(SHADOWS).map(([key, sh]) => (
+                <option key={key} value={key}>
+                  {sh.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <NumberField
+            label="Border"
+            value={s.borderWidth ?? 0}
+            min={0}
+            max={20}
+            suffix="px"
+            onChange={(borderWidth) => onStyle({ borderWidth })}
+          />
         </div>
+        {(s.borderWidth ?? 0) > 0 && (
+          <>
+            <span className="insp-label">Border colour</span>
+            <ColorPicker
+              value={s.borderColor ?? 'text'}
+              presets={COLOR_PRESETS.filter((p) => p.value !== 'transparent')}
+              onChange={(borderColor) => onStyle({ borderColor })}
+              label="Border colour"
+            />
+          </>
+        )}
+        <button
+          type="button"
+          className="btn btn-outline insp-glass"
+          onClick={() => onStyle({ ...GLASS, bg: s.bg && s.bg !== 'transparent' ? s.bg : '#ffffff' })}
+          title="See-through background, blur behind, a light edge and a soft shadow"
+        >
+          <Sparkle size={15} />
+          Glass effect
+        </button>
+        <p className="insp-note">
+          Blur behind frosts whatever sits underneath (glassmorphism). Lower the background opacity to
+          see it.
+        </p>
       </Group>
 
       {hasText(node.type) && (
