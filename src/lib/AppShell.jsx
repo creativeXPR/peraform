@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { LayoutGrid, Menu, Moon, PanelLeft, Search, Sun, X } from 'lucide-react'
 import AccountMenu from '../features/auth/AccountMenu.jsx'
+import BalanceChip from '../features/credits/BalanceChip.jsx'
 import { useTheme } from './useTheme.js'
 import './AppShell.css'
 import LogoMark from './LogoMark.jsx'
@@ -67,6 +68,7 @@ export default function AppShell({
         )}
         <div className="topbar-actions">
           {actions}
+          <BalanceChip />
           <button
             type="button"
             className="icon-btn"

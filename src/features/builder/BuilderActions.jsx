@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   ChevronDown,
   Code2,
@@ -47,6 +47,16 @@ export default function BuilderActions() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const isOwner = form.ownerId === user.uid
   const link = `${window.location.origin}/f/${form.id}`
+
+  // A one-off note from the page that sent us here (e.g. "Made with AI ·
+  // used 6 credits"), shown once and then cleared from history.
+  const location = useLocation()
+  const notice = location.state?.notice
+  useEffect(() => {
+    if (!notice) return
+    showToast(notice)
+    navigate(location.pathname, { replace: true, state: null })
+  }, [notice, showToast, navigate, location.pathname])
 
   useEffect(() => {
     const onKey = (e) => {

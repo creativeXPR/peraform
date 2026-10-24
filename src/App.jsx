@@ -13,6 +13,9 @@ const SettingsPage = lazy(() => import('./features/builder/SettingsPage.jsx'))
 const ResponsesPage = lazy(() => import('./features/responses/ResponsesPage.jsx'))
 const RespondPage = lazy(() => import('./features/respond/RespondPage.jsx'))
 const ResultPage = lazy(() => import('./features/respond/ResultPage.jsx'))
+const CreditsPage = lazy(() => import('./features/credits/CreditsPage.jsx'))
+const CreditsReturn = lazy(() => import('./features/credits/CreditsReturn.jsx'))
+const AdminCreditsPage = lazy(() => import('./features/credits/AdminCreditsPage.jsx'))
 
 export default function App() {
   return (
@@ -23,6 +26,9 @@ export default function App() {
           <Route element={<RequireCreator />}>
             <Route element={<AppShell sidebar={false} search />}>
               <Route path="/" element={<DashboardPage />} />
+              <Route path="/credits" element={<CreditsPage />} />
+              <Route path="/credits/return" element={<CreditsReturn />} />
+              <Route path="/admin/credits" element={<AdminCreditsPage />} />
             </Route>
             {/* One editing session per form; the tabs share it. */}
             <Route path="/forms/:formId" element={<FormLayout />}>

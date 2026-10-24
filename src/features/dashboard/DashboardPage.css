@@ -9,7 +9,7 @@
 /* ── Start row ───────────────────────────────────────────── */
 .dash-start {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: clamp(12px, 2vw, 24px);
 }
 
@@ -42,6 +42,10 @@
 .start-card:hover:not(:disabled) .start-visual {
   border-color: var(--accent);
   transform: translateY(-2px);
+}
+
+.start-visual-ai {
+  background: linear-gradient(135deg, var(--accent-soft), var(--fill));
 }
 
 .start-visual-icon {
@@ -306,6 +310,15 @@
 @media (max-width: 639px) {
   .dash-start {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Full width on top, so the AI card leads on phones. */
+  .start-card-ai {
+    grid-column: span 2;
+  }
+
+  .start-card-ai .start-visual {
+    aspect-ratio: 16 / 5;
   }
 
   .form-row {

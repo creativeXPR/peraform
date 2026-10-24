@@ -9,6 +9,7 @@ import {
   List,
   MoreVertical,
   Plus,
+  Sparkles,
   Star,
   Upload,
 } from 'lucide-react'
@@ -26,6 +27,7 @@ import PromptDialog from '../../lib/PromptDialog.jsx'
 import MoveDialog from './MoveDialog.jsx'
 import MenuButton from '../../lib/MenuButton.jsx'
 import { useToast } from '../../lib/useToast.jsx'
+import GenerateFormDialog from '../ai/GenerateFormDialog.jsx'
 import { resendVerification } from '../auth/authActions.js'
 import { useAuth } from '../auth/useAuth.js'
 import FormCard from './FormCard.jsx'
@@ -76,6 +78,7 @@ export default function DashboardPage() {
   const [sort, setSort] = useState('edited')
   const [view, setView] = useState(readSavedView)
   const [creating, setCreating] = useState(false)
+  const [aiOpen, setAiOpen] = useState(false)
   const [actionError, setActionError] = useState('')
   const [toast, showToast] = useToast()
   const [pendingDelete, setPendingDelete] = useState(null)
@@ -201,6 +204,17 @@ export default function DashboardPage() {
       <section className="dash-start" aria-label="Start a new form">
         <button
           type="button"
+          className="start-card start-card-ai"
+          onClick={() => setAiOpen(true)}
+          disabled={creating}
+        >
+          <span className="start-visual start-visual-icon start-visual-ai">
+            <Sparkles size={32} strokeWidth={1.5} />
+          </span>
+          <span className="start-label">Create with AI</span>
+        </button>
+        <button
+          type="button"
           className="start-card"
           onClick={() => startForm(() => ({}))}
           disabled={creating}
@@ -245,6 +259,8 @@ export default function DashboardPage() {
           onChange={handleImport}
         />
       </section>
+
+      <GenerateFormDialog open={aiOpen} onClose={() => setAiOpen(false)} />
 
       {actionError && (
         <p className="form-error" role="alert">

@@ -45,6 +45,11 @@ if (recaptchaKey && !useEmulators) {
 export const db = getFirestore(firebaseApp, 'peraform')
 if (useEmulators) connectFirestoreEmulator(db, '127.0.0.1', port(8080))
 
+// The suite-wide billing database: credit wallets shared by every Quality
+// Tools app. Read-only here; only Cloud Functions write to it.
+export const billingDb = getFirestore(firebaseApp, 'billing')
+if (useEmulators) connectFirestoreEmulator(billingDb, '127.0.0.1', port(8080))
+
 // Points at PeraForm's own bucket (VITE_FIREBASE_STORAGE_BUCKET), so its
 // storage rules stay separate from other Quality Tools apps.
 export const storage = getStorage(firebaseApp)
@@ -59,6 +64,12 @@ export const callManageCollaborators = httpsCallable(functions, 'manageCollabora
 export const callAcceptInvites = httpsCallable(functions, 'acceptInvites')
 export const callFormGate = httpsCallable(functions, 'formGate')
 export const callSheetsLink = httpsCallable(functions, 'sheetsLink')
+export const callEnsureWallet = httpsCallable(functions, 'ensureWallet')
+export const callCreateTopup = httpsCallable(functions, 'createTopup')
+export const callVerifyTopup = httpsCallable(functions, 'verifyTopup')
+export const callBillingAdmin = httpsCallable(functions, 'billingAdmin')
+// AI runs can take a while (the function allows 120 s).
+export const callAiRun = httpsCallable(functions, 'aiRun', { timeout: 125_000 })
 
 export const googleProvider = new GoogleAuthProvider()
 

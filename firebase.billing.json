@@ -1,0 +1,9 @@
+{
+  "firestore": [
+    {
+      "database": "billing",
+      "rules": "firestore.billing.rules",
+      "indexes": "firestore.billing.indexes.json"
+    }
+  ]
+}

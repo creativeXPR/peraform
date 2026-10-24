@@ -44,6 +44,12 @@ export async function parseImportFile(file) {
   } catch {
     throw new Error('That file isn’t valid JSON.')
   }
+  return parseFormContent(data)
+}
+
+// The same clean-up for content from anywhere else (e.g. a form the AI
+// wrote): only known fields survive, every item gets a fresh id.
+export function parseFormContent(data, fallbackTitle = 'Imported form') {
   if (!data || typeof data !== 'object' || !Array.isArray(data.questions)) {
     throw new Error('That file doesn’t look like a PeraForm form.')
   }
@@ -116,7 +122,7 @@ export async function parseImportFile(file) {
   })
 
   return {
-    title: text(data.title, 200) || 'Imported form',
+    title: text(data.title, 200) || fallbackTitle,
     description: text(data.description, 2000),
     questions,
   }

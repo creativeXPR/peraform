@@ -1,0 +1,104 @@
+// Credit pricing: shared by the functions (holds and charges) and the app
+// (the "≈ X credits" hints), so both always use the same math.
+// No imports, no I/O: keep it that way so the browser can load it.
+//
+// Units (never floats for money):
+//   millicredits: 1 credit = 1000   ·   kobo: ₦1 = 100
+
+// Claude prices in USD per 1M tokens, from Anthropic's pricing on
+// 2026-10-06. Check them again before changing anything here; the live
+// values are in the billing db's config/billing doc, which overrides these.
+// Thinking tokens are billed as output (they're inside usage.output_tokens).
+export const DEFAULT_BILLING = {
+  creditValueKobo: 2000, // 1 credit = ₦20
+  fxNgnPerUsd: 1700, // buffered above market
+  markup: 2.5, // covers Paystack fees and VAT too
+  minChargeMillicredits: 100, // 0.1 credit
+  maxChargeMillicredits: 40000, // 40 credits per run, at most
+  starterMillicredits: 10000, // 10 free credits for a new account
+  lowBalanceMillicredits: 5000,
+  models: {
+    'claude-haiku-5-5': { inUsdPerM: 0.1, outUsdPerM: 0.5 },
+    'claude-sonnet-5-5': { inUsdPerM: 2, outUsdPerM: 10 },
+    'claude-opus-5-5': { inUsdPerM: 4, outUsdPerM: 20 },
+  },
+  // What each quality level runs on.
+  tiers: {
+    quick: 'claude-haiku-5-5',
+    standard: 'claude-sonnet-5-5',
+    best: 'claude-opus-5-5',
+  },
+}
+
+export const TIERS = ['quick', 'standard', 'best']
+
+// The stored config/billing doc over the defaults (models and tiers merge
+// key by key, so adding one model doesn't drop the others).
+export function mergeBilling(stored = {}) {
+  return {
+    ...DEFAULT_BILLING,
+    ...stored,
+    models: { ...DEFAULT_BILLING.models, ...stored.models },
+    tiers: { ...DEFAULT_BILLING.tiers, ...stored.tiers },
+  }
+}
+
+export const DEFAULT_PACKS = [
+  { id: 'starter', name: 'Starter', priceKobo: 100000, millicredits: 40000, active: true },
+  { id: 'standard', name: 'Standard', priceKobo: 250000, millicredits: 110000, active: true },
+  { id: 'pro', name: 'Pro', priceKobo: 500000, millicredits: 240000, active: true },
+]
+
+export function costUsd(billing, model, tokensIn, tokensOut) {
+  const price = billing.models[model]
+  if (!price) throw new Error(`No price for ${model}`)
+  return (tokensIn / 1e6) * price.inUsdPerM + (tokensOut / 1e6) * price.outUsdPerM
+}
+
+// USD cost → millicredits, rounded up, then held inside the min/max.
+export function chargeFor(billing, usd) {
+  const priceKobo = usd * billing.fxNgnPerUsd * 100 * billing.markup
+  // The tiny epsilon stops float noise (e.g. 2.0000000001) adding a whole unit.
+  const millicredits = Math.ceil((priceKobo / billing.creditValueKobo) * 1000 - 1e-9)
+  return Math.min(Math.max(millicredits, billing.minChargeMillicredits), billing.maxChargeMillicredits)
+}
+
+// Rough token count for text we haven't sent yet. Deliberately generous
+// (≈3 characters a token; real English is closer to 4), since it sizes holds.
+export function estimateTokens(chars) {
+  return Math.ceil(chars / 3)
+}
+
+// The most a run could cost: all of its input, plus every output token it's
+// allowed (thinking included). This is what gets reserved before calling.
+export function holdFor(billing, model, inputTokens, maxTokens) {
+  return chargeFor(billing, costUsd(billing, model, inputTokens, maxTokens))
+}
+
+// The reverse: how many output tokens `millicredits` pays for, after the
+// input. A run reserves what the user can spare and its max_tokens is cut
+// to fit, so it can never cost more than it reserved.
+export function affordableOutputTokens(billing, model, inputTokens, millicredits) {
+  const price = billing.models[model]
+  const usd = ((millicredits / 1000) * billing.creditValueKobo) / (billing.fxNgnPerUsd * 100 * billing.markup)
+  const left = usd - (inputTokens / 1e6) * price.inUsdPerM
+  return Math.max(0, Math.floor((left / price.outUsdPerM) * 1e6))
+}
+
+// What a run will probably cost, for the hint on the button.
+export function typicalCharge(billing, model, inputTokens, outputTokens) {
+  return chargeFor(billing, costUsd(billing, model, inputTokens, outputTokens))
+}
+
+// 12345 → "12.3", 400 → "0.4", 10000 → "10". Rounds toward zero, so we never
+// show more than is there.
+export function formatCredits(millicredits) {
+  const tenths = Math.trunc(millicredits / 100)
+  const sign = tenths < 0 ? '−' : ''
+  const abs = Math.abs(tenths)
+  return `${sign}${Math.floor(abs / 10)}${abs % 10 ? `.${abs % 10}` : ''}`
+}
+
+export function formatNaira(kobo) {
+  return `₦${(kobo / 100).toLocaleString('en-NG', { maximumFractionDigits: 2 })}`
+}

@@ -1,13 +1,13 @@
-import { initializeApp } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
-import { FieldValue, getFirestore } from 'firebase-admin/firestore'
+import { FieldValue } from 'firebase-admin/firestore'
 import { getStorage } from 'firebase-admin/storage'
 import { logger } from 'firebase-functions'
-import { defineBoolean, defineSecret, defineString } from 'firebase-functions/params'
+import { defineSecret, defineString } from 'firebase-functions/params'
 import { onDocumentCreated } from 'firebase-functions/v2/firestore'
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
 import { onObjectFinalized } from 'firebase-functions/v2/storage'
 import { isAllowedResponder } from './access.js'
+import { REGION, db, requireApp } from './app.js'
 import { MARK, compressBuffer, compressionFor } from './compress.js'
 import { gradeResponse } from './grade.js'
 import { responseTable } from './responseTable.js'
@@ -16,24 +16,8 @@ import { APP_URL, SMTP_PASS, emailHtml, sendMail } from './mail.js'
 import { allow, clientIp } from './rateLimit.js'
 import { checkSubmission, sanitizeAnswers } from './submit.js'
 
-initializeApp()
-// PeraForm's named database (the project's default one belongs to other apps).
-const db = getFirestore('peraform')
-const REGION = 'europe-west1'
-
-// Off until the reCAPTCHA key is set up (see README); then set
-// ENFORCE_APP_CHECK=true in functions/.env and redeploy.
-const ENFORCE_APP_CHECK = defineBoolean('ENFORCE_APP_CHECK', { default: false })
-
-// Every callable starts here: refuses requests without a valid App Check
-// token (i.e. not from PeraForm's own site) once enforcement is on.
-// The local emulators run without App Check, so it's never required there.
-const EMULATED = process.env.FUNCTIONS_EMULATOR === 'true'
-function requireApp(request) {
-  if (ENFORCE_APP_CHECK.value() && !EMULATED && !request.app) {
-    throw new HttpsError('failed-precondition', 'This request didn’t come from PeraForm.')
-  }
-}
+// Credits and AI (billing/, ai/).
+export * from './billing/functions.js'
 
 // PeraForm's storage bucket; file-upload answers must point into it.
 const UPLOAD_BUCKET = defineString('UPLOAD_BUCKET', { default: 'quality-toolsx-peraform' })
