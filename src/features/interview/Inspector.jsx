@@ -1,15 +1,22 @@
-import { ArrowDownToLine, ArrowUpToLine, Copy, Eye, EyeOff, FolderInput, Sparkle, Trash2 } from 'lucide-react'
+import {
+  AlignCenterHorizontal,
+  AlignCenterVertical,
+  AlignEndHorizontal,
+  AlignEndVertical,
+  AlignStartHorizontal,
+  AlignStartVertical,
+  ArrowDownToLine,
+  ArrowUpToLine,
+  Copy,
+  Eye,
+  EyeOff,
+  FolderInput,
+  Sparkle,
+  Trash2,
+} from 'lucide-react'
 import ColorPicker from '../../lib/ColorPicker.jsx'
 import { youtubeId } from '../../lib/formModel.js'
-import {
-  BUTTON_ACTIONS,
-  COLOR_TOKENS,
-  DEVICES,
-  GLASS,
-  NODE_TYPES,
-  SHADOWS,
-  frameOf,
-} from '../../lib/interview.js'
+import { BUTTON_ACTIONS, COLOR_TOKENS, DEVICES, GLASS, NODE_TYPES, SHADOWS, frameOf } from '../../lib/interview.js'
 import { THEME_FONTS } from '../../lib/theme.js'
 import ImagePicker from '../builder/ImagePicker.jsx'
 import { triggerKindFor } from '../../lib/actions.js'
@@ -59,10 +66,38 @@ function Group({ title, children }) {
 
 const hasText = (type) => ['text', 'button', 'question', 'card'].includes(type)
 
+const ALIGN = [
+  ['left', AlignStartVertical, 'Align left edges'],
+  ['center', AlignCenterVertical, 'Align centres (across)'],
+  ['right', AlignEndVertical, 'Align right edges'],
+  ['top', AlignStartHorizontal, 'Align top edges'],
+  ['middle', AlignCenterHorizontal, 'Align middles (down)'],
+  ['bottom', AlignEndHorizontal, 'Align bottom edges'],
+]
+
+// "Hidden until an action shows it": hidden on both devices, so a Show
+// action (or an answer) is what brings it in.
+function StartHidden({ node, onStartHidden }) {
+  const both = DEVICES_LIST.every((d) => frameOf(node, d).hidden)
+  return (
+    <label className="insp-check">
+      <input type="checkbox" checked={both} onChange={(e) => onStartHidden(e.target.checked)} />
+      Hidden until an action shows it
+    </label>
+  )
+}
+const DEVICES_LIST = Object.keys(DEVICES)
+
 // The menu for the selected block: where it sits (on this device), how it
-// looks, and what it holds.
+// looks, and what it holds. With several selected (multi = how many), it
+// shows what can apply to all of them: alignment, visibility and looks;
+// `node` is the last one picked, whose values are shown.
 export default function Inspector({
   node,
+  multi = 0,
+  onAlign, // (how) — several selected
+  onStartHidden, // (hidden) — on both devices
+  onTargetVisibility, // (id, hidden) — another block, from an action
   device,
   screens,
   pageQuestions,
@@ -88,195 +123,276 @@ export default function Inspector({
   return (
     <div className="inspector">
       <div className="insp-head">
-        <strong>{type}</strong>
+        <strong>{multi ? `${multi} blocks selected` : type}</strong>
         <div className="insp-tools">
-          <button type="button" className="icon-btn" onClick={() => onLevel(1)} title="Bring forward" aria-label="Bring forward">
-            <ArrowUpToLine size={16} />
-          </button>
-          <button type="button" className="icon-btn" onClick={() => onLevel(-1)} title="Send backward" aria-label="Send backward">
-            <ArrowDownToLine size={16} />
-          </button>
-          <button type="button" className="icon-btn" onClick={onDuplicate} title="Duplicate (Ctrl+D)" aria-label="Duplicate">
+          {!multi && (
+            <>
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={() => onLevel(1)}
+                title="Bring forward"
+                aria-label="Bring forward"
+              >
+                <ArrowUpToLine size={16} />
+              </button>
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={() => onLevel(-1)}
+                title="Send backward"
+                aria-label="Send backward"
+              >
+                <ArrowDownToLine size={16} />
+              </button>
+            </>
+          )}
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={onDuplicate}
+            title="Duplicate (Ctrl+D)"
+            aria-label="Duplicate"
+          >
             <Copy size={16} />
           </button>
-          <button type="button" className="icon-btn" onClick={onMove} title="Move to another card or screen" aria-label="Move to…">
-            <FolderInput size={16} />
-          </button>
+          {!multi && (
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={onMove}
+              title="Move to another card or screen"
+              aria-label="Move to…"
+            >
+              <FolderInput size={16} />
+            </button>
+          )}
           <button type="button" className="icon-btn insp-danger" onClick={onDelete} title="Delete" aria-label="Delete">
             <Trash2 size={16} />
           </button>
         </div>
       </div>
 
-      <Group title={`Position · ${DEVICES[device].label}`}>
-        <div className="insp-grid">
-          <NumberField label="X" value={f.x} onChange={(x) => onFrame({ x })} />
-          <NumberField label="Y" value={f.y} onChange={(y) => onFrame({ y })} />
-          <NumberField label="W" value={f.w} min={16} onChange={(w) => onFrame({ w })} />
-          <NumberField label="H" value={f.h} min={16} onChange={(h) => onFrame({ h })} />
-          <NumberField label="Rotate" value={f.r || 0} min={-180} max={180} suffix="°" onChange={(r) => onFrame({ r })} />
-          <NumberField label="Level" value={f.z || 0} min={0} max={99} onChange={(z) => onFrame({ z })} />
-        </div>
-        <button
-          type="button"
-          className={`insp-toggle${f.hidden ? '' : ' is-on'}`}
-          aria-pressed={!f.hidden}
-          onClick={() => onFrame({ hidden: !f.hidden })}
-        >
-          {f.hidden ? <EyeOff size={16} /> : <Eye size={16} />}
-          {f.hidden ? `Hidden on ${DEVICES[device].label.toLowerCase()}` : `Shown on ${DEVICES[device].label.toLowerCase()}`}
-        </button>
-        <p className="insp-note">
-          Position, size and visibility are set per device — switch to {DEVICES[otherDevice].label} to
-          lay it out there.
-        </p>
-      </Group>
-
-      <Group title="Content">
-        {node.type === 'text' && (
-          <textarea
-            className="insp-input"
-            rows={3}
-            value={node.text ?? ''}
-            onChange={(e) => onContent({ text: e.target.value })}
-            placeholder="Write something"
-            aria-label="Text"
-          />
-        )}
-        {node.type === 'button' && (
-          <>
-            <input
-              className="insp-input"
-              value={node.label ?? ''}
-              onChange={(e) => onContent({ label: e.target.value })}
-              placeholder="Button label"
-              aria-label="Button label"
-            />
-            <label className="insp-field">
-              <span>When clicked</span>
-              <select
-                value={node.action?.type ?? 'next'}
-                onChange={(e) => onContent({ action: { type: e.target.value, screen: node.action?.screen ?? null } })}
+      {multi > 0 && (
+        <Group title={`Arrange · ${DEVICES[device].label}`}>
+          <div className="insp-align">
+            {ALIGN.map(([how, Icon, label]) => (
+              <button
+                key={how}
+                type="button"
+                className="icon-btn"
+                onClick={() => onAlign(how)}
+                title={label}
+                aria-label={label}
               >
-                {Object.entries(BUTTON_ACTIONS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {node.action?.type === 'goto' && (
+                <Icon size={16} />
+              </button>
+            ))}
+          </div>
+          <p className="insp-note">Aligns the blocks that share a card with the last one you picked.</p>
+          <button
+            type="button"
+            className={`insp-toggle${f.hidden ? '' : ' is-on'}`}
+            aria-pressed={!f.hidden}
+            onClick={() => onFrame({ hidden: !f.hidden })}
+          >
+            {f.hidden ? <EyeOff size={16} /> : <Eye size={16} />}
+            {f.hidden
+              ? `Hidden on ${DEVICES[device].label.toLowerCase()}`
+              : `Shown on ${DEVICES[device].label.toLowerCase()}`}
+          </button>
+          <StartHidden node={node} onStartHidden={onStartHidden} />
+        </Group>
+      )}
+
+      {!multi && (
+        <Group title={`Position · ${DEVICES[device].label}`}>
+          <div className="insp-grid">
+            <NumberField label="X" value={f.x} onChange={(x) => onFrame({ x })} />
+            <NumberField label="Y" value={f.y} onChange={(y) => onFrame({ y })} />
+            <NumberField label="W" value={f.w} min={16} onChange={(w) => onFrame({ w })} />
+            <NumberField label="H" value={f.h} min={16} onChange={(h) => onFrame({ h })} />
+            <NumberField
+              label="Rotate"
+              value={f.r || 0}
+              min={-180}
+              max={180}
+              suffix="°"
+              onChange={(r) => onFrame({ r })}
+            />
+            <NumberField label="Level" value={f.z || 0} min={0} max={99} onChange={(z) => onFrame({ z })} />
+          </div>
+          <button
+            type="button"
+            className={`insp-toggle${f.hidden ? '' : ' is-on'}`}
+            aria-pressed={!f.hidden}
+            onClick={() => onFrame({ hidden: !f.hidden })}
+          >
+            {f.hidden ? <EyeOff size={16} /> : <Eye size={16} />}
+            {f.hidden
+              ? `Hidden on ${DEVICES[device].label.toLowerCase()}`
+              : `Shown on ${DEVICES[device].label.toLowerCase()}`}
+          </button>
+          <StartHidden node={node} onStartHidden={onStartHidden} />
+          <p className="insp-note">
+            Position, size and visibility are set per device — switch to {DEVICES[otherDevice].label} to lay it out
+            there. A hidden block gives its space back: the blocks below move up until it’s shown.
+          </p>
+        </Group>
+      )}
+
+      {!multi && (
+        <>
+          <Group title="Content">
+            {node.type === 'text' && (
+              <textarea
+                className="insp-input"
+                rows={3}
+                value={node.text ?? ''}
+                onChange={(e) => onContent({ text: e.target.value })}
+                placeholder="Write something"
+                aria-label="Text"
+              />
+            )}
+            {node.type === 'button' && (
+              <>
+                <input
+                  className="insp-input"
+                  value={node.label ?? ''}
+                  onChange={(e) => onContent({ label: e.target.value })}
+                  placeholder="Button label"
+                  aria-label="Button label"
+                />
+                <label className="insp-field">
+                  <span>When clicked</span>
+                  <select
+                    value={node.action?.type ?? 'next'}
+                    onChange={(e) =>
+                      onContent({ action: { type: e.target.value, screen: node.action?.screen ?? null } })
+                    }
+                  >
+                    {Object.entries(BUTTON_ACTIONS).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {node.action?.type === 'goto' && (
+                  <label className="insp-field">
+                    <span>Screen</span>
+                    <select
+                      value={node.action.screen ?? ''}
+                      onChange={(e) => onContent({ action: { type: 'goto', screen: e.target.value } })}
+                    >
+                      <option value="">Choose a screen</option>
+                      {screens.map((sc) => (
+                        <option key={sc.key} value={sc.key}>
+                          {sc.index + 1}. {sc.title}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+              </>
+            )}
+            {node.type === 'image' && (
+              <>
+                <ImagePicker
+                  variant="button"
+                  label={node.image ? 'Change image' : 'Choose image'}
+                  onPicked={(image) => onContent({ image })}
+                />
+                <input
+                  className="insp-input"
+                  value={node.alt ?? ''}
+                  onChange={(e) => onContent({ alt: e.target.value })}
+                  placeholder="Describe the image (for screen readers)"
+                  aria-label="Image description"
+                />
+              </>
+            )}
+            {node.type === 'video' && (
+              <>
+                <input
+                  className="insp-input"
+                  defaultValue={node.videoId ? `https://youtu.be/${node.videoId}` : ''}
+                  onBlur={(e) => {
+                    const id = youtubeId(e.target.value)
+                    if (id) onContent({ videoId: id })
+                  }}
+                  placeholder="YouTube link"
+                  aria-label="YouTube link"
+                />
+                <p className="insp-note">Paste a YouTube link, then click away.</p>
+              </>
+            )}
+            {node.type === 'embed' && (
+              <>
+                <input
+                  className="insp-input"
+                  defaultValue={node.url ?? ''}
+                  onBlur={(e) => {
+                    const url = e.target.value.trim()
+                    if (/^https:\/\/\S+$/i.test(url)) onContent({ url })
+                  }}
+                  placeholder="https://…"
+                  aria-label="Web page address"
+                />
+                <p className="insp-note">
+                  Any https page that allows embedding (maps, slides, calendars…). Some sites block it.
+                </p>
+              </>
+            )}
+            {node.type === 'question' && (
               <label className="insp-field">
-                <span>Screen</span>
-                <select
-                  value={node.action.screen ?? ''}
-                  onChange={(e) => onContent({ action: { type: 'goto', screen: e.target.value } })}
-                >
-                  <option value="">Choose a screen</option>
-                  {screens.map((sc) => (
-                    <option key={sc.key} value={sc.key}>
-                      {sc.index + 1}. {sc.title}
+                <span>Question</span>
+                <select value={node.questionId ?? ''} onChange={(e) => onContent({ questionId: e.target.value })}>
+                  {pageQuestions.map((q) => (
+                    <option key={q.id} value={q.id}>
+                      {q.title || 'Untitled question'}
                     </option>
                   ))}
                 </select>
               </label>
             )}
-          </>
-        )}
-        {node.type === 'image' && (
-          <>
-            <ImagePicker
-              variant="button"
-              label={node.image ? 'Change image' : 'Choose image'}
-              onPicked={(image) => onContent({ image })}
-            />
-            <input
-              className="insp-input"
-              value={node.alt ?? ''}
-              onChange={(e) => onContent({ alt: e.target.value })}
-              placeholder="Describe the image (for screen readers)"
-              aria-label="Image description"
-            />
-          </>
-        )}
-        {node.type === 'video' && (
-          <>
-            <input
-              className="insp-input"
-              defaultValue={node.videoId ? `https://youtu.be/${node.videoId}` : ''}
-              onBlur={(e) => {
-                const id = youtubeId(e.target.value)
-                if (id) onContent({ videoId: id })
-              }}
-              placeholder="YouTube link"
-              aria-label="YouTube link"
-            />
-            <p className="insp-note">Paste a YouTube link, then click away.</p>
-          </>
-        )}
-        {node.type === 'embed' && (
-          <>
-            <input
-              className="insp-input"
-              defaultValue={node.url ?? ''}
-              onBlur={(e) => {
-                const url = e.target.value.trim()
-                if (/^https:\/\/\S+$/i.test(url)) onContent({ url })
-              }}
-              placeholder="https://…"
-              aria-label="Web page address"
-            />
-            <p className="insp-note">
-              Any https page that allows embedding (maps, slides, calendars…). Some sites block it.
-            </p>
-          </>
-        )}
-        {node.type === 'question' && (
-          <label className="insp-field">
-            <span>Question</span>
-            <select value={node.questionId ?? ''} onChange={(e) => onContent({ questionId: e.target.value })}>
-              {pageQuestions.map((q) => (
-                <option key={q.id} value={q.id}>
-                  {q.title || 'Untitled question'}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-        {node.type === 'card' && (
-          <label className="insp-check">
-            <input
-              type="checkbox"
-              checked={Boolean(s.clip)}
-              onChange={(e) => onStyle({ clip: e.target.checked })}
-            />
-            Clip contents to the card
-          </label>
-        )}
-      </Group>
+            {node.type === 'card' && (
+              <label className="insp-check">
+                <input
+                  type="checkbox"
+                  checked={Boolean(s.clip)}
+                  onChange={(e) => onStyle({ clip: e.target.checked })}
+                />
+                Clip contents to the card
+              </label>
+            )}
+          </Group>
 
-      {(node.type === 'button' || trigger) && (
-        <Group title="Actions">
-          <ActionsEditor
-            actions={node.actions}
-            onChange={(actions) => onContent({ actions })}
-            trigger={node.type === 'button' ? 'click' : trigger}
-            options={question?.options ?? []}
-            targets={actionTargets}
-            allowSet
-            colorPresets={COLOR_PRESETS}
-          />
-        </Group>
+          {(node.type === 'button' || trigger) && (
+            <Group title="Actions">
+              <ActionsEditor
+                actions={node.actions}
+                onChange={(actions) => onContent({ actions })}
+                trigger={node.type === 'button' ? 'click' : trigger}
+                options={question?.options ?? []}
+                targets={actionTargets}
+                allowSet
+                colorPresets={COLOR_PRESETS}
+                onTargetVisibility={onTargetVisibility}
+              />
+            </Group>
+          )}
+
+          <Group title="Animations">
+            <AnimationsEditor
+              animations={node.animations}
+              onChange={(animations) => onContent({ animations })}
+              onPreview={onPreview}
+              colorPresets={COLOR_PRESETS}
+            />
+          </Group>
+        </>
       )}
-
-      <Group title="Animations">
-        <AnimationsEditor
-          animations={node.animations}
-          onChange={(animations) => onContent({ animations })}
-          onPreview={onPreview}
-          colorPresets={COLOR_PRESETS}
-        />
-      </Group>
 
       <Group title="Appearance">
         <span className="insp-label">Background</span>
@@ -287,9 +403,21 @@ export default function Inspector({
           label="Background"
         />
         <div className="insp-grid">
-          <NumberField label="Radius" value={s.radius ?? 0} min={0} max={999} onChange={(radius) => onStyle({ radius })} />
+          <NumberField
+            label="Radius"
+            value={s.radius ?? 0}
+            min={0}
+            max={999}
+            onChange={(radius) => onStyle({ radius })}
+          />
           {node.type !== 'card' && (
-            <NumberField label="Padding" value={s.padding ?? 0} min={0} max={200} onChange={(padding) => onStyle({ padding })} />
+            <NumberField
+              label="Padding"
+              value={s.padding ?? 0}
+              min={0}
+              max={200}
+              onChange={(padding) => onStyle({ padding })}
+            />
           )}
           <NumberField
             label="Opacity"
@@ -307,7 +435,14 @@ export default function Inspector({
             suffix="%"
             onChange={(bgAlpha) => onStyle({ bgAlpha })}
           />
-          <NumberField label="Blur behind" value={s.blur ?? 0} min={0} max={60} suffix="px" onChange={(blur) => onStyle({ blur })} />
+          <NumberField
+            label="Blur behind"
+            value={s.blur ?? 0}
+            min={0}
+            max={60}
+            suffix="px"
+            onChange={(blur) => onStyle({ blur })}
+          />
           <label className="insp-field">
             <span>Shadow</span>
             <select value={s.shadow ?? 'none'} onChange={(e) => onStyle({ shadow: e.target.value })}>
@@ -348,8 +483,7 @@ export default function Inspector({
           Glass effect
         </button>
         <p className="insp-note">
-          Blur behind frosts whatever sits underneath (glassmorphism). Lower the background opacity to
-          see it.
+          Blur behind frosts whatever sits underneath (glassmorphism). Lower the background opacity to see it.
         </p>
       </Group>
 

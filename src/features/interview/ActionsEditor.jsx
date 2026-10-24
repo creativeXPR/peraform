@@ -9,10 +9,21 @@ import './actions.css'
 // (buttons and question blocks) and normal-form questions.
 //   trigger     — 'click' | 'select' | 'match': what this block can react to
 //   options     — for 'select': the question's options
-//   targets     — [{ id, label }] blocks an action can change
+//   targets     — [{ id, label, shownAtStart? }] blocks an action can change
 //   allowSet    — interview only: "Change how it looks"
 //   colorPresets — swatches for colour changes
-export default function ActionsEditor({ actions = [], onChange, trigger, options = [], targets, allowSet, colorPresets }) {
+//   onTargetVisibility(id, hidden) — interview: sets whether a target starts
+//                 hidden, offered when "Show" points at a block already shown
+export default function ActionsEditor({
+  actions = [],
+  onChange,
+  trigger,
+  options = [],
+  targets,
+  allowSet,
+  colorPresets,
+  onTargetVisibility,
+}) {
   const [removing, setRemoving] = useState(null) // action id
 
   const firstTrigger =
@@ -117,6 +128,31 @@ export default function ActionsEditor({ actions = [], onChange, trigger, options
                 ))}
               </select>
             </div>
+
+            {onTargetVisibility && a.target && (() => {
+              const shown = targets.find((x) => x.id === a.target)?.shownAtStart
+              if (a.effect.type === 'show' && shown) {
+                return (
+                  <p className="action-hint">
+                    That block already shows from the start, so this won’t change anything.{' '}
+                    <button type="button" className="link-btn" onClick={() => onTargetVisibility(a.target, true)}>
+                      Hide it until then
+                    </button>
+                  </p>
+                )
+              }
+              if (a.effect.type === 'hide' && shown === false) {
+                return (
+                  <p className="action-hint">
+                    That block starts hidden, so this won’t change anything.{' '}
+                    <button type="button" className="link-btn" onClick={() => onTargetVisibility(a.target, false)}>
+                      Show it from the start
+                    </button>
+                  </p>
+                )
+              }
+              return null
+            })()}
 
             {a.effect.type === 'play' && (
               <div className="action-row">

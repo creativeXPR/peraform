@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { MAX_END_WAIT, designedProps, play, prefersReducedMotion } from '../../lib/animations.js'
-import { DEVICES, frameOf, stageHeight } from '../../lib/interview.js'
+import { DEVICES, frameOf, liveLayout } from '../../lib/interview.js'
 import Stage from '../interview/Stage.jsx'
 
 // A designed screen for respondents (interview mode), scaled to the width
@@ -49,7 +49,8 @@ export default function InterviewView({
 
   const W = DEVICES[device].width
   const scale = width ? Math.min(1, width / W) : 0
-  const H = stageHeight(design, device)
+  // Shorter while hidden blocks have given their space back.
+  const H = liveLayout(design, device, overrides).height
 
   return (
     <div ref={ref} className={`interview-view interview-${device}`}>

@@ -119,14 +119,32 @@ export function rotateVector(dx, dy, degrees) {
 // Snaps a frame to the parent's left/centre/right and top/middle/bottom
 // when it comes within SNAP_DISTANCE. Returns the snapped x/y and the guide
 // lines to draw ({ axis: 'x' | 'y', at }).
-export function snapFrame(frame, parent, distance = SNAP_DISTANCE) {
+// Snaps a moving frame to its parent's left/centre/right and top/middle/
+// bottom, and to the edges and centres of the other blocks beside it
+// (`others`: their frames in the same parent). Returns the snapped x/y and
+// the guide lines to draw. Cheap enough to run on every pointer move: a
+// few comparisons per sibling.
+export function snapFrame(frame, parent, distance = SNAP_DISTANCE, others = []) {
   const guides = []
-  const pick = (pos, size, total, axis) => {
+  const pick = (pos, size, total, axis, starts, ends) => {
+    // Lines the frame can line up with, and where that puts it.
     const options = [
       { at: 0, value: 0 },
       { at: total / 2, value: (total - size) / 2 },
       { at: total, value: total - size },
     ]
+    for (let i = 0; i < starts.length; i++) {
+      const a = starts[i]
+      const b = ends[i]
+      const mid = (a + b) / 2
+      options.push(
+        { at: a, value: a }, // start to start
+        { at: b, value: b - size }, // end to end
+        { at: b, value: b }, // start to end (next to it)
+        { at: a, value: a - size }, // end to start
+        { at: mid, value: mid - size / 2 }, // centres
+      )
+    }
     let best = null
     for (const o of options) {
       const gap = Math.abs(pos - o.value)
@@ -136,9 +154,96 @@ export function snapFrame(frame, parent, distance = SNAP_DISTANCE) {
     guides.push({ axis, at: best.at })
     return best.value
   }
-  const x = pick(frame.x, frame.w, parent.w, 'x')
-  const y = pick(frame.y, frame.h, parent.h, 'y')
+  const x = pick(frame.x, frame.w, parent.w, 'x', others.map((o) => o.x), others.map((o) => o.x + o.w))
+  const y = pick(frame.y, frame.h, parent.h, 'y', others.map((o) => o.y), others.map((o) => o.y + o.h))
   return { x: Math.round(x), y: Math.round(y), guides }
+}
+
+// Hidden blocks give their space back, live: blocks below a hidden one (in
+// the same column) move up by its height plus the gap after it, and a card
+// shrinks by what its contents gave up, which moves blocks below the card
+// in turn. isHidden(node) → boolean (design + actions). Returns the frames
+// that changed: { [id]: frame }. Showing the block again puts everything
+// back, since this is worked out fresh from the design each time.
+export function collapseHidden(design, device, isHidden) {
+  const out = {}
+  const frame = (n) => out[n.id] ?? frameOf(n, device)
+  const overlaps = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w
+
+  function layout(parentId) {
+    const kids = childrenOf(design.nodes, parentId, device)
+    // Inside first, so a card's own shrink is known before its siblings move.
+    for (const k of kids) if (k.type === 'card') layout(k.id)
+
+    // Space given back: by hidden blocks, and at the bottom of shrunk cards.
+    const gaps = []
+    for (const k of kids) {
+      const f = frameOf(k, device)
+      if (isHidden(k)) {
+        const below = kids
+          .filter((o) => o !== k && !isHidden(o) && overlaps(frameOf(o, device), f) && frameOf(o, device).y >= f.y + f.h)
+          .map((o) => frameOf(o, device).y - (f.y + f.h))
+        gaps.push({ at: f.y, size: f.h + (below.length ? Math.min(...below) : 0), x: f.x, w: f.w })
+      } else if (out[k.id] && out[k.id].h < f.h) {
+        gaps.push({ at: f.y + out[k.id].h, size: f.h - out[k.id].h, x: f.x, w: f.w })
+      }
+    }
+    if (!gaps.length) return
+
+    let lowest = 0
+    let lowestBefore = 0
+    for (const k of kids) {
+      const f = frameOf(k, device)
+      lowestBefore = Math.max(lowestBefore, f.y + f.h)
+      if (isHidden(k)) continue
+      const shift = gaps.filter((g) => g.at < f.y && overlaps(g, f)).reduce((sum, g) => sum + g.size, 0)
+      const current = frame(k)
+      if (shift) out[k.id] = { ...current, y: f.y - shift }
+      lowest = Math.max(lowest, f.y - shift + current.h)
+    }
+    // The card holding them shrinks by what its contents gave back.
+    if (parentId) {
+      const card = design.nodes[parentId]
+      const cf = frameOf(card, device)
+      const shrink = Math.max(0, lowestBefore - lowest)
+      if (shrink) out[card.id] = { ...frame(card), h: Math.max(MIN_SIZE, cf.h - shrink) }
+    }
+  }
+
+  layout(null)
+  return out
+}
+
+// A live screen's layout: frames moved by hidden blocks (design + action
+// overrides), and the stage height that results.
+export function liveLayout(design, device, overrides = {}) {
+  const layout = collapseHidden(design, device, (n) => overrides[n.id]?.hidden ?? frameOf(n, device).hidden ?? false)
+  const nodes = { ...design.nodes }
+  for (const [id, frame] of Object.entries(layout)) {
+    nodes[id] = { ...nodes[id], frames: { ...nodes[id].frames, [device]: frame } }
+  }
+  return { layout, height: stageHeight({ ...design, nodes }, device) }
+}
+
+// Lines up several blocks (same parent) on their shared edge or centre:
+// how = left | center | right | top | middle | bottom. Returns frame
+// patches: { [id]: { x } | { y } }.
+export function alignFrames(frames, how) {
+  const list = Object.entries(frames)
+  if (list.length < 2) return {}
+  const left = Math.min(...list.map(([, f]) => f.x))
+  const right = Math.max(...list.map(([, f]) => f.x + f.w))
+  const top = Math.min(...list.map(([, f]) => f.y))
+  const bottom = Math.max(...list.map(([, f]) => f.y + f.h))
+  const at = {
+    left: () => ({ x: left }),
+    center: (f) => ({ x: Math.round((left + right) / 2 - f.w / 2) }),
+    right: (f) => ({ x: right - f.w }),
+    top: () => ({ y: top }),
+    middle: (f) => ({ y: Math.round((top + bottom) / 2 - f.h / 2) }),
+    bottom: (f) => ({ y: bottom - f.h }),
+  }[how]
+  return Object.fromEntries(list.map(([id, f]) => [id, at(f)]))
 }
 
 export function newId() {

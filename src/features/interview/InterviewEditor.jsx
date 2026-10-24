@@ -7,6 +7,7 @@ import {
   COLOR_TOKENS,
   DEVICES,
   addNode,
+  alignFrames,
   canHoldChildren,
   deleteNode,
   duplicateBlock,
@@ -49,8 +50,10 @@ export default function InterviewEditor({ viewSwitch }) {
   const { draft, edit } = useFormEditor()
   const [screenKey, setScreenKey] = useState(null)
   const [device, setDevice] = useState('phone')
-  const [selectedId, setSelectedId] = useState(null)
-  const [pending, setPending] = useState(null) // { kind: 'delete', id } | { kind: 'reset' }
+  // Selected blocks, in the order picked; the last one is shown in the
+  // Inspector (and gets the resize handles when it's the only one).
+  const [selection, setSelection] = useState([])
+  const [pending, setPending] = useState(null) // { kind: 'delete', ids } | { kind: 'reset' }
   // Inspector → Preview: { nodeId, anim, nonce } plays it on the canvas.
   const [preview, setPreview] = useState(null)
   const [moving, setMoving] = useState(null) // block id for "Move to…"
@@ -62,7 +65,45 @@ export default function InterviewEditor({ viewSwitch }) {
   const pageQuestions = screen.page.items.filter(isQuestion)
   const placed = placedQuestionIds(design)
   const unplaced = pageQuestions.filter((q) => !placed.has(q.id))
+  const selectedIds = selection.filter((id) => design.nodes[id])
+  const selectedId = selectedIds.at(-1) ?? null
   const selected = selectedId ? design.nodes[selectedId] : null
+
+  // id → select just it; add → toggle it in the selection; null → none.
+  function select(id, add = false) {
+    if (!id) return setSelection([])
+    setSelection((sel) => (add ? (sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id]) : [id]))
+  }
+
+  // Frame patches for several blocks, as one undo step.
+  function changeFrames(patches) {
+    const ids = Object.keys(patches)
+    if (!ids.length) return
+    change(`frames:${ids.join()}:${device}`, (dsn) =>
+      ids.reduce((d, id) => setFrame(d, id, device, patches[id]), dsn),
+    )
+  }
+
+  // Hidden on both devices (or shown on both), for every selected block.
+  function startHidden(ids, hidden) {
+    change(`start-hidden:${ids.join()}`, (dsn) =>
+      ids.reduce(
+        (d, id) => Object.keys(DEVICES).reduce((dd, dev) => setFrame(dd, id, dev, { hidden }), d),
+        dsn,
+      ),
+    )
+  }
+
+  // Lines up the selected blocks that share the last-picked block's card.
+  function align(how) {
+    const parentId = selected?.parentId ?? null
+    const frames = Object.fromEntries(
+      selectedIds
+        .filter((id) => (design.nodes[id].parentId ?? null) === parentId)
+        .map((id) => [id, frameOf(design.nodes[id], device)]),
+    )
+    changeFrames(alignFrames(frames, how))
+  }
 
   // Applies fn(design) → design to the current screen, starting from its
   // saved design or, the first time, its starter design.
@@ -100,25 +141,32 @@ export default function InterviewEditor({ viewSwitch }) {
       node.action = { type: 'next' }
     }
     change(`add:${node.id}`, (dsn) => growToFit(addNode(dsn, node), node.id))
-    setSelectedId(node.id)
+    setSelection([node.id])
   }
 
-  function remove(id) {
-    change(`delete:${id}`, (dsn) => deleteNode(dsn, id))
-    setSelectedId(null)
+  function remove(ids) {
+    change(`delete:${ids.join()}`, (dsn) => ids.reduce((d, id) => (d.nodes[id] ? deleteNode(d, id) : d), dsn))
+    setSelection([])
   }
 
-  // Copies a block (question blocks get their own new question). Worked out
-  // once, here, so the copy's id is known and can be selected.
-  function duplicate(id) {
-    const { form: next, id: copyId } = duplicateBlock(draft, screen.key, id)
-    if (!copyId) return
-    edit(`interview:${screen.key}:duplicate:${copyId}`, (d) => ({
+  // Copies blocks (question blocks get their own new question). Worked out
+  // once, here, so the copies' ids are known and can be selected.
+  function duplicate(ids) {
+    let next = draft
+    const copies = []
+    for (const id of ids) {
+      const result = duplicateBlock(next, screen.key, id)
+      if (!result.id) continue
+      next = result.form
+      copies.push(result.id)
+    }
+    if (!copies.length) return
+    edit(`interview:${screen.key}:duplicate:${copies.join()}`, (d) => ({
       ...d,
       questions: next.questions,
       interview: next.interview,
     }))
-    setSelectedId(copyId)
+    setSelection(copies)
   }
 
   // "Move to…": into another card here or on another screen.
@@ -131,7 +179,7 @@ export default function InterviewEditor({ viewSwitch }) {
     })
     setMoving(null)
     if (toKey !== from) setScreenKey(toKey)
-    setSelectedId(id)
+    setSelection([id])
   }
 
   const renderQuestion = (q) => (
@@ -165,24 +213,24 @@ export default function InterviewEditor({ viewSwitch }) {
           screenKey={screen.key}
           onScreen={(key) => {
             setScreenKey(key)
-            setSelectedId(null)
+            setSelection([])
           }}
           design={design}
           device={device}
           questions={questions}
           unplaced={unplaced}
           targetCard={targetCard}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
+          selectedIds={selectedIds}
+          onSelect={select}
           onToggleHidden={(node) =>
             change(`hidden:${node.id}:${device}`, (dsn) =>
               setFrame(dsn, node.id, device, { hidden: !frameOf(node, device).hidden }),
             )
           }
           onAdd={add}
-          onDuplicate={duplicate}
+          onDuplicate={(id) => duplicate([id])}
           onMove={setMoving}
-          onDelete={(id) => setPending({ kind: 'delete', id })}
+          onDelete={(id) => setPending({ kind: 'delete', ids: [id] })}
         />
 
         <Canvas
@@ -192,17 +240,18 @@ export default function InterviewEditor({ viewSwitch }) {
           device={device}
           questions={questions}
           renderQuestion={renderQuestion}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
+          selectedIds={selectedIds}
+          onSelect={select}
+          onSelectMany={setSelection}
           preview={preview}
-          onFrame={(id, patch) => change(`frame:${id}:${device}`, (dsn) => setFrame(dsn, id, device, patch))}
-          onKey={(e, node) => {
+          onFrames={changeFrames}
+          onKey={(e, nodes) => {
             if (e.key === 'Delete' || e.key === 'Backspace') {
               e.preventDefault()
-              setPending({ kind: 'delete', id: node.id })
+              setPending({ kind: 'delete', ids: nodes.map((n) => n.id) })
             } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
               e.preventDefault()
-              duplicate(node.id)
+              duplicate(nodes.map((n) => n.id))
             }
           }}
         />
@@ -210,8 +259,12 @@ export default function InterviewEditor({ viewSwitch }) {
         <div className="ie-side">
           {selected ? (
             <Inspector
-              key={selected.id}
+              key={selectedIds.join()}
               node={selected}
+              multi={selectedIds.length > 1 ? selectedIds.length : 0}
+              onAlign={align}
+              onStartHidden={(hidden) => startHidden(selectedIds, hidden)}
+              onTargetVisibility={(id, hidden) => startHidden([id], hidden)}
               device={device}
               screens={screens}
               pageQuestions={pageQuestions}
@@ -221,13 +274,16 @@ export default function InterviewEditor({ viewSwitch }) {
                 .map((n) => ({
                   id: n.id,
                   label: nodeLabel(n, questions),
+                  // Shown when the screen opens (on either device).
+                  shownAtStart: Object.keys(DEVICES).some((dev) => !frameOf(n, dev).hidden),
                   animations: (n.animations ?? []).map((a) => ({ id: a.id, name: a.name })),
                 }))}
-              onFrame={(patch) =>
-                change(`frame:${selected.id}:${device}`, (dsn) => setFrame(dsn, selected.id, device, patch))
-              }
+              // Frame and style changes apply to every selected block.
+              onFrame={(patch) => changeFrames(Object.fromEntries(selectedIds.map((id) => [id, patch])))}
               onStyle={(patch) =>
-                change(`style:${selected.id}:${Object.keys(patch).join()}`, (dsn) => setStyle(dsn, selected.id, patch))
+                change(`style:${selectedIds.join()}:${Object.keys(patch).join()}`, (dsn) =>
+                  selectedIds.reduce((d, id) => setStyle(d, id, patch), dsn),
+                )
               }
               onContent={(patch) =>
                 change(`content:${selected.id}:${Object.keys(patch).join()}`, (dsn) =>
@@ -235,9 +291,9 @@ export default function InterviewEditor({ viewSwitch }) {
                 )
               }
               onPreview={(anim) => setPreview({ nodeId: selected.id, anim, nonce: Date.now() })}
-              onDuplicate={() => duplicate(selected.id)}
+              onDuplicate={() => duplicate(selectedIds)}
               onMove={() => setMoving(selected.id)}
-              onDelete={() => setPending({ kind: 'delete', id: selected.id })}
+              onDelete={() => setPending({ kind: 'delete', ids: selectedIds })}
               onLevel={(delta) => {
                 const z = Math.max(0, (frameOf(selected, device).z || 0) + delta)
                 change(`frame:${selected.id}:${device}`, (dsn) => setFrame(dsn, selected.id, device, { z }))
@@ -260,10 +316,11 @@ export default function InterviewEditor({ viewSwitch }) {
               <section className="insp-group">
                 <h3>Design</h3>
                 <p className="insp-note">
-                  Click a block to edit it. Drag to move — it snaps to the left, centre, right, top
-                  and bottom (hold Alt to place freely). Drag the corners to resize and the round
-                  knob to rotate. Ctrl + scroll zooms; hold Space (or press H) and drag to move
-                  around.
+                  Click a block to edit it. Drag to move: it snaps to the card’s edges and centre
+                  and to the other blocks (hold Alt to place freely). Shift-click, or drag a box on
+                  empty space, to select several and move or style them together. Drag the corners
+                  to resize and the round knob to rotate. Ctrl + scroll zooms; hold Space (or press
+                  H) and drag to move around.
                 </p>
                 <button type="button" className="btn btn-outline" onClick={() => setPending({ kind: 'reset' })}>
                   <RotateCcw size={15} />
@@ -292,22 +349,24 @@ export default function InterviewEditor({ viewSwitch }) {
         title={
           pending?.kind === 'reset'
             ? 'Start this screen over?'
-            : `Delete this ${design.nodes[pending?.id]?.type === 'card' ? 'card' : 'block'}?`
+            : pending?.ids?.length > 1
+              ? `Delete these ${pending.ids.length} blocks?`
+              : `Delete this ${design.nodes[pending?.ids?.[0]]?.type === 'card' ? 'card' : 'block'}?`
         }
         message={
           pending?.kind === 'reset'
             ? 'Its design is replaced by a fresh starter layout on both devices. You can undo this.'
-            : design.nodes[pending?.id]?.type === 'card'
-              ? 'The card and everything inside it are removed from this screen on both devices. You can undo this.'
-              : 'It’s removed from this screen on both devices. You can undo this.'
+            : pending?.ids?.some((id) => design.nodes[id]?.type === 'card')
+              ? 'Cards go with everything inside them. They’re removed from this screen on both devices. You can undo this.'
+              : 'Removed from this screen on both devices. You can undo this.'
         }
         confirmLabel={pending?.kind === 'reset' ? 'Start over' : 'Delete'}
         onConfirm={() => {
           if (pending.kind === 'reset') {
             const isLast = screen.index === screens.length - 1
             change('reset', () => starterScreen(draft, screen, isLast))
-            setSelectedId(null)
-          } else remove(pending.id)
+            setSelection([])
+          } else remove(pending.ids)
           setPending(null)
         }}
         onCancel={() => setPending(null)}

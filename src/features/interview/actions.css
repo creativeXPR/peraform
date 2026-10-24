@@ -159,3 +159,13 @@
 .action-prop > span {
   flex: 1;
 }
+
+/* A nudge under an action that wouldn't do anything as things stand. */
+.action-hint {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}

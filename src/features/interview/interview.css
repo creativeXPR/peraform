@@ -671,6 +671,14 @@ textarea.insp-input {
 .interview-frame {
   margin: 0 auto;
   overflow: hidden;
+  /* Glides with the blocks when hidden ones give their space back. */
+  transition: height 320ms var(--ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .interview-frame {
+    transition: none;
+  }
 }
 
 .interview-desktop .interview-frame {
@@ -747,4 +755,20 @@ textarea.insp-input {
 .layer-menu .icon-btn {
   width: 26px;
   height: 26px;
+}
+
+/* Selection box drawn on empty canvas space. */
+.canvas-box {
+  position: absolute;
+  z-index: 5;
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  pointer-events: none;
+}
+
+/* Inspector, several selected: align buttons in a row. */
+.insp-align {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }

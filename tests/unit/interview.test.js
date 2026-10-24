@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEVICES,
+  alignFrames,
+  collapseHidden,
   childrenOf,
   deleteNode,
   duplicateNode,
@@ -296,5 +298,65 @@ describe('keeping saved screens in step with the question list', () => {
     const synced = syncInterview(moved)
     expect(syncInterview(synced)).toBe(synced)
     expect(syncInterview(form)).toBe(form)
+  })
+})
+
+describe('snapping to other blocks', () => {
+  const parent = { w: 400, h: 600 }
+  const other = { x: 20, y: 100, w: 200, h: 40 }
+
+  it('lines up left edges, right edges and centres with a neighbour', () => {
+    expect(snapFrame({ x: 26, y: 300, w: 100, h: 40 }, parent, 10, [other]).x).toBe(20)
+    expect(snapFrame({ x: 115, y: 300, w: 100, h: 40 }, parent, 10, [other]).x).toBe(120) // right to right
+    expect(snapFrame({ x: 66, y: 300, w: 100, h: 40 }, parent, 10, [other]).x).toBe(70) // centres
+  })
+
+  it('sits right below a neighbour, and draws the guide there', () => {
+    const snapped = snapFrame({ x: 200, y: 146, w: 100, h: 40 }, parent, 10, [other])
+    expect(snapped.y).toBe(140)
+    expect(snapped.guides).toContainEqual({ axis: 'y', at: 140 })
+  })
+
+  it('leaves the block alone when nothing is near', () => {
+    expect(snapFrame({ x: 260, y: 300, w: 60, h: 40 }, parent, 10, [other])).toMatchObject({ x: 260, y: 300, guides: [] })
+  })
+})
+
+describe('hidden blocks give their space back', () => {
+  const at = (x, y, w, h) => ({ phone: { x, y, w, h, r: 0, z: 0 } })
+  const design = {
+    nodes: {
+      card: { id: 'card', type: 'card', parentId: null, seq: 1, frames: at(16, 40, 300, 300) },
+      a: { id: 'a', type: 'text', parentId: 'card', seq: 2, frames: at(20, 20, 260, 40) },
+      b: { id: 'b', type: 'text', parentId: 'card', seq: 3, frames: at(20, 76, 260, 60) },
+      c: { id: 'c', type: 'button', parentId: 'card', seq: 4, frames: at(20, 152, 260, 48) },
+      side: { id: 'side', type: 'text', parentId: 'card', seq: 5, frames: at(290, 0, 8, 300) },
+      below: { id: 'below', type: 'card', parentId: null, seq: 6, frames: at(16, 360, 300, 100) },
+    },
+  }
+  // A strip at the top right, beside the column (it doesn't overlap a/b/c,
+  // so it never moves, and it's above them, so the card can still shrink).
+  design.nodes.side.frames = at(285, 0, 10, 30)
+
+  it('moves the blocks below up, shrinks the card, and moves what is below the card', () => {
+    const out = collapseHidden(design, 'phone', (n) => n.id === 'b')
+    expect(out.c.y).toBe(152 - 76) // b's 60 + the 16 gap after it
+    expect(out.a).toBeUndefined()
+    expect(out.card.h).toBe(300 - 76)
+    expect(out.below.y).toBe(360 - 76)
+  })
+
+  it('changes nothing when nothing is hidden', () => {
+    expect(collapseHidden(design, 'phone', () => false)).toEqual({})
+  })
+})
+
+describe('aligning several blocks', () => {
+  const frames = { a: { x: 10, y: 0, w: 100, h: 20 }, b: { x: 50, y: 40, w: 60, h: 20 } }
+  it('lines them up on a shared edge or centre', () => {
+    expect(alignFrames(frames, 'left')).toEqual({ a: { x: 10 }, b: { x: 10 } })
+    expect(alignFrames(frames, 'right')).toEqual({ a: { x: 10 }, b: { x: 50 } })
+    expect(alignFrames(frames, 'center')).toEqual({ a: { x: 10 }, b: { x: 30 } })
+    expect(alignFrames(frames, 'bottom')).toEqual({ a: { y: 40 }, b: { y: 40 } })
   })
 })

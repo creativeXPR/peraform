@@ -1,13 +1,24 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import { designedProps, play, prefersReducedMotion } from '../../lib/animations.js'
 import { THEME_FONTS } from '../../lib/theme.js'
-import { DEVICES, SHADOWS, backgroundCss, childrenOf, colorCss, frameOf, stageHeight } from '../../lib/interview.js'
+import {
+  DEVICES,
+  SHADOWS,
+  backgroundCss,
+  childrenOf,
+  colorCss,
+  frameOf,
+  liveLayout,
+  stageHeight,
+} from '../../lib/interview.js'
 // Question fields look exactly as on the normal form, in the editor too.
 import '../respond/RespondPage.css'
 import './interview.css'
 
 // Properties an action changes, with how each animates.
 const ANIMATED = ['transform', 'background-color', 'color', 'font-size', 'border-radius']
+// Live: blocks glide to close (or reopen) the space of a hidden block.
+const REFLOW = ['top', 'height', 'min-height'].map((p) => `${p} 320ms cubic-bezier(0.4, 0, 0.2, 1)`)
 
 //   override: live only — the block's state from actions (lib/actions.js):
 //   { hidden, props, transition }
@@ -49,20 +60,22 @@ function nodeStyle(node, frame, editing, override) {
   if (hidden) {
     if (editing) style.opacity = 0.35
     else {
-      // Faded out rather than removed, so showing it again can fade in
-      // (every block is positioned on its own, so nothing else moves).
+      // Faded out rather than removed, so showing it again can fade in.
+      // The blocks below close up its space (Stage → collapseHidden).
       style.opacity = 0
       style.visibility = 'hidden'
       style.pointerEvents = 'none'
     }
   }
   const t = !editing && override?.transition
+  const transitions = !editing && !prefersReducedMotion() ? [...REFLOW] : []
   if (t) {
     const props = [...ANIMATED]
     if (t.display || p.opacity !== undefined) props.push('opacity')
     if (t.display) props.push('visibility')
-    style.transition = props.map((prop) => `${prop} ${t.duration}ms ${t.easing}`).join(', ')
+    transitions.push(...props.map((prop) => `${prop} ${t.duration}ms ${t.easing}`))
   }
+  if (transitions.length) style.transition = transitions.join(', ')
   return style
 }
 
@@ -82,13 +95,16 @@ export function StageNode({ node, ctx }) {
     onButton,
     onNodePointerDown,
     selectedId,
+    selectedIds,
     renderHandles,
     renderGuides,
     overrides,
     preview, // edit: { nodeId, anim, nonce } plays one animation on the canvas
   } = ctx
-  const frame = frameOf(node, device)
   const editing = mode === 'edit'
+  // Live, a block may sit higher (or a card be shorter) while something
+  // above it is hidden; the design itself is unchanged.
+  const frame = ctx.layout?.[node.id] ?? frameOf(node, device)
   const override = overrides?.[node.id]
   const elRef = useRef(null)
   const playedRef = useRef({}) // animation id → plays seen (action triggers)
@@ -134,7 +150,7 @@ export function StageNode({ node, ctx }) {
     'stage-node',
     `stage-${node.type}`,
     frame.hidden ? 'is-hidden' : '',
-    editing && selectedId === node.id ? 'is-selected' : '',
+    editing && (selectedIds ?? [selectedId]).includes(node.id) ? 'is-selected' : '',
   ]
     .filter(Boolean)
     .join(' ')
@@ -212,20 +228,23 @@ export function StageNode({ node, ctx }) {
       onPointerDown={editing ? (e) => onNodePointerDown?.(e, node) : undefined}
     >
       {content}
-      {editing && selectedId === node.id && renderHandles?.(node)}
+      {editing && selectedId === node.id && (selectedIds?.length ?? 1) <= 1 && renderHandles?.(node)}
     </div>
   )
 }
 
 // A whole screen at design size. The caller scales it to fit.
 export default function Stage({ design, device, children, ...ctx }) {
-  const full = { design, device, ...ctx }
+  // Live: hidden blocks (by design or by an action) give their space back.
+  const live = ctx.mode === 'edit' ? null : liveLayout(design, device, ctx.overrides)
+  const full = { design, device, layout: live?.layout, ...ctx }
+  const height = live ? live.height : stageHeight(design, device)
   return (
     <div
       className="stage"
       style={{
         width: DEVICES[device].width,
-        height: stageHeight(design, device),
+        height,
         background: colorCss(design.bg) ?? 'var(--bg)',
       }}
     >
@@ -237,3 +256,4 @@ export default function Stage({ design, device, children, ...ctx }) {
     </div>
   )
 }
+

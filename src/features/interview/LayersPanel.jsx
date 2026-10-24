@@ -38,10 +38,15 @@ function Tree({ nodes, parentId, device, depth, ctx }) {
         return (
           <li key={node.id}>
             <div
-              className={`layer${ctx.selectedId === node.id ? ' is-selected' : ''}${hidden ? ' is-hidden' : ''}`}
+              className={`layer${ctx.selectedIds.includes(node.id) ? ' is-selected' : ''}${hidden ? ' is-hidden' : ''}`}
               style={{ paddingLeft: 8 + depth * 14 }}
             >
-              <button type="button" className="layer-name" onClick={() => ctx.onSelect(node.id)}>
+              <button
+                type="button"
+                className="layer-name"
+                // Shift or Ctrl/⌘: add to (or take out of) the selection.
+                onClick={(e) => ctx.onSelect(node.id, e.shiftKey || e.ctrlKey || e.metaKey)}
+              >
                 <Icon size={14} />
                 <span>{nodeLabel(node, ctx.questions)}</span>
               </button>
@@ -85,8 +90,8 @@ export default function LayersPanel({
   questions,
   unplaced, // this screen's questions not on the canvas yet
   targetCard, // the card new blocks go into, or null
-  selectedId,
-  onSelect,
+  selectedIds, // [id] — several with Shift/Ctrl-click
+  onSelect, // (id, add)
   onToggleHidden,
   onAdd, // (type, extra?)
   onDuplicate, // (id)
@@ -141,7 +146,7 @@ export default function LayersPanel({
           parentId={null}
           device={device}
           depth={0}
-          ctx={{ selectedId, onSelect, onToggleHidden, questions, onDuplicate, onMove, onDelete }}
+          ctx={{ selectedIds, onSelect, onToggleHidden, questions, onDuplicate, onMove, onDelete }}
         />
         {!Object.keys(design.nodes).length && (
           <p className="layers-note">This screen is empty. Add a card to start.</p>
