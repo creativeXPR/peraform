@@ -118,6 +118,23 @@ service cloud.firestore {
         allow delete: if isFormMember();
       }
 
+      // Answers in progress (useSavedProgress): each respondent's own copy,
+      // so a refresh doesn't lose them. Only they can see or change it;
+      // it's deleted when they submit.
+      match /progress/{uid} {
+        allow read, delete: if isSignedIn() && request.auth.uid == uid;
+        allow create, update: if isSignedIn()
+          && request.auth.uid == uid
+          && form().status == 'published'
+          && request.resource.data.keys().hasOnly(['answers', 'pageIndex', 'history', 'updatedAt'])
+          && request.resource.data.answers is map
+          && request.resource.data.answers.size() <= 500
+          && request.resource.data.pageIndex is int
+          && request.resource.data.history is list
+          && request.resource.data.history.size() <= 200
+          && request.resource.data.updatedAt == request.time;
+      }
+
       match /responses/{responseId} {
         // Respondents can read their own response once its quiz score has
         // been released; members can always read.

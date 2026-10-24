@@ -450,3 +450,44 @@ describe('Google Sheets link', () => {
     await assertFails(getDoc(doc(guest(), 'forms/f1/private/sheets')))
   })
 })
+
+describe('answers in progress', () => {
+  beforeEach(() => seed('forms/f1', form()))
+
+  const save = (db, uid = ANON, extra = {}) =>
+    setDoc(doc(db, `forms/f1/progress/${uid}`), {
+      answers: { q1: 'Ada' },
+      pageIndex: 0,
+      history: [],
+      updatedAt: serverTimestamp(),
+      ...extra,
+    })
+
+  it('lets a respondent save, read and delete their own', async () => {
+    await assertSucceeds(save(anon()))
+    await assertSucceeds(save(anon())) // updating it later
+    await assertSucceeds(getDoc(doc(anon(), `forms/f1/progress/${ANON}`)))
+    await assertSucceeds(deleteDoc(doc(anon(), `forms/f1/progress/${ANON}`)))
+  })
+
+  it('keeps it private, even from the form’s owner', async () => {
+    await assertSucceeds(save(anon()))
+    await assertFails(getDoc(doc(real(OWNER), `forms/f1/progress/${ANON}`)))
+    await assertFails(getDoc(doc(real(STRANGER), `forms/f1/progress/${ANON}`)))
+    await assertFails(save(real(STRANGER), ANON))
+  })
+
+  it('refuses other fields, made-up times and unpublished forms', async () => {
+    await assertFails(save(anon(), ANON, { respondentId: 'x' }))
+    await assertFails(save(anon(), ANON, { updatedAt: new Date('2030-01-01') }))
+    await seed('forms/f2', form({ status: 'draft' }))
+    await assertFails(
+      setDoc(doc(anon(), `forms/f2/progress/${ANON}`), {
+        answers: {},
+        pageIndex: 0,
+        history: [],
+        updatedAt: serverTimestamp(),
+      }),
+    )
+  })
+})

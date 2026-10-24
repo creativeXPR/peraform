@@ -32,6 +32,7 @@ import InterviewView from './InterviewView.jsx'
 import QuestionField from './QuestionField.jsx'
 import QuizSubmitted from './QuizSubmitted.jsx'
 import { formatClock, useCountdown } from './useCountdown.js'
+import { useSavedProgress } from './useSavedProgress.js'
 import './RespondPage.css'
 import LogoMark from '../../lib/LogoMark.jsx'
 
@@ -272,12 +273,31 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false }) {
   }, [pageIndex])
 
   function reset() {
+    saved.clear()
     setAnswers({})
     setClickState({})
     setErrors({})
     setPageIndex(0)
     setHistory([])
   }
+
+  // Answers in progress survive a refresh (and, signed in, a change of
+  // device): saved to the respondent's own account as they go. Not for
+  // previews or pre-fill mode; a pre-filled link's answers win over saved ones.
+  const fromLink = Object.keys(initialAnswers).length > 0
+  const saved = useSavedProgress({
+    formId: form.id,
+    uid,
+    enabled: form.status === 'published' && !prefillMode && state === 'filling',
+    progress: { answers, pageIndex, history },
+    onRestore: (progress) => {
+      if (fromLink) return false
+      setAnswers(progress.answers)
+      const page = Math.min(progress.pageIndex ?? 0, pages.length - 1)
+      setPageIndex(Math.max(0, page))
+      setHistory((progress.history ?? []).filter((p) => p < page))
+    },
+  })
 
   if (form.status === 'closed') {
     return <Notice title={title}>This form is no longer accepting responses.</Notice>
@@ -526,6 +546,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false }) {
       })
       setSentId(data.responseId)
       setState('sent')
+      saved.clear()
     } catch (err) {
       const code = err.code?.replace('functions/', '')
       if (code === 'already-exists') return setState('already')
@@ -560,6 +581,18 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false }) {
   sendRef.current = send
   // "Running low": the last minute, or the last quarter of a short quiz.
   const lowAt = Math.min(60, quiz.timeLimit * 15)
+
+  // Waiting (briefly) to see if there are answers to bring back.
+  if (!saved.ready) return <div className="respond-card respond-loading" aria-busy="true" />
+
+  const restoredNote = saved.restored && (
+    <p className="respond-banner respond-restored">
+      Your answers from earlier are back.{' '}
+      <button type="button" className="link-btn" onClick={reset}>
+        Start over
+      </button>
+    </p>
+  )
 
   if (interview) {
     // Designed buttons drive navigation: next (following skip logic, and
@@ -623,6 +656,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false }) {
         leaveRef={leaveRef}
         overlay={
           (prefillMode ||
+            saved.restored ||
             preview ||
             deadline ||
             error ||
@@ -630,6 +664,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false }) {
             (showProgressBar && pages.length > 1)) && (
             <div className="interview-overlay">
               {prefillMode && <PrefillBar form={form} answers={answers} />}
+              {restoredNote}
               {preview && !prefillMode && (
                 <p className="respond-banner">
                   Preview — publish this form to start collecting responses.
@@ -696,6 +731,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false }) {
         </div>
       )}
       {prefillMode && <PrefillBar form={form} answers={answers} />}
+      {restoredNote}
       {preview && !prefillMode && (
         <p className="respond-banner">Preview — publish this form to start collecting responses.</p>
       )}
