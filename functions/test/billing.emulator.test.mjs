@@ -138,6 +138,20 @@ describe('top-ups', () => {
     const payment = (await bdb.doc(`payments/${reference}`).get()).data()
     assert.equal(payment.credited, true)
     assert.equal(payment.amountKobo, 250000)
+    // One invoice number, even with four racing credits; the buyer is on it.
+    assert.match(payment.invoiceNo, /^QT-\d{4}-\d{5}$/)
+    assert.ok(payment.buyer.email.startsWith('alice'))
+  })
+
+  it('numbers invoices in order, never twice', async () => {
+    const refs = []
+    for (const packId of ['starter', 'starter']) {
+      const { reference } = await call('createTopup', alice, { packId })
+      await call('verifyTopup', alice, { reference })
+      refs.push(reference)
+    }
+    const [a, b] = await Promise.all(refs.map(async (r) => (await bdb.doc(`payments/${r}`).get()).data().invoiceNo))
+    assert.equal(Number(b.slice(-5)), Number(a.slice(-5)) + 1)
   })
 
   it('refuses a wrongly signed webhook', async () => {
@@ -240,6 +254,19 @@ describe('AI runs', () => {
     await settleHold(bdb, holdId, 300, {})
     await settleHold(bdb, holdId, 300, {})
     assert.equal((await wallet(bob.uid)).balance, 4700)
+  })
+
+  it('a cancelled run is never charged, even if it finishes', async () => {
+    await bdb.doc(`wallets/${bob.uid}`).update({ balance: 20000, held: 0 })
+    const { holdId } = await placeHold(bdb, bob.uid, { app: 'peraform', feature: 'generate-form', model: DEFAULT_BILLING.tiers.quick, amount: 2000 })
+    // Someone else can't cancel it; its owner can.
+    assert.equal((await call('aiRun', alice, { cancel: holdId })).cancelled, false)
+    assert.equal((await call('aiRun', bob, { cancel: holdId })).cancelled, true)
+    const settled = await settleHold(bdb, holdId, 900, {})
+    assert.equal(settled.cancelled, true)
+    const w = await wallet(bob.uid)
+    assert.equal(w.balance, 20000)
+    assert.equal(w.held, 0)
   })
 
   it('refuses anonymous accounts and unknown features', async () => {

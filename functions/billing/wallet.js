@@ -7,7 +7,9 @@ import { FieldValue } from 'firebase-admin/firestore'
 //   wallets/{uid}     { balance, held, lifetimeTopupKobo }      (millicredits)
 //   ledger/{id}       { uid, type, millicredits (signed), balanceAfter, ref, … }
 //   holds/{id}        { uid, app, feature, model, heldMillicredits, status }
-//   payments/{ref}    { uid, packId, amountKobo, millicredits, status, credited }
+//   payments/{ref}    { uid, packId, amountKobo, millicredits, status, credited,
+//                       invoiceNo (once paid), buyer: { email, name } }
+//   counters/invoices { next }   — invoice numbers, one sequence, never reused
 
 export class BillingError extends Error {
   constructor(code, message, details) {
@@ -87,6 +89,7 @@ export async function placeHold(bdb, uid, { app, feature, model, amount, minAmou
 // Charges the real cost (never more than the hold) and frees the rest.
 // If the stale-hold sweeper already released it, the reservation is gone
 // but the work was done, so the charge still applies to the balance.
+// A run the user cancelled is released instead: cancelling is always free.
 export async function settleHold(bdb, holdId, charge, usage) {
   const holdRef = bdb.doc(`holds/${holdId}`)
   return bdb.runTransaction(async (tx) => {
@@ -94,6 +97,13 @@ export async function settleHold(bdb, holdId, charge, usage) {
     if (!hold || hold.status === 'settled') return null
     const walletRef = bdb.doc(`wallets/${hold.uid}`)
     const wallet = (await tx.get(walletRef)).data()
+    if (hold.cancelled) {
+      if (hold.status === 'held') {
+        tx.update(walletRef, { held: wallet.held - hold.heldMillicredits, updatedAt: FieldValue.serverTimestamp() })
+      }
+      tx.update(holdRef, { status: 'released', reason: 'cancelled', settledAt: FieldValue.serverTimestamp() })
+      return { cancelled: true, charged: 0 }
+    }
     const amount = Math.min(charge, hold.heldMillicredits)
     const stillHeld = hold.status === 'held'
     const balanceAfter = wallet.balance - amount
@@ -116,6 +126,18 @@ export async function settleHold(bdb, holdId, charge, usage) {
       ...usage,
     })
     return { charged: amount, spendable: balanceAfter - heldAfter }
+  })
+}
+
+// The user pressed Cancel: marks their running hold so it's released,
+// not charged, when the run comes back. Only the hold's owner can.
+export async function cancelHold(bdb, uid, holdId) {
+  const holdRef = bdb.doc(`holds/${holdId}`)
+  return bdb.runTransaction(async (tx) => {
+    const hold = (await tx.get(holdRef)).data()
+    if (!hold || hold.uid !== uid || hold.status !== 'held') return false
+    tx.update(holdRef, { cancelled: true })
+    return true
   })
 }
 
@@ -173,6 +195,13 @@ export async function creditPayment(bdb, reference, paid) {
       return { status: 'mismatch', credited: false, payment }
     }
 
+    // The next invoice number, taken in this transaction so two payments
+    // can never share one, and a number is only used by a credited payment.
+    const counterRef = bdb.doc('counters/invoices')
+    const next = (await tx.get(counterRef)).data()?.next ?? 1
+    const invoiceNo = invoiceNumber(next)
+    tx.set(counterRef, { next: next + 1 })
+
     const balanceAfter = (wallet?.balance ?? 0) + payment.millicredits
     tx.set(
       walletRef,
@@ -191,6 +220,8 @@ export async function creditPayment(bdb, reference, paid) {
       paystackId: paid.id ?? null,
       channel: paid.channel ?? null,
       paidAt: paid.paid_at ?? null,
+      invoiceNo,
+      invoicedAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     })
     ledgerEntry(tx, bdb, {
@@ -204,6 +235,11 @@ export async function creditPayment(bdb, reference, paid) {
     })
     return { status: 'success', credited: true, payment, balance: balanceAfter }
   })
+}
+
+// QT-2026-00001: suite prefix, year, then the running number.
+export function invoiceNumber(n, year = new Date().getUTCFullYear()) {
+  return `QT-${year}-${String(n).padStart(5, '0')}`
 }
 
 // A refunded or charged-back payment takes its credits back, even if that

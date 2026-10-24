@@ -155,7 +155,14 @@ export default function CreditsPage() {
                     {when(p.createdAt)} · {p.id}
                   </span>
                 </div>
-                <span className={`credits-status credits-status-${p.status}`}>{STATUS[p.status] ?? p.status}</span>
+                <span className="credits-row-end">
+                  {p.credited && (
+                    <Link to={`/credits/invoice/${p.id}`} className="link-btn">
+                      Invoice
+                    </Link>
+                  )}
+                  <span className={`credits-status credits-status-${p.status}`}>{STATUS[p.status] ?? p.status}</span>
+                </span>
               </li>
             ))}
           </ul>

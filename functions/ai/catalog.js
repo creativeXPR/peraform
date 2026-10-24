@@ -3,7 +3,7 @@
 // of a typical run (for the "≈ X credits" hint). Shared with the app, so
 // no prompts or imports here; those are in features.js (server only).
 //
-// Quality levels: quick = Gemini 3.1 Flash-Lite, standard = Gemini 3.8
+// Quality levels: quick = Gemini 3.5 Flash-Lite, standard = Gemini 3.6
 // Flash, best = Gemini 3.1 Pro (billing/pricing.js → tiers; config/billing
 // can repoint them). Every level carries the same markup.
 

@@ -16,6 +16,7 @@ import { DEFAULT_PACKS, affordableOutputTokens, chargeFor, costUsd, mergeBilling
 import {
   BillingError,
   adminAdjust,
+  cancelHold,
   creditPayment,
   ensureWallet as ensureWalletDoc,
   placeHold,
@@ -95,6 +96,8 @@ export const createTopup = onCall({ region: REGION, secrets: [PAYSTACK_SECRET_KE
     uid,
     packId: pack.id,
     packName: pack.name,
+    // For the invoice: who paid (as on their account at the time).
+    buyer: { email, name: request.auth.token.name ?? null },
     amountKobo: pack.priceKobo,
     millicredits: pack.millicredits,
     currency: 'NGN',
@@ -199,10 +202,17 @@ export const paystackWebhook = onRequest(
 // ── AI runs ─────────────────────────────────────────────────
 // Reserve the most it could cost → run the model → charge what it really
 // used (and free the rest). Any failure frees it all: no charge.
+// Streams progress to the app as it goes: { stage: 'started' } once the
+// credits are reserved, then the feature's own progress (e.g. questions
+// written so far). Closing the dialog cancels the run, free of charge.
 export const aiRun = onCall(
-  { region: REGION, timeoutSeconds: 120, memory: '512MiB' },
-  async (request) => {
+  { region: REGION, timeoutSeconds: 300, memory: '512MiB' },
+  async (request, response) => {
     const uid = requireAccount(request)
+    // { cancel: holdId }: the user pressed Cancel on a run in progress.
+    if (request.data?.cancel) {
+      return { cancelled: await cancelHold(bdb, uid, String(request.data.cancel)) }
+    }
     const featureId = request.data?.feature
     const feature = FEATURES[featureId]
     if (!feature) throw new HttpsError('invalid-argument', 'Unknown AI feature.')
@@ -242,9 +252,21 @@ export const aiRun = onCall(
       throw err
     }
 
+    const send = (chunk) => response?.sendChunk(chunk).catch(() => {})
+    send({ stage: 'started', reserved, holdId })
+    let shown = ''
+    const onText = (text) => {
+      const progress = feature.progress?.(text)
+      const key = JSON.stringify(progress)
+      if (progress && key !== shown) {
+        shown = key
+        send({ stage: 'writing', ...progress })
+      }
+    }
+
     try {
       const run = AI_FAKE
-        ? await fakeRun(featureId, request.data?.input, inputTokens)
+        ? await fakeRun(featureId, request.data?.input, inputTokens, onText, response?.signal)
         : await runModel({
             model,
             system: feature.system,
@@ -253,6 +275,8 @@ export const aiRun = onCall(
             // Whatever the reservation pays for, up to the feature's budget.
             maxTokens: Math.min(feature.maxTokens[prepared.mode], affordableOutputTokens(billing, model, inputTokens, reserved)),
             effort: feature.effort,
+            onText,
+            signal: response?.signal,
           })
       const result = feature.result(run.json)
       if (!result) throw new AiError('empty')
@@ -261,16 +285,22 @@ export const aiRun = onCall(
       const charge = chargeFor(billing, usd)
       if (charge > reserved) logger.warn('AI run cost more than its hold', { featureId, model, charge, reserved, ...run.usage })
       const settled = await settleHold(bdb, holdId, charge, { ...run.usage, costUsd: usd, tier })
+      if (settled?.cancelled) {
+        logger.info('AI run cancelled, no charge', { featureId, model, ...run.usage })
+        throw new HttpsError('cancelled', 'Cancelled. You weren’t charged.')
+      }
       return { result, charged: settled?.charged ?? 0, spendable: settled?.spendable ?? null }
     } catch (err) {
+      if (err instanceof HttpsError) throw err
       await releaseHold(bdb, holdId).catch((e) => logger.error('Release failed', { holdId, err: e.message }))
       logger.warn('AI run failed, no charge', { featureId, model, err: err.message })
       const message =
-        err.message === 'refused'
-          ? 'The AI can’t help with that request. You weren’t charged.'
-          : err.message === 'too-long'
-            ? 'That was too big to finish in one go. Try something shorter. You weren’t charged.'
-            : 'The AI didn’t come back with a usable answer. You weren’t charged; please try again.'
+        {
+          refused: 'The AI can’t help with that request. You weren’t charged.',
+          'too-long': 'That was too big to finish in one go. Try something shorter. You weren’t charged.',
+          stalled: 'The AI stopped responding. You weren’t charged; please try again.',
+          cancelled: 'Cancelled. You weren’t charged.',
+        }[err.message] ?? 'The AI didn’t come back with a usable answer. You weren’t charged; please try again.'
       throw new HttpsError('unavailable', message)
     }
   },
@@ -278,9 +308,19 @@ export const aiRun = onCall(
 
 // Emulator stand-in for the AI. Test inputs: "FAIL" fails; "SLOW…" takes
 // 2 s (so tests can overlap runs).
-async function fakeRun(featureId, input, inputTokens) {
+async function fakeRun(featureId, input, inputTokens, onText, signal) {
   if (input?.text === 'FAIL') throw new AiError('fake failure')
-  if (input?.text?.startsWith('SLOW')) await new Promise((r) => setTimeout(r, 2000))
+  onText?.(JSON.stringify(FAKE_OUTPUT[featureId]))
+  if (input?.text?.startsWith('SLOW')) {
+    // Stops if the caller hangs up, like the real run.
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(resolve, 2000)
+      signal?.addEventListener('abort', () => {
+        clearTimeout(timer)
+        reject(new AiError('cancelled'))
+      })
+    })
+  }
   return { json: FAKE_OUTPUT[featureId], usage: { tokensIn: inputTokens, tokensOut: 800 } }
 }
 

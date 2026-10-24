@@ -7,9 +7,12 @@
 
 // Model prices in USD per 1M tokens (text, prompts ≤ 200k tokens):
 //   Gemini on Vertex AI (global endpoint): cloud.google.com/vertex-ai/
-//     generative-ai/pricing, read 2026-10-24. gemini-3.8-flash is at an
-//     introductory price until 2026-12-31; from 2027-01-01 it is $1.50 /
-//     $7.50. Update config/billing then. (A regional VERTEX_LOCATION costs
+//     generative-ai/pricing, read 2026-10-24. gemini-3.6/3.8-flash are at
+//     an introductory price until 2026-12-31; from 2027-01-01 they are
+//     $1.50 / $7.50. Update config/billing then.
+//   Tiers were picked on speed (2026-10-24, same prompt, 3 runs): 3.5
+//     Flash-Lite 2.5 s, 3.6 Flash 4–6 s, 3.1 Pro 13–15 s. 3.8 Flash swung
+//     from 7 s to over 90 s, and 3.1 Flash-Lite once looped until its limit. (A regional VERTEX_LOCATION costs
 //     10% more for Gemini 3.x.) The 2.5 models aren't open to this project
 //     on Vertex (404), so the tiers use 3.x; their prices stay for reference.
 //   Claude: Anthropic's pricing, read 2026-10-06 (kept so a tier can be
@@ -24,7 +27,17 @@ export const DEFAULT_BILLING = {
   maxChargeMillicredits: 40000, // 40 credits per run, at most
   starterMillicredits: 10000, // 10 free credits for a new account
   lowBalanceMillicredits: 5000,
+  // Who the invoices are from (config/billing → invoice overrides it).
+  invoice: {
+    name: 'Quality Tools',
+    email: 'qualitytoolsx@gmail.com',
+    website: 'quality-toolsx.web.app',
+    address: '',
+    note: 'Payment processed by Paystack. Credits never expire and work in every Quality Tools app.',
+  },
   models: {
+    'gemini-3.5-flash-lite': { inUsdPerM: 0.3, outUsdPerM: 2.5 },
+    'gemini-3.6-flash': { inUsdPerM: 0.75, outUsdPerM: 3.75 },
     'gemini-3.1-flash-lite': { inUsdPerM: 0.25, outUsdPerM: 1.5 },
     'gemini-3.8-flash': { inUsdPerM: 0.75, outUsdPerM: 3.75 },
     'gemini-3.1-pro-preview': { inUsdPerM: 2, outUsdPerM: 12 },
@@ -36,8 +49,8 @@ export const DEFAULT_BILLING = {
   },
   // What each quality level runs on.
   tiers: {
-    quick: 'gemini-3.1-flash-lite',
-    standard: 'gemini-3.8-flash',
+    quick: 'gemini-3.5-flash-lite',
+    standard: 'gemini-3.6-flash',
     best: 'gemini-3.1-pro-preview',
   },
 }
@@ -52,6 +65,7 @@ export function mergeBilling(stored = {}) {
     ...stored,
     models: { ...DEFAULT_BILLING.models, ...stored.models },
     tiers: { ...DEFAULT_BILLING.tiers, ...stored.tiers },
+    invoice: { ...DEFAULT_BILLING.invoice, ...stored.invoice },
   }
 }
 

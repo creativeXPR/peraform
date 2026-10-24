@@ -68,6 +68,14 @@ Choose the question type that makes answering fastest and the answers easiest to
 Mark a question required only when the form can't do without it. Keep wording short, neutral and friendly. Never ask for passwords or card details.
 Write in the language of the request.`
 
+function unescapeJson(s) {
+  try {
+    return JSON.parse(`"${s}"`)
+  } catch {
+    return s
+  }
+}
+
 function cleanText(value, max) {
   if (typeof value !== 'string') throw new InputError('Tell us what the form is for.')
   const text = value.trim()
@@ -95,6 +103,14 @@ export const FEATURES = {
     result(json) {
       if (!json || !Array.isArray(json.questions) || !json.questions.length) return null
       return { form: json }
+    },
+    // From the half-written JSON: the form's title, how many questions are
+    // under way, and the titles written so far (each question starts with
+    // "type", then "title"; the first title is the form's).
+    progress(text) {
+      const questions = (text.match(/"type"\s*:/g) ?? []).length
+      const titles = [...text.matchAll(/"title"\s*:\s*"((?:[^"\\]|\\.)*)"/g)].map((m) => unescapeJson(m[1]))
+      return { title: titles[0] ?? null, questions, written: titles.slice(1) }
     },
   },
 }

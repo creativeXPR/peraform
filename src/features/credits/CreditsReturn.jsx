@@ -57,9 +57,16 @@ export default function CreditsReturn() {
       <Icon size={40} className={`credits-return-icon credits-return-${result.status}`} />
       <h1>{title}</h1>
       {text && <p className="credits-sub">{text}</p>}
-      <Link to="/credits" className="btn btn-primary">
-        Back to credits
-      </Link>
+      <div className="credits-return-actions">
+        {result.status === 'success' && (
+          <Link to={`/credits/invoice/${reference}`} className="btn btn-outline">
+            View invoice
+          </Link>
+        )}
+        <Link to="/credits" className="btn btn-primary">
+          Back to credits
+        </Link>
+      </div>
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Sparkles, X } from 'lucide-react'
+import { Check, Sparkles, X } from 'lucide-react'
 import { callAiRun } from '../../lib/firebase.js'
 import { AI_FEATURES, holdRange } from '../../../functions/ai/catalog.js'
 import { formatCredits, typicalCharge } from '../../../functions/billing/pricing.js'
@@ -20,7 +20,8 @@ const LEVELS = [
 
 // "Create with AI": describe the form (or paste a document), pick a quality
 // level, and get a ready-to-edit draft. Shows what it will roughly cost
-// and the most it can cost before anything runs.
+// and the most it can cost before anything runs, then live progress (the
+// run streams: each question appears as it's written). Cancel is free.
 export default function GenerateFormDialog({ open, onClose }) {
   const ref = useRef(null)
   const navigate = useNavigate()
@@ -31,6 +32,10 @@ export default function GenerateFormDialog({ open, onClose }) {
   const [tier, setTier] = useState(spec.defaultTier)
   const [state, setState] = useState('idle') // idle | running
   const [error, setError] = useState('')
+  // { stage: 'starting' | 'started' | 'writing' | 'saving', title, questions, written }
+  const [progress, setProgress] = useState(null)
+  const [elapsed, setElapsed] = useState(0)
+  const abortRef = useRef(null)
 
   useEffect(() => {
     const dialog = ref.current
@@ -46,16 +51,57 @@ export default function GenerateFormDialog({ open, onClose }) {
   const short = loaded && spendable < range.min
   const running = state === 'running'
 
+  // Seconds since the run started, for the progress panel.
+  useEffect(() => {
+    if (!running) return
+    const started = Date.now()
+    const timer = setInterval(() => setElapsed(Math.floor((Date.now() - started) / 1000)), 1000)
+    return () => clearInterval(timer)
+  }, [running])
+
   function close() {
     if (!running) onClose()
+  }
+
+  // Ask the server to cancel first. If the run is still going, it's marked
+  // so it's released, not charged, and we stop waiting. If it has just
+  // finished (and been charged), keep the result: the form is on its way.
+  async function cancel() {
+    const { controller, holdId } = abortRef.current ?? {}
+    if (!holdId) {
+      controller?.abort()
+      return
+    }
+    try {
+      const { data } = await callAiRun({ cancel: holdId })
+      if (data.cancelled) controller.abort()
+    } catch {
+      controller.abort()
+    }
   }
 
   async function generate(e) {
     e.preventDefault()
     setState('running')
     setError('')
+    setElapsed(0)
+    setProgress({ stage: 'starting' })
+    const controller = new AbortController()
+    abortRef.current = { controller, holdId: null }
     try {
-      const { data } = await callAiRun({ feature: FEATURE, tier, input: { mode, text } })
+      const call = await callAiRun.stream(
+        { feature: FEATURE, tier, input: { mode, text } },
+        { signal: controller.signal },
+      )
+      // call.data rejects too when the stream fails or is cancelled; the
+      // loop below reports that, so don't let it surface as unhandled.
+      call.data.catch(() => {})
+      for await (const chunk of call.stream) {
+        if (chunk.holdId) abortRef.current.holdId = chunk.holdId
+        setProgress(chunk)
+      }
+      const data = await call.data
+      setProgress((p) => ({ ...p, stage: 'saving' }))
       const content = parseFormContent(data.result.form, 'AI form')
       const id = await createForm(user.uid, content)
       navigate(`/forms/${id}/edit`, {
@@ -63,6 +109,11 @@ export default function GenerateFormDialog({ open, onClose }) {
       })
     } catch (err) {
       setState('idle')
+      setProgress(null)
+      if (controller.signal.aborted) {
+        setError('Cancelled. You weren’t charged.')
+        return
+      }
       setError(
         err.message === 'insufficient-credits'
           ? `This needs at least ${formatCredits(err.details?.needed ?? range.min)} credits free and you have ${formatCredits(err.details?.spendable ?? spendable)}.`
@@ -149,7 +200,9 @@ export default function GenerateFormDialog({ open, onClose }) {
           })}
         </fieldset>
 
-        <p className="ai-hold">
+        {running && <Progress progress={progress} elapsed={elapsed} />}
+
+        <p className="ai-hold" hidden={running}>
           {short
             ? `Needs at least ${formatCredits(range.min)} credits free; you have ${formatCredits(spendable)}.`
             : `Reserves up to ${formatCredits(hold)} credits while it works; you pay only what it uses. You have ${loaded ? formatCredits(spendable) : '…'}.`}
@@ -161,6 +214,11 @@ export default function GenerateFormDialog({ open, onClose }) {
         )}
 
         <div className="confirm-actions">
+          {running && (
+            <button type="button" className="btn btn-outline" onClick={cancel}>
+              Cancel
+            </button>
+          )}
           {short ? (
             <Link to="/credits" className="btn btn-primary">
               Top up credits
@@ -174,5 +232,43 @@ export default function GenerateFormDialog({ open, onClose }) {
         </div>
       </form>
     </dialog>
+  )
+}
+
+// What the run is doing right now. The questions appear as they're written.
+function Progress({ progress, elapsed }) {
+  const { stage, title, questions = 0, written = [] } = progress ?? {}
+  const status =
+    stage === 'saving'
+      ? 'Saving your form…'
+      : stage === 'writing' && questions > 0
+        ? `Writing question ${questions}…`
+        : stage === 'writing' || stage === 'started'
+          ? 'Planning your form…'
+          : 'Reserving credits…'
+  return (
+    <section className="ai-progress" aria-live="polite">
+      <div className="ai-progress-head">
+        <span className="ai-progress-spark" aria-hidden="true">
+          <Sparkles size={16} />
+        </span>
+        <strong>{status}</strong>
+        <span className="ai-progress-time">{elapsed}s</span>
+      </div>
+      {title && <p className="ai-progress-title">{title}</p>}
+      {written.length > 0 && (
+        <ol className="ai-progress-list">
+          {written.slice(-5).map((t, i, shown) => (
+            <li key={written.length - shown.length + i}>
+              <Check size={14} aria-hidden="true" />
+              {t || 'Untitled question'}
+            </li>
+          ))}
+        </ol>
+      )}
+      {elapsed >= 25 && stage !== 'saving' && (
+        <p className="ai-progress-note">Longer forms take a little longer. It’s still going; you can cancel at no charge.</p>
+      )}
+    </section>
   )
 }

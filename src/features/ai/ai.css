@@ -144,3 +144,89 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Live progress while the AI writes the form. */
+.ai-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: var(--radius-control);
+  background: var(--accent-soft);
+}
+
+.ai-progress-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.ai-progress-spark {
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  animation: ai-pulse 1.4s var(--ease) infinite;
+}
+
+.ai-progress-time {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ai-progress-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.ai-progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.ai-progress-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  animation: ai-in 0.25s var(--ease);
+}
+
+.ai-progress-list svg {
+  flex-shrink: 0;
+  color: var(--success);
+}
+
+.ai-progress-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+@keyframes ai-pulse {
+  50% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+}
+
+@keyframes ai-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-progress-spark,
+  .ai-progress-list li {
+    animation: none;
+  }
+}
