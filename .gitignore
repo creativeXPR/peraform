@@ -32,3 +32,6 @@ dist-ssr
 
 # Local function secrets (emulator only)
 functions/.secret.local
+
+# Local emulator config on shifted ports (testing beside other projects)
+firebase.alt.json
