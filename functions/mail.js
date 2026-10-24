@@ -1,4 +1,3 @@
-import nodemailer from 'nodemailer'
 import { logger } from 'firebase-functions'
 import { defineSecret, defineString } from 'firebase-functions/params'
 
@@ -21,6 +20,8 @@ export async function sendMail({ to, subject, text, html }) {
     logger.info('Email not configured, skipping', { subject })
     return false
   }
+  // Loaded only when an email is actually sent (keeps cold starts fast).
+  const { default: nodemailer } = await import('nodemailer')
   transport ??= nodemailer.createTransport({
     host: SMTP_HOST.value(),
     port: 465,

@@ -1812,3 +1812,89 @@
   outline: none;
   border-color: var(--accent);
 }
+
+/* Embed HTML / Keyboard shortcuts dialogs */
+.embed-dialog {
+  width: min(560px, calc(100vw - 32px));
+}
+
+.embed-code {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  resize: none;
+}
+
+.embed-size {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.embed-size label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.embed-size input {
+  width: 84px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.shortcuts-dialog {
+  width: min(560px, calc(100vw - 32px));
+}
+
+.shortcuts-group h3 {
+  margin: 8px 0 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.shortcuts-group dl {
+  margin: 0;
+}
+
+.shortcuts-group dl > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.shortcuts-group dd {
+  margin: 0;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.shortcuts-group kbd {
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: var(--fill);
+  font-family: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+}

@@ -1,5 +1,4 @@
 import { gzipSync } from 'node:zlib'
-import sharp from 'sharp'
 
 // Respondents' uploads are compressed after they land in Storage:
 //   photos  → resized to fit MAX_SIDE, re-encoded in the same format
@@ -40,7 +39,10 @@ export function compressionFor({ name = '', contentType = '', contentEncoding, s
   return null
 }
 
+// sharp is large: loaded on first use, so other functions' cold starts
+// (which share this code) don't pay for it.
 async function shrinkImage(input, type) {
+  const { default: sharp } = await import('sharp')
   const img = sharp(input, { failOn: 'none' })
     .rotate() // Apply EXIF orientation before metadata is dropped.
     .resize({ width: MAX_SIDE, height: MAX_SIDE, fit: 'inside', withoutEnlargement: true })

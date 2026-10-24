@@ -1,12 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import {
-  doc,
-  getDoc,
-  getDocFromServer,
-  serverTimestamp,
-  setDoc,
-} from 'firebase/firestore'
+import { doc, getDoc, getDocFromServer, serverTimestamp, setDoc } from 'firebase/firestore'
 import { CheckCircle2, Moon, Sun, Timer } from 'lucide-react'
 import { callFormGate, callSubmitResponse, db } from '../../lib/firebase.js'
 import {
@@ -23,6 +17,7 @@ import { needsSignIn, quizSettings, settingsOf, topBarTitle } from '../../lib/fo
 import { applyClick, isHiddenNow, resolveActions, shownByActions } from '../../lib/actions.js'
 import { frameOf, screenDesign, screensOf, visibleQuestionIds } from '../../lib/interview.js'
 import { useViewportDevice } from '../../lib/useViewportDevice.js'
+import { parsePrefill } from '../../lib/prefill.js'
 import { shuffled } from '../../lib/shuffle.js'
 import { loadThemeFont, themeOf, themeStyle } from '../../lib/theme.js'
 import { validateAnswer } from '../../lib/validation.js'
@@ -30,6 +25,8 @@ import { useTheme } from '../../lib/useTheme.js'
 import { ensureSignedIn } from '../auth/authActions.js'
 import { isCreator, useAuth } from '../auth/useAuth.js'
 import AccessGate from './AccessGate.jsx'
+import PrefillBar from './PrefillBar.jsx'
+import PrintView from './PrintView.jsx'
 import ContentBlock from './ContentBlock.jsx'
 import InterviewView from './InterviewView.jsx'
 import QuestionField from './QuestionField.jsx'
@@ -82,9 +79,39 @@ export default function RespondPage() {
   // A gate only applies to the account it was checked for.
   const activeGate = gate?.key === `${formId}:${uid}` ? gate : null
 
+  // ?embed=1: inside someone's website (no top bar or footer).
+  // ?print=1: everything on one page, blank, ready to print.
+  // ?mode=prefill: an editor answering questions to get a pre-filled link.
+  const [modes] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return {
+      embed: params.get('embed') === '1',
+      print: params.get('print') === '1',
+      prefill: params.get('mode') === 'prefill',
+      search: window.location.search,
+    }
+  })
+
+  if (form && modes.print) {
+    return (
+      <div className="respond themed respond-print" style={themeStyle(formTheme, false)}>
+        <PrintView form={form} />
+      </div>
+    )
+  }
+
   return (
-    <div className="respond themed" style={form ? themeStyle(formTheme, mode === 'dark') : undefined}>
-      <RespondTopBar theme={mode} toggleTheme={toggleTheme} title={form ? topBarTitle(form) : null} />
+    <div
+      className={`respond themed${modes.embed ? ' respond-embed' : ''}`}
+      style={form ? themeStyle(formTheme, mode === 'dark') : undefined}
+    >
+      {!modes.embed && (
+        <RespondTopBar
+          theme={mode}
+          toggleTheme={toggleTheme}
+          title={form ? topBarTitle(form) : null}
+        />
+      )}
       <main className="respond-main">
         {activeGate ? (
           <AccessGate gate={activeGate} formId={formId} />
@@ -97,11 +124,19 @@ export default function RespondPage() {
         ) : !form ? (
           <div className="respond-skeleton" aria-busy="true" />
         ) : (
-          <FormView form={form} user={user} />
+          <FormView
+            form={form}
+            user={user}
+            initialAnswers={parsePrefill(form, modes.search)}
+            prefillMode={modes.prefill && Boolean(user && form.memberIds.includes(user.uid))}
+          />
         )}
       </main>
       <footer className="respond-foot">
-        Made with <Link to="/">PeraForm</Link>
+        Made with{' '}
+        <Link to="/" target={modes.embed ? '_blank' : undefined}>
+          PeraForm
+        </Link>
       </footer>
     </div>
   )
@@ -169,9 +204,12 @@ function cleanAnswer(question, value) {
   )
 }
 
-function FormView({ form, user }) {
+//   initialAnswers: from a pre-filled link (lib/prefill.js)
+//   prefillMode: an editor making a pre-filled link — nothing is required
+//   or submitted; the bar at the top turns the answers into a link.
+function FormView({ form, user, initialAnswers = {}, prefillMode = false }) {
   const formTheme = themeOf(form)
-  const [answers, setAnswers] = useState({})
+  const [answers, setAnswers] = useState(initialAnswers)
   // Interview mode: what button clicks have changed so far (lib/actions.js).
   const [clickState, setClickState] = useState({})
   const [errors, setErrors] = useState({}) // questionId → message
@@ -276,9 +314,7 @@ function FormView({ form, user }) {
   if (state === 'sent' || state === 'already') {
     return (
       <Notice title={title} icon={<CheckCircle2 size={36} className="respond-done-icon" />}>
-        {state === 'sent'
-          ? doneMessage
-          : 'You’ve already responded to this form.'}
+        {state === 'sent' ? doneMessage : 'You’ve already responded to this form.'}
         {state === 'sent' && !limitOneResponse && showSubmitAnother && (
           <>
             <br />
@@ -383,12 +419,16 @@ function FormView({ form, user }) {
   const screens = interview ? screensOf(form) : null
   const design = interview ? screenDesign(form, screens[pageIndex], screens) : null
   // Blocks' state from actions: button clicks so far + answer conditions.
-  const nodeHidden = (id) => (design?.nodes[id] ? frameOf(design.nodes[id], device).hidden ?? false : false)
+  const nodeHidden = (id) =>
+    design?.nodes[id] ? (frameOf(design.nodes[id], device).hidden ?? false) : false
   const overrides = interview
     ? resolveActions({
         sources: Object.values(design.nodes)
           .filter((n) => n.actions?.length)
-          .map((n) => ({ actions: n.actions, questionId: n.type === 'question' ? n.questionId : null })),
+          .map((n) => ({
+            actions: n.actions,
+            questionId: n.type === 'question' ? n.questionId : null,
+          })),
         answers,
         clickState,
         baseHidden: nodeHidden,
@@ -413,6 +453,7 @@ function FormView({ form, user }) {
   // Every question on this page must be complete (if required) and pass its
   // response validation before moving on.
   function pageIsValid() {
+    if (prefillMode) return true // filling in only some answers is the point
     const found = {}
     for (const q of asked) {
       const value = answers[q.id]
@@ -428,7 +469,9 @@ function FormView({ form, user }) {
     const first = asked.find((q) => found[q.id])
     if (!first) return true
     setErrors(found)
-    document.getElementById(`q-${first.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    document
+      .getElementById(`q-${first.id}`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     return false
   }
 
@@ -453,6 +496,10 @@ function FormView({ form, user }) {
   // auto: the timer ran out — send what's there, skipping required checks.
   async function send({ auto }) {
     if (state === 'sending' || state === 'sent') return
+    if (prefillMode) {
+      setError('This is pre-fill mode: use “Get pre-filled link” at the top instead of submitting.')
+      return
+    }
     // Only pages the respondent actually saw — skipped sections don't count.
     const visited = new Set([...history, pageIndex])
     const clean = {}
@@ -471,7 +518,10 @@ function FormView({ form, user }) {
       // Anonymous session if needed; the function checks everything else
       // (functions/index.js → submitResponse).
       await ensureSignedIn()
-      const { data } = await callSubmitResponse({ formId: form.id, answers: clean })
+      const { data } = await callSubmitResponse({
+        formId: form.id,
+        answers: clean,
+      })
       setSentId(data.responseId)
       setState('sent')
     } catch (err) {
@@ -480,7 +530,9 @@ function FormView({ form, user }) {
       if (code === 'deadline-exceeded') return setState('late')
       setState('filling')
       if (auto) {
-        setError('Time’s up, but your answers couldn’t be sent. Check your connection and press Submit.')
+        setError(
+          'Time’s up, but your answers couldn’t be sent. Check your connection and press Submit.',
+        )
         return
       }
       // Server errors carry a readable message (closed form, too many
@@ -568,10 +620,18 @@ function FormView({ form, user }) {
         overrides={overrides}
         leaveRef={leaveRef}
         overlay={
-          (preview || deadline || error || state === 'sending' || (showProgressBar && pages.length > 1)) && (
+          (prefillMode ||
+            preview ||
+            deadline ||
+            error ||
+            state === 'sending' ||
+            (showProgressBar && pages.length > 1)) && (
             <div className="interview-overlay">
-              {preview && (
-                <p className="respond-banner">Preview — publish this form to start collecting responses.</p>
+              {prefillMode && <PrefillBar form={form} answers={answers} />}
+              {preview && !prefillMode && (
+                <p className="respond-banner">
+                  Preview — publish this form to start collecting responses.
+                </p>
               )}
               {showProgressBar && pages.length > 1 && (
                 <div
@@ -582,11 +642,18 @@ function FormView({ form, user }) {
                   aria-valuemax={pages.length}
                   aria-valuenow={pageIndex + 1}
                 >
-                  <span style={{ width: `${((pageIndex + 1) / pages.length) * 100}%` }} />
+                  <span
+                    style={{
+                      width: `${((pageIndex + 1) / pages.length) * 100}%`,
+                    }}
+                  />
                 </div>
               )}
               {deadline && (
-                <div className={`quiz-timer${secondsLeft <= lowAt ? ' quiz-timer-low' : ''}`} role="timer">
+                <div
+                  className={`quiz-timer${secondsLeft <= lowAt ? ' quiz-timer-low' : ''}`}
+                  role="timer"
+                >
                   <Timer size={16} />
                   <span>{formatClock(secondsLeft)}</span>
                   <span className="quiz-timer-label">left</span>
@@ -626,7 +693,8 @@ function FormView({ form, user }) {
           <span className="quiz-timer-label">left</span>
         </div>
       )}
-      {preview && (
+      {prefillMode && <PrefillBar form={form} answers={answers} />}
+      {preview && !prefillMode && (
         <p className="respond-banner">Preview — publish this form to start collecting responses.</p>
       )}
 
@@ -682,7 +750,10 @@ function FormView({ form, user }) {
           <div
             key={q.id}
             className="respond-reveal"
-            style={{ animationDuration: `${t.duration}ms`, animationTimingFunction: t.easing }}
+            style={{
+              animationDuration: `${t.duration}ms`,
+              animationTimingFunction: t.easing,
+            }}
           >
             {block}
           </div>
@@ -707,15 +778,18 @@ function FormView({ form, user }) {
           {/* Distinct keys: if React reused one <button> and flipped its type
               to "submit" mid-click, clicking Next on the second-to-last page
               would submit the form straight away. */}
+          {/* Pre-fill mode only makes a link; there's nothing to send. */}
           {next === 'submit' ? (
-            <button
-              key="submit"
-              type="submit"
-              className="btn btn-primary"
-              disabled={preview || state === 'sending'}
-            >
-              {state === 'sending' ? 'Submitting…' : 'Submit'}
-            </button>
+            !prefillMode && (
+              <button
+                key="submit"
+                type="submit"
+                className="btn btn-primary"
+                disabled={preview || state === 'sending'}
+              >
+                {state === 'sending' ? 'Submitting…' : 'Submit'}
+              </button>
+            )
           ) : (
             <button
               key="next"

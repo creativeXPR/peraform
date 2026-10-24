@@ -2,11 +2,15 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ChevronDown,
+  Code2,
   Copy,
   Eye,
+  Keyboard,
   Link2,
+  ListChecks,
   MoreVertical,
   Palette,
+  Printer,
   Redo2,
   Trash2,
   Undo2,
@@ -17,7 +21,9 @@ import MenuButton from '../../lib/MenuButton.jsx'
 import { useToast } from '../../lib/useToast.jsx'
 import { useAuth } from '../auth/useAuth.js'
 import { createForm, deleteForm } from '../dashboard/formActions.js'
+import EmbedDialog from './EmbedDialog.jsx'
 import ShareDialog from './ShareDialog.jsx'
+import ShortcutsDialog from './ShortcutsDialog.jsx'
 import ThemePanel from './ThemePanel.jsx'
 import { useFormEditor } from './editorContext.js'
 
@@ -37,11 +43,19 @@ export default function BuilderActions() {
   const [busy, setBusy] = useState(false)
   const [collabOpen, setCollabOpen] = useState(false)
   const [themeOpen, setThemeOpen] = useState(false)
+  const [embedOpen, setEmbedOpen] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const isOwner = form.ownerId === user.uid
   const link = `${window.location.origin}/f/${form.id}`
 
   useEffect(() => {
     const onKey = (e) => {
+      // Ctrl + / : the shortcuts sheet (works anywhere in the editor).
+      if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+        e.preventDefault()
+        setShortcutsOpen(true)
+        return
+      }
       if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'z' || isTextField(e.target)) {
         return
       }
@@ -129,6 +143,14 @@ export default function BuilderActions() {
     { label: 'Share', icon: UserPlus, onSelect: () => setCollabOpen(true) },
     { label: 'Theme', icon: Palette, onSelect: () => setThemeOpen(true) },
     { label: 'Make a copy', icon: Copy, onSelect: makeCopy },
+    {
+      label: 'Get pre-filled link',
+      icon: ListChecks,
+      onSelect: () => window.open(`${link}?mode=prefill`, '_blank', 'noopener'),
+    },
+    { label: 'Embed HTML', icon: Code2, onSelect: () => setEmbedOpen(true) },
+    { label: 'Print', icon: Printer, onSelect: () => window.open(`${link}?print=1`, '_blank', 'noopener') },
+    { label: 'Keyboard shortcuts', icon: Keyboard, onSelect: () => setShortcutsOpen(true) },
   ]
   if (isOwner) {
     moreItems.push({
@@ -214,6 +236,9 @@ export default function BuilderActions() {
 
         <MenuButton icon={<MoreVertical size={18} />} label="More" items={moreItems} />
       </div>
+
+      <EmbedDialog open={embedOpen} link={link} onClose={() => setEmbedOpen(false)} showToast={showToast} />
+      <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
 
       <ConfirmModal
         open={Boolean(confirm)}
