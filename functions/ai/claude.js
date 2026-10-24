@@ -1,9 +1,9 @@
 // One Claude call per AI run: JSON out (structured outputs), usage back.
 // The SDK loads on first use, so functions that never call Claude don't
 // pay for it at cold start.
-let client
+import { AiError } from './errors.js'
 
-export class AiError extends Error {}
+let client
 
 export async function runClaude(apiKey, { model, system, prompt, schema, maxTokens, effort }) {
   const { default: Anthropic } = await import('@anthropic-ai/sdk')

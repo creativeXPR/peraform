@@ -3,8 +3,9 @@
 // of a typical run (for the "≈ X credits" hint). Shared with the app, so
 // no prompts or imports here; those are in features.js (server only).
 //
-// Quality levels: quick = Haiku, standard = Sonnet, best = Opus (see
-// billing/pricing.js → tiers). Every level carries the same markup.
+// Quality levels: quick = Gemini Flash-Lite, standard = Gemini Flash,
+// best = Gemini Pro (billing/pricing.js → tiers; config/billing can repoint
+// them). Every level carries the same markup.
 
 import { holdFor } from '../billing/pricing.js'
 

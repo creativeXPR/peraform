@@ -6,7 +6,8 @@ import { HttpsError, onCall, onRequest } from 'firebase-functions/v2/https'
 import { onSchedule } from 'firebase-functions/v2/scheduler'
 import { EMULATED, REGION, billingDb as bdb, db, requireApp } from '../app.js'
 import { holdRange, inputTokensFor, tierFor } from '../ai/catalog.js'
-import { AiError, runClaude } from '../ai/claude.js'
+import { AiError } from '../ai/errors.js'
+import { runModel } from '../ai/run.js'
 import { FAKE_OUTPUT, FEATURES, InputError } from '../ai/features.js'
 import { APP_URL } from '../mail.js'
 import { allow } from '../rateLimit.js'
@@ -27,14 +28,14 @@ import {
 // Credits: wallets, Paystack top-ups and metered AI runs. Data lives in
 // the suite-wide billing database; only these functions write to it.
 //   firebase functions:secrets:set PAYSTACK_SECRET_KEY   (sk_test_… first)
-//   firebase functions:secrets:set ANTHROPIC_API_KEY
+//   firebase functions:secrets:set GEMINI_API_KEY        (Google AI Studio)
 const PAYSTACK_SECRET_KEY = defineSecret('PAYSTACK_SECRET_KEY')
-const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY')
+const GEMINI_API_KEY = defineSecret('GEMINI_API_KEY')
 // Comma-separated emails that may grant, adjust and refund credits.
 const ADMIN_EMAILS = defineString('ADMIN_EMAILS', { default: '' })
 
 // Emulator stand-ins (functions/.env.local), so local tests never call
-// Claude or Paystack: AI_FAKE=1, PAYSTACK_FAKE=1.
+// the AI or Paystack: AI_FAKE=1, PAYSTACK_FAKE=1.
 const AI_FAKE = EMULATED && process.env.AI_FAKE === '1'
 const PAYSTACK_FAKE = EMULATED && process.env.PAYSTACK_FAKE === '1'
 
@@ -196,10 +197,10 @@ export const paystackWebhook = onRequest(
 )
 
 // ── AI runs ─────────────────────────────────────────────────
-// Reserve the most it could cost → run Claude → charge what it really
+// Reserve the most it could cost → run the model → charge what it really
 // used (and free the rest). Any failure frees it all: no charge.
 export const aiRun = onCall(
-  { region: REGION, secrets: [ANTHROPIC_API_KEY], timeoutSeconds: 120, memory: '512MiB' },
+  { region: REGION, secrets: [GEMINI_API_KEY], timeoutSeconds: 120, memory: '512MiB' },
   async (request) => {
     const uid = requireAccount(request)
     const featureId = request.data?.feature
@@ -244,7 +245,7 @@ export const aiRun = onCall(
     try {
       const run = AI_FAKE
         ? await fakeRun(featureId, request.data?.input, inputTokens)
-        : await runClaude(ANTHROPIC_API_KEY.value(), {
+        : await runModel({ gemini: GEMINI_API_KEY.value() }, {
             model,
             system: feature.system,
             prompt: prepared.prompt,
@@ -275,7 +276,7 @@ export const aiRun = onCall(
   },
 )
 
-// Emulator stand-in for Claude. Test inputs: "FAIL" fails; "SLOW…" takes
+// Emulator stand-in for the AI. Test inputs: "FAIL" fails; "SLOW…" takes
 // 2 s (so tests can overlap runs).
 async function fakeRun(featureId, input, inputTokens) {
   if (input?.text === 'FAIL') throw new AiError('fake failure')

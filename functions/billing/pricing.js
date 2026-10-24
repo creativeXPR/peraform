@@ -5,10 +5,14 @@
 // Units (never floats for money):
 //   millicredits: 1 credit = 1000   ·   kobo: ₦1 = 100
 
-// Claude prices in USD per 1M tokens, from Anthropic's pricing on
-// 2026-10-06. Check them again before changing anything here; the live
-// values are in the billing db's config/billing doc, which overrides these.
-// Thinking tokens are billed as output (they're inside usage.output_tokens).
+// Model prices in USD per 1M tokens (text, prompts ≤ 200k tokens):
+//   Gemini: ai.google.dev/gemini-api/docs/pricing, read 2026-10-24.
+//     gemini-3.8-flash is at an introductory price until 2026-12-31; from
+//     2027-01-01 it is $1.50 / $7.50. Update config/billing then.
+//   Claude: Anthropic's pricing, read 2026-10-06 (kept so a tier can be
+//     pointed back at Claude from config/billing).
+// The billing db's config/billing doc overrides these. Thinking tokens
+// are billed as output by both providers.
 export const DEFAULT_BILLING = {
   creditValueKobo: 2000, // 1 credit = ₦20
   fxNgnPerUsd: 1700, // buffered above market
@@ -18,15 +22,18 @@ export const DEFAULT_BILLING = {
   starterMillicredits: 10000, // 10 free credits for a new account
   lowBalanceMillicredits: 5000,
   models: {
+    'gemini-2.5-flash-lite': { inUsdPerM: 0.1, outUsdPerM: 0.4 },
+    'gemini-3.8-flash': { inUsdPerM: 0.75, outUsdPerM: 3.75 },
+    'gemini-2.5-pro': { inUsdPerM: 1.25, outUsdPerM: 10 },
     'claude-haiku-5-5': { inUsdPerM: 0.1, outUsdPerM: 0.5 },
     'claude-sonnet-5-5': { inUsdPerM: 2, outUsdPerM: 10 },
     'claude-opus-5-5': { inUsdPerM: 4, outUsdPerM: 20 },
   },
   // What each quality level runs on.
   tiers: {
-    quick: 'claude-haiku-5-5',
-    standard: 'claude-sonnet-5-5',
-    best: 'claude-opus-5-5',
+    quick: 'gemini-2.5-flash-lite',
+    standard: 'gemini-3.8-flash',
+    best: 'gemini-2.5-pro',
   },
 }
 

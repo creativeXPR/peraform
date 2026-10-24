@@ -99,7 +99,7 @@ export const FEATURES = {
   },
 }
 
-// Canned output for the emulators (AI_FAKE=1), so tests never call Claude.
+// Canned output for the emulators (AI_FAKE=1), so tests never call the AI.
 export const FAKE_OUTPUT = {
   'generate-form': {
     title: 'Team lunch',

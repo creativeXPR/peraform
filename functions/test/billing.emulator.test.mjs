@@ -1,4 +1,4 @@
-// Credits, end to end on the emulators (Claude and Paystack faked by
+// Credits, end to end on the emulators (the AI and Paystack faked by
 // functions/.env.local). Run from peraform/:
 //   firebase emulators:exec --only auth,firestore,functions --project quality-toolsx \
 //     "node --test functions/test/billing.emulator.test.mjs"
@@ -87,6 +87,12 @@ let bob
 before(async () => {
   const stamp = Date.now()
   ;[alice, bob] = await Promise.all([signUp(`alice${stamp}@example.com`), signUp(`bob${stamp}@example.com`)])
+  // Warm the functions up first: on a slow machine, several calls landing
+  // on a cold emulator at once can get "socket hang up".
+  const warm = await signUp(`warm${stamp}@example.com`)
+  await call('ensureWallet', warm)
+  await call('verifyTopup', warm, { reference: 'none' }).catch(() => {})
+  await webhook({ event: 'warm-up' }, 'bad')
 })
 after(() => setTimeout(() => process.exit(0), 100))
 
@@ -165,10 +171,11 @@ describe('AI runs', () => {
     assert.equal(before.balance - after.balance, res.charged)
     const charge = (await ledger(bob.uid)).find((e) => e.type === 'charge')
     assert.equal(charge.millicredits, -res.charged)
-    assert.equal(charge.model, 'claude-sonnet-5-5')
+    assert.equal(charge.model, DEFAULT_BILLING.tiers.standard)
     assert.equal(charge.tokensOut, 800)
-    // Sonnet: tokensIn×$2/M + 800×$10/M, ×1700 ×100 ×2.5 / 2000 ×1000, rounded up.
-    const usd = (charge.tokensIn / 1e6) * 2 + (800 / 1e6) * 10
+    // tokensIn × in-price + 800 × out-price, ×1700 ×100 ×2.5 / 2000 ×1000, rounded up.
+    const price = DEFAULT_BILLING.models[DEFAULT_BILLING.tiers.standard]
+    const usd = (charge.tokensIn / 1e6) * price.inUsdPerM + (800 / 1e6) * price.outUsdPerM
     assert.equal(res.charged, Math.ceil(usd * 1700 * 100 * 2.5 / 2000 * 1000 - 1e-9))
   })
 
@@ -205,7 +212,7 @@ describe('AI runs', () => {
     await bdb.doc(`wallets/${bob.uid}`).update({ balance: 5000, held: 0 })
     const tries = await Promise.allSettled(
       [1, 2, 3, 4, 5].map(() =>
-        placeHold(bdb, bob.uid, { app: 'test', feature: 'generate-form', model: 'claude-haiku-5-5', amount: 2000 }),
+        placeHold(bdb, bob.uid, { app: 'test', feature: 'generate-form', model: DEFAULT_BILLING.tiers.quick, amount: 2000 }),
       ),
     )
     const held = tries.filter((t) => t.status === 'fulfilled').map((t) => t.value)
@@ -224,7 +231,7 @@ describe('AI runs', () => {
 
   it('releases holds left behind by a crashed run', async () => {
     await bdb.doc(`wallets/${bob.uid}`).update({ balance: 5000, held: 0 })
-    const { holdId } = await placeHold(bdb, bob.uid, { app: 'test', feature: 'generate-form', model: 'claude-haiku-5-5', amount: 1000 })
+    const { holdId } = await placeHold(bdb, bob.uid, { app: 'test', feature: 'generate-form', model: DEFAULT_BILLING.tiers.quick, amount: 1000 })
     await bdb.doc(`holds/${holdId}`).update({ createdAt: new Date(Date.now() - 11 * 60_000) })
     await sweepStaleHolds(bdb)
     assert.equal((await bdb.doc(`holds/${holdId}`).get()).data().status, 'released')

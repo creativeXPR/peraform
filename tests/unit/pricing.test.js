@@ -23,7 +23,7 @@ describe('pricing', () => {
   })
 
   it('follows the formula and always rounds up', () => {
-    // Sonnet, 2k in + 3k out = $0.034 → ×1700 ×100 ×2.5 = 14,450 kobo → /2000 = 7.225 credits
+    // Claude Sonnet, 2k in + 3k out = $0.034 → ×1700 ×100 ×2.5 = 14,450 kobo → /2000 = 7.225 credits
     const usd = costUsd(B, 'claude-sonnet-5-5', 2000, 3000)
     expect(usd).toBeCloseTo(0.034, 10)
     expect(chargeFor(B, usd)).toBe(7225)
