@@ -28,9 +28,9 @@ import {
 // Credits: wallets, Paystack top-ups and metered AI runs. Data lives in
 // the suite-wide billing database; only these functions write to it.
 //   firebase functions:secrets:set PAYSTACK_SECRET_KEY   (sk_test_… first)
-//   firebase functions:secrets:set GEMINI_API_KEY        (Google AI Studio)
+// The AI runs on Gemini through Vertex AI: no key; the functions' service
+// account needs the "Vertex AI User" role (see README).
 const PAYSTACK_SECRET_KEY = defineSecret('PAYSTACK_SECRET_KEY')
-const GEMINI_API_KEY = defineSecret('GEMINI_API_KEY')
 // Comma-separated emails that may grant, adjust and refund credits.
 const ADMIN_EMAILS = defineString('ADMIN_EMAILS', { default: '' })
 
@@ -200,7 +200,7 @@ export const paystackWebhook = onRequest(
 // Reserve the most it could cost → run the model → charge what it really
 // used (and free the rest). Any failure frees it all: no charge.
 export const aiRun = onCall(
-  { region: REGION, secrets: [GEMINI_API_KEY], timeoutSeconds: 120, memory: '512MiB' },
+  { region: REGION, timeoutSeconds: 120, memory: '512MiB' },
   async (request) => {
     const uid = requireAccount(request)
     const featureId = request.data?.feature
@@ -245,7 +245,7 @@ export const aiRun = onCall(
     try {
       const run = AI_FAKE
         ? await fakeRun(featureId, request.data?.input, inputTokens)
-        : await runModel({ gemini: GEMINI_API_KEY.value() }, {
+        : await runModel({
             model,
             system: feature.system,
             prompt: prepared.prompt,

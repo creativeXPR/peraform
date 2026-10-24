@@ -6,9 +6,11 @@
 //   millicredits: 1 credit = 1000   ·   kobo: ₦1 = 100
 
 // Model prices in USD per 1M tokens (text, prompts ≤ 200k tokens):
-//   Gemini: ai.google.dev/gemini-api/docs/pricing, read 2026-10-24.
-//     gemini-3.8-flash is at an introductory price until 2026-12-31; from
-//     2027-01-01 it is $1.50 / $7.50. Update config/billing then.
+//   Gemini on Vertex AI (global endpoint): cloud.google.com/vertex-ai/
+//     generative-ai/pricing, read 2026-10-24. gemini-3.8-flash is at an
+//     introductory price until 2026-12-31; from 2027-01-01 it is $1.50 /
+//     $7.50. Update config/billing then. (A regional VERTEX_LOCATION costs
+//     10% more for Gemini 3.x.)
 //   Claude: Anthropic's pricing, read 2026-10-06 (kept so a tier can be
 //     pointed back at Claude from config/billing).
 // The billing db's config/billing doc overrides these. Thinking tokens

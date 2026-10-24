@@ -1,9 +1,23 @@
 import { AiError } from './errors.js'
 
-// One Gemini call per AI run: JSON out (responseJsonSchema), usage back.
-// The SDK loads on first use, so functions that never call Gemini don't
-// pay for it at cold start.
+// One Gemini call per AI run, through Vertex AI: billed monthly to the
+// project's Cloud billing account (no prepayment), and no API key: the
+// function's own service account signs in. JSON out (responseJsonSchema),
+// usage back. The SDK loads on first use, so functions that never call
+// Gemini don't pay for it at cold start.
+//
+// VERTEX_LOCATION (functions/.env): "global" is cheapest for Gemini 3.x and
+// the most available; a region (e.g. europe-west1) keeps processing there.
 let client
+
+function projectId() {
+  if (process.env.GCLOUD_PROJECT) return process.env.GCLOUD_PROJECT
+  try {
+    return JSON.parse(process.env.FIREBASE_CONFIG).projectId
+  } catch {
+    return undefined
+  }
+}
 
 // Keep thinking light: these runs are form-shaped JSON, not puzzles.
 // Gemini 3.x takes a level; 2.5 takes a token budget (Flash-Lite: none).
@@ -13,9 +27,13 @@ function thinkingFor(model) {
   return { thinkingLevel: 'LOW' }
 }
 
-export async function runGemini(apiKey, { model, system, prompt, schema, maxTokens }) {
+export async function runGemini({ model, system, prompt, schema, maxTokens }) {
   const { GoogleGenAI } = await import('@google/genai')
-  client ??= new GoogleGenAI({ apiKey })
+  client ??= new GoogleGenAI({
+    vertexai: true,
+    project: projectId(),
+    location: process.env.VERTEX_LOCATION || 'global',
+  })
   const res = await client.models.generateContent({
     model,
     contents: prompt,
