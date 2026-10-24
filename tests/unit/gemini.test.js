@@ -58,11 +58,17 @@ describe('Gemini runs', () => {
     expect(out.usage).toEqual({ tokensIn: 900, tokensOut: 1800 })
   })
 
-  it('keeps thinking light on 2.5 models, and off on Flash-Lite', async () => {
+  it('keeps thinking light (minimal on Flash-Lite, off on 2.5 Flash-Lite)', async () => {
+    await runGemini(request('gemini-3.1-flash-lite'))
+    await runGemini(request('gemini-3.1-pro-preview'))
     await runGemini(request('gemini-2.5-pro'))
     await runGemini(request('gemini-2.5-flash-lite'))
-    expect(sent[0].config.thinkingConfig).toEqual({ thinkingBudget: 512 })
-    expect(sent[1].config.thinkingConfig).toEqual({ thinkingBudget: 0 })
+    expect(sent.map((r) => r.config.thinkingConfig)).toEqual([
+      { thinkingLevel: 'MINIMAL' },
+      { thinkingLevel: 'LOW' },
+      { thinkingBudget: 512 },
+      { thinkingBudget: 0 },
+    ])
   })
 
   it('fails (so the run is free) when blocked, cut off or not JSON', async () => {

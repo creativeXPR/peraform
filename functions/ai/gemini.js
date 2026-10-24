@@ -20,10 +20,12 @@ function projectId() {
 }
 
 // Keep thinking light: these runs are form-shaped JSON, not puzzles.
-// Gemini 3.x takes a level; 2.5 takes a token budget (Flash-Lite: none).
+// Gemini 3.x takes a level (Flash-Lite: minimal); 2.5 takes a token budget
+// (Flash-Lite: none).
 function thinkingFor(model) {
   if (model.startsWith('gemini-2.5-flash-lite')) return { thinkingBudget: 0 }
   if (model.startsWith('gemini-2.5')) return { thinkingBudget: 512 }
+  if (model.includes('flash-lite')) return { thinkingLevel: 'MINIMAL' }
   return { thinkingLevel: 'LOW' }
 }
 

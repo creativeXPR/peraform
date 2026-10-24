@@ -3,9 +3,9 @@
 // of a typical run (for the "≈ X credits" hint). Shared with the app, so
 // no prompts or imports here; those are in features.js (server only).
 //
-// Quality levels: quick = Gemini Flash-Lite, standard = Gemini Flash,
-// best = Gemini Pro (billing/pricing.js → tiers; config/billing can repoint
-// them). Every level carries the same markup.
+// Quality levels: quick = Gemini 3.1 Flash-Lite, standard = Gemini 3.8
+// Flash, best = Gemini 3.1 Pro (billing/pricing.js → tiers; config/billing
+// can repoint them). Every level carries the same markup.
 
 import { holdFor } from '../billing/pricing.js'
 
@@ -22,8 +22,9 @@ export const AI_FEATURES = {
     minTokens: { describe: 3000, text: 4000 },
     // System prompt + the output schema, in tokens (on top of the user's text).
     overheadTokens: 1100,
-    // A ~15-question form from a short description.
-    typical: { inputTokens: 1200, outputTokens: 2500 },
+    // A form from a short description, measured on Vertex 2026-10-24:
+    // ~700 tokens in, 400–800 out (thinking included).
+    typical: { inputTokens: 900, outputTokens: 1200 },
   },
 }
 

@@ -10,7 +10,8 @@
 //     generative-ai/pricing, read 2026-10-24. gemini-3.8-flash is at an
 //     introductory price until 2026-12-31; from 2027-01-01 it is $1.50 /
 //     $7.50. Update config/billing then. (A regional VERTEX_LOCATION costs
-//     10% more for Gemini 3.x.)
+//     10% more for Gemini 3.x.) The 2.5 models aren't open to this project
+//     on Vertex (404), so the tiers use 3.x; their prices stay for reference.
 //   Claude: Anthropic's pricing, read 2026-10-06 (kept so a tier can be
 //     pointed back at Claude from config/billing).
 // The billing db's config/billing doc overrides these. Thinking tokens
@@ -24,8 +25,10 @@ export const DEFAULT_BILLING = {
   starterMillicredits: 10000, // 10 free credits for a new account
   lowBalanceMillicredits: 5000,
   models: {
-    'gemini-2.5-flash-lite': { inUsdPerM: 0.1, outUsdPerM: 0.4 },
+    'gemini-3.1-flash-lite': { inUsdPerM: 0.25, outUsdPerM: 1.5 },
     'gemini-3.8-flash': { inUsdPerM: 0.75, outUsdPerM: 3.75 },
+    'gemini-3.1-pro-preview': { inUsdPerM: 2, outUsdPerM: 12 },
+    'gemini-2.5-flash-lite': { inUsdPerM: 0.1, outUsdPerM: 0.4 },
     'gemini-2.5-pro': { inUsdPerM: 1.25, outUsdPerM: 10 },
     'claude-haiku-5-5': { inUsdPerM: 0.1, outUsdPerM: 0.5 },
     'claude-sonnet-5-5': { inUsdPerM: 2, outUsdPerM: 10 },
@@ -33,9 +36,9 @@ export const DEFAULT_BILLING = {
   },
   // What each quality level runs on.
   tiers: {
-    quick: 'gemini-2.5-flash-lite',
+    quick: 'gemini-3.1-flash-lite',
     standard: 'gemini-3.8-flash',
-    best: 'gemini-2.5-pro',
+    best: 'gemini-3.1-pro-preview',
   },
 }
 
