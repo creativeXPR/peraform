@@ -115,10 +115,19 @@ export const PRESENTATION_DEFAULTS = {
   // of the creator's own, which starts as the form's name.
   topTitleOn: false,
   topTitle: '',
+  // Space inside answer fields (text boxes, dropdowns, dates), in px.
+  fieldPadding: 7,
 }
 
 export function settingsOf(form) {
   return { ...PRESENTATION_DEFAULTS, ...form?.settings }
+}
+
+// The form's answer-field padding as a CSS variable, for the page that
+// shows its fields (respondent page, interview canvas).
+export function fieldPaddingStyle(form) {
+  const px = Number(settingsOf(form).fieldPadding)
+  return { '--field-pad': `${Number.isFinite(px) ? Math.min(32, Math.max(0, px)) : 7}px` }
 }
 
 // What the respondent page shows at the top instead of the logo, or null.

@@ -12,6 +12,7 @@ import {
   Palette,
   Printer,
   Redo2,
+  Sparkles,
   Trash2,
   Undo2,
   UserPlus,
@@ -21,6 +22,7 @@ import MenuButton from '../../lib/MenuButton.jsx'
 import { useToast } from '../../lib/useToast.jsx'
 import { useAuth } from '../auth/useAuth.js'
 import { createForm, deleteForm } from '../dashboard/formActions.js'
+import EditFormDialog from '../ai/EditFormDialog.jsx'
 import EmbedDialog from './EmbedDialog.jsx'
 import ShareDialog from './ShareDialog.jsx'
 import ShortcutsDialog from './ShortcutsDialog.jsx'
@@ -45,6 +47,7 @@ export default function BuilderActions() {
   const [themeOpen, setThemeOpen] = useState(false)
   const [embedOpen, setEmbedOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [aiOpen, setAiOpen] = useState(false)
   const isOwner = form.ownerId === user.uid
   const link = `${window.location.origin}/f/${form.id}`
 
@@ -152,6 +155,7 @@ export default function BuilderActions() {
     { label: 'Copy link', icon: Link2, onSelect: copyLink },
     { label: 'Share', icon: UserPlus, onSelect: () => setCollabOpen(true) },
     { label: 'Theme', icon: Palette, onSelect: () => setThemeOpen(true) },
+    { label: 'Edit with AI', icon: Sparkles, onSelect: () => setAiOpen(true) },
     { label: 'Make a copy', icon: Copy, onSelect: makeCopy },
     {
       label: 'Get pre-filled link',
@@ -174,6 +178,15 @@ export default function BuilderActions() {
   return (
     <>
       <div className="builder-actions">
+        <button
+          type="button"
+          className="icon-btn desktop-only builder-ai"
+          onClick={() => setAiOpen(true)}
+          aria-label="Edit with AI"
+          title="Edit with AI"
+        >
+          <Sparkles size={18} />
+        </button>
         <button
           type="button"
           className="icon-btn desktop-only"
@@ -249,6 +262,7 @@ export default function BuilderActions() {
 
       <EmbedDialog open={embedOpen} link={link} onClose={() => setEmbedOpen(false)} showToast={showToast} />
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <EditFormDialog open={aiOpen} onClose={() => setAiOpen(false)} />
 
       <ConfirmModal
         open={Boolean(confirm)}

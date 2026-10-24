@@ -1,4 +1,4 @@
-import { AI_FEATURES } from './catalog.js'
+import { AI_FEATURES, compactForm } from './catalog.js'
 
 // The server half of each AI feature: input checks, the prompt and the
 // output schema. The app sends only { feature, tier, input }: never a
@@ -56,17 +56,30 @@ const FORM_SCHEMA = {
   },
 }
 
-const GENERATE_SYSTEM = `You design forms for PeraForm, an online form builder like Google Forms.
-Write a complete, ready-to-use form: a clear title, a one or two sentence description, and well-ordered questions.
-
-Choose the question type that makes answering fastest and the answers easiest to analyse:
+const TYPE_GUIDE = `Choose the question type that makes answering fastest and the answers easiest to analyse:
 - multipleChoice (one answer) or checkboxes (several) when the answers are a known, short list; dropdown when the list is long (over 7).
-- linearScale for agreement or satisfaction (min 1, max 5, with minLabel and maxLabel); rating for star ratings (max 5).
+- linearScale for agreement or satisfaction (min 0 or 1, max 2 to 10, usually 1 to 5, with minLabel and maxLabel); rating for star ratings (max 3 to 10 stars, usually 5).
 - mcGrid or checkboxGrid when several items share the same scale (rows = items, columns = scale).
 - date and time for dates and times; shortText for names, emails, phone numbers and one-line answers; longText only for open feedback.
 - section starts a new page: use one only when the form has distinct parts and is long (over about 10 questions).
-Mark a question required only when the form can't do without it. Keep wording short, neutral and friendly. Never ask for passwords or card details.
+Mark a question required only when the form can't do without it. Keep wording short, neutral and friendly. Never ask for passwords or card details.`
+
+const GENERATE_SYSTEM = `You design forms for PeraForm, an online form builder like Google Forms.
+Write a complete, ready-to-use form: a clear title, a one or two sentence description, and well-ordered questions.
+
+${TYPE_GUIDE}
 Write in the language of the request.`
+
+const EDIT_SYSTEM = `You edit an existing form in PeraForm, an online form builder like Google Forms.
+You get the current form as JSON and an instruction. Return the whole form after making the change, in the same shape:
+- Every item has an "id": copy each existing item's id exactly, even when you change the item. Give items you add "new-1", "new-2" and so on.
+- Keep everything you weren't asked to change exactly as it is: same order, wording, options and settings.
+- Remove an item only when the instruction asks for it.
+- Items of type "text" are headings with a description; "image" and "video" items can be kept, moved or removed, but not created.
+- Put one or two plain sentences saying what you changed in "summary" (for the form's owner).
+When you add or retype questions:
+${TYPE_GUIDE}
+Write in the language of the form.`
 
 function unescapeJson(s) {
   try {
@@ -82,6 +95,29 @@ function cleanText(value, max) {
   if (text.length < 3) throw new InputError('Tell us a bit more about the form.')
   if (text.length > max) throw new InputError(`That’s too long (${max.toLocaleString()} characters at most).`)
   return text
+}
+
+// The edit schema: the form schema, items with an optional id, content
+// items allowed, and a summary of the change.
+const EDIT_SCHEMA = {
+  ...FORM_SCHEMA,
+  required: ['title', 'description', 'questions', 'summary'],
+  properties: {
+    ...FORM_SCHEMA.properties,
+    summary: { type: 'string' },
+    questions: {
+      type: 'array',
+      items: {
+        ...FORM_SCHEMA.properties.questions.items,
+        required: ['id', ...FORM_SCHEMA.properties.questions.items.required],
+        properties: {
+          id: { type: 'string' },
+          ...FORM_SCHEMA.properties.questions.items.properties,
+          type: { type: 'string', enum: [...QUESTION_TYPES, 'text', 'image', 'video'] },
+        },
+      },
+    },
+  },
 }
 
 export const FEATURES = {
@@ -115,8 +151,40 @@ export const FEATURES = {
   },
 }
 
+FEATURES['edit-form'] = {
+  ...AI_FEATURES['edit-form'],
+  system: EDIT_SYSTEM,
+  schema: EDIT_SCHEMA,
+  effort: 'low',
+  // input: { formId, instruction }. The form is read here, from the
+  // database (the caller must be one of its editors), not taken from the app.
+  async prepare(input, ctx) {
+    const instruction = cleanText(input?.instruction, this.maxChars.edit)
+    const formId = typeof input?.formId === 'string' ? input.formId : ''
+    const form = formId && ctx?.db ? (await ctx.db.doc(`forms/${formId}`).get()).data() : null
+    if (!form || !form.memberIds?.includes(ctx.uid)) throw new InputError('Form not found.')
+    const json = JSON.stringify(compactForm(form))
+    if (json.length > this.maxFormChars) {
+      throw new InputError('This form is too long to edit with AI in one go. Try it on a copy with fewer questions.')
+    }
+    const prompt = `Current form:\n${json}\n\nInstruction:\n${instruction}`
+    return { prompt, mode: 'edit', chars: json.length + instruction.length }
+  },
+  result(json) {
+    if (!json || !Array.isArray(json.questions)) return null
+    return { form: json, summary: typeof json.summary === 'string' ? json.summary : '' }
+  },
+  progress: FEATURES['generate-form'].progress,
+}
+
 // Canned output for the emulators (AI_FAKE=1), so tests never call the AI.
 export const FAKE_OUTPUT = {
+  'edit-form': {
+    title: 'Team lunch (edited)',
+    description: 'Help us plan the lunch.',
+    summary: 'Added an email question.',
+    questions: [{ type: 'shortText', title: 'Email', description: '', required: true }],
+  },
   'generate-form': {
     title: 'Team lunch',
     description: 'Help us plan the lunch.',

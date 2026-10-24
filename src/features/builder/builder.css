@@ -1898,3 +1898,29 @@
   font-size: 12px;
   white-space: nowrap;
 }
+
+/* "Edit with AI" in the top bar stands out a little. */
+.builder-ai {
+  color: var(--accent);
+}
+
+/* Settings: a number with its unit, beside the setting's text. */
+.setting-number {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.setting-px {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.setting-px .setting-input {
+  width: 72px;
+}

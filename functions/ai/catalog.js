@@ -26,6 +26,32 @@ export const AI_FEATURES = {
     // ~700 tokens in, 400–800 out (thinking included).
     typical: { inputTokens: 900, outputTokens: 1200 },
   },
+  // Change the form you're in: the instruction plus the form itself go in;
+  // the whole form comes back (so output grows with the form).
+  'edit-form': {
+    label: 'Edit a form with AI',
+    tiers: ['quick', 'standard', 'best'],
+    defaultTier: 'standard',
+    maxChars: { edit: 2000 }, // the instruction
+    maxFormChars: 40000, // the form, as compact JSON
+    maxTokens: { edit: 8000 },
+    minTokens: { edit: 3000 },
+    overheadTokens: 1300,
+    typical: { inputTokens: 2500, outputTokens: 2200 },
+  },
+}
+
+// The form as the AI sees it: just what it may read and change.
+const EDITABLE = ['id', 'type', 'title', 'description', 'required', 'options', 'min', 'max', 'minLabel', 'maxLabel', 'rows', 'columns']
+export function compactForm(form) {
+  const pick = (item) =>
+    Object.fromEntries(
+      EDITABLE.filter((k) => item[k] !== undefined && item[k] !== '' && !(Array.isArray(item[k]) && !item[k].length)).map((k) => [
+        k,
+        item[k],
+      ]),
+    )
+  return { title: form.title ?? '', description: form.description ?? '', questions: (form.questions ?? []).map(pick) }
 }
 
 // Input tokens for a run (what holds are sized on, here and on the server).

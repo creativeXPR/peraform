@@ -19,6 +19,7 @@ export default function SettingsPage() {
     showSubmitAnother,
     topTitleOn,
     topTitle,
+    fieldPadding,
   } = settingsOf(draft)
   const quiz = quizSettings(draft)
   const mode = draft.mode === 'interview' ? 'interview' : 'normal'
@@ -153,6 +154,26 @@ export default function SettingsPage() {
             />
           </label>
         )}
+        <label className="setting setting-number">
+          <span className="setting-text">
+            <strong>Space inside answer fields</strong>
+            <span>Padding around what respondents type, in text boxes, dropdowns and dates.</span>
+          </span>
+          <span className="setting-px">
+            <input
+              className="setting-input"
+              type="number"
+              min={0}
+              max={32}
+              value={fieldPadding}
+              onChange={(e) =>
+                e.target.value !== '' && set('fieldPadding', Math.min(32, Math.max(0, Math.round(Number(e.target.value)))))
+              }
+              aria-label="Space inside answer fields, in pixels"
+            />
+            px
+          </span>
+        </label>
         <Toggle
           title="Show progress bar"
           text="Shows how far through the form respondents are (forms with sections)."

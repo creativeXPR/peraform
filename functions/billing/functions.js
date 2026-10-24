@@ -220,7 +220,7 @@ export const aiRun = onCall(
 
     let prepared
     try {
-      prepared = feature.prepare(request.data?.input)
+      prepared = await feature.prepare(request.data?.input, { db, uid })
     } catch (err) {
       if (err instanceof InputError) throw new HttpsError('invalid-argument', err.message)
       throw err
@@ -237,14 +237,17 @@ export const aiRun = onCall(
     const range = holdRange(billing, featureId, tier, prepared.mode, prepared.chars)
 
     let holdId, reserved
+    const reserve = () =>
+      placeHold(bdb, uid, { app: 'peraform', feature: featureId, model, amount: range.max, minAmount: range.min })
     try {
-      ;({ holdId, reserved } = await placeHold(bdb, uid, {
-        app: 'peraform',
-        feature: featureId,
-        model,
-        amount: range.max,
-        minAmount: range.min,
-      }))
+      try {
+        ;({ holdId, reserved } = await reserve())
+      } catch (err) {
+        // A brand-new account can get here before its wallet is made: make
+        // it (starter credits) and try once more.
+        if (!(err instanceof BillingError) || !(await ensureWalletDoc(bdb, uid, billing))) throw err
+        ;({ holdId, reserved } = await reserve())
+      }
     } catch (err) {
       if (err instanceof BillingError) {
         throw new HttpsError('failed-precondition', 'insufficient-credits', err.details)

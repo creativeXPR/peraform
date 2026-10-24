@@ -189,7 +189,8 @@
 .respond-input {
   width: 100%;
   max-width: 420px;
-  padding: 8px 0;
+  /* The form's "Space inside answer fields" setting (7px by default). */
+  padding: max(8px, var(--field-pad, 7px)) var(--field-pad, 7px);
   border: 0;
   border-bottom: 1px solid var(--line);
   outline: none;
@@ -214,7 +215,7 @@ textarea.respond-input {
 .respond-select {
   width: auto;
   min-width: 180px;
-  padding: 8px 12px;
+  padding: max(8px, var(--field-pad, 7px)) calc(var(--field-pad, 7px) + 5px);
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
   background: var(--bg);

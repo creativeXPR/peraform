@@ -230,3 +230,53 @@
     animation: none;
   }
 }
+
+/* Edit with AI: example instructions, and the result. */
+.ai-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: -6px;
+}
+
+.ai-example {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.ai-example:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.ai-done {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: var(--radius-control);
+  background: var(--accent-soft);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.ai-done p {
+  margin: 0;
+}
+
+.ai-done-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.ai-done-head svg {
+  color: var(--success);
+}

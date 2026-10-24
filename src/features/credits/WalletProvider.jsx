@@ -49,7 +49,9 @@ export default function WalletProvider({ children }) {
     return {
       wallet,
       spendable: wallet ? wallet.balance - wallet.held : 0,
-      loaded: state.uid === uid,
+      // Loaded once the wallet exists (a new account's is made in the
+      // background): until then nothing reads as a zero balance.
+      loaded: state.uid === uid && wallet !== null,
       ...config,
     }
   }, [state, uid, config])

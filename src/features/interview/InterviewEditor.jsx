@@ -3,6 +3,7 @@ import { Monitor, RotateCcw, Smartphone } from 'lucide-react'
 import ColorPicker from '../../lib/ColorPicker.jsx'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { isQuestion } from '../../lib/formLogic.js'
+import { fieldPaddingStyle } from '../../lib/formModel.js'
 import {
   COLOR_TOKENS,
   DEVICES,
@@ -187,7 +188,7 @@ export default function InterviewEditor({ viewSwitch }) {
   )
 
   return (
-    <div className="interview-editor">
+    <div className="interview-editor" style={fieldPaddingStyle(draft)}>
       <div className="ie-toolbar">
         {viewSwitch}
         <div className="segmented" role="radiogroup" aria-label="Device">
