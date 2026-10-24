@@ -95,6 +95,20 @@ export default function InterviewEditor({ viewSwitch }) {
     )
   }
 
+  // A whole screen skipped until an action shows it (not the first).
+  function setScreenHidden(key, hidden) {
+    edit(`interview:${key}:hidden`, (d) => {
+      const all = screensOf(d)
+      const target = all.find((s) => s.key === key)
+      if (!target) return d
+      const iv = interviewOf(d)
+      return {
+        ...d,
+        interview: { ...iv, screens: { ...iv.screens, [key]: { ...screenDesign(d, target, all), hidden } } },
+      }
+    })
+  }
+
   // Lines up the selected blocks that share the last-picked block's card.
   function align(how) {
     const parentId = selected?.parentId ?? null
@@ -265,12 +279,22 @@ export default function InterviewEditor({ viewSwitch }) {
               multi={selectedIds.length > 1 ? selectedIds.length : 0}
               onAlign={align}
               onStartHidden={(hidden) => startHidden(selectedIds, hidden)}
-              onTargetVisibility={(id, hidden) => startHidden([id], hidden)}
+              onTargetVisibility={(id, hidden) =>
+                screens.some((s) => s.key === id) ? setScreenHidden(id, hidden) : startHidden([id], hidden)
+              }
               device={device}
               screens={screens}
               pageQuestions={pageQuestions}
               questions={questions}
-              actionTargets={Object.values(design.nodes)
+              actionTargets={[
+                // Whole screens (every one but the first): show, hide, recolour.
+                ...screens.slice(1).map((s) => ({
+                  id: s.key,
+                  label: `Screen ${s.index + 1}: ${s.title}`,
+                  screen: true,
+                  shownAtStart: !interviewOf(draft).screens?.[s.key]?.hidden,
+                })),
+                ...Object.values(design.nodes)
                 .filter((n) => n.id !== selected.id)
                 .map((n) => ({
                   id: n.id,
@@ -278,7 +302,8 @@ export default function InterviewEditor({ viewSwitch }) {
                   // Shown when the screen opens (on either device).
                   shownAtStart: Object.keys(DEVICES).some((dev) => !frameOf(n, dev).hidden),
                   animations: (n.animations ?? []).map((a) => ({ id: a.id, name: a.name })),
-                }))}
+                })),
+              ]}
               // Frame and style changes apply to every selected block.
               onFrame={(patch) => changeFrames(Object.fromEntries(selectedIds.map((id) => [id, patch])))}
               onStyle={(patch) =>
@@ -305,6 +330,23 @@ export default function InterviewEditor({ viewSwitch }) {
               <div className="insp-head">
                 <strong>Screen {screen.index + 1}</strong>
               </div>
+              {screen.index > 0 && (
+                <section className="insp-group">
+                  <h3>Visibility</h3>
+                  <label className="insp-check">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(design.hidden)}
+                      onChange={(e) => setScreenHidden(screen.key, e.target.checked)}
+                    />
+                    Skip this screen until an action shows it
+                  </label>
+                  <p className="insp-note">
+                    A button or an answer on any screen can show it (or hide it, or change its background): pick
+                    “Screen {screen.index + 1}” as the action’s target.
+                  </p>
+                </section>
+              )}
               <section className="insp-group">
                 <h3>Background</h3>
                 <ColorPicker

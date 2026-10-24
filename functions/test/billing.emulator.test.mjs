@@ -11,7 +11,7 @@ import { getFirestore } from 'firebase-admin/firestore'
 import { readFileSync } from 'node:fs'
 import { holdRange } from '../ai/catalog.js'
 import { DEFAULT_BILLING } from '../billing/pricing.js'
-import { placeHold, releaseHold, settleHold, sweepStaleHolds } from '../billing/wallet.js'
+import { expireCredits, expiryFrom, placeHold, releaseHold, settleHold, sweepStaleHolds } from '../billing/wallet.js'
 
 const OFFSET = Number(process.env.PORT_OFFSET || 0)
 const PROJECT = 'quality-toolsx'
@@ -278,6 +278,33 @@ describe('AI runs', () => {
     const anon = { token: (await res.json()).idToken }
     await assert.rejects(call('aiRun', anon, { feature: 'generate-form', input }), /Sign in/)
     await assert.rejects(call('aiRun', alice, { feature: 'write-my-essay', input }), /Unknown/)
+  })
+})
+
+describe('expiry', () => {
+  it('a top-up moves the expiry date to 12 months away', async () => {
+    const { reference } = await call('createTopup', alice, { packId: 'starter' })
+    await call('verifyTopup', alice, { reference })
+    const w = await wallet(alice.uid)
+    const months = (w.expiresAt.toDate() - Date.now()) / (30.4 * 24 * 3600 * 1000)
+    assert.ok(months > 11.8 && months < 12.2, String(months))
+  })
+
+  it('expires what is spare once the date passes, leaving reserved credits', async () => {
+    await bdb.doc(`wallets/${bob.uid}`).update({ balance: 9000, held: 2000, expiresAt: new Date(Date.now() - 1000) })
+    const out = await expireCredits(bdb)
+    assert.ok(out.some((x) => x.uid === bob.uid && x.millicredits === 7000))
+    const w = await wallet(bob.uid)
+    assert.equal(w.balance, 2000)
+    assert.equal(w.expiresAt, null)
+    assert.ok((await ledger(bob.uid)).some((e) => e.type === 'expiry' && e.millicredits === -7000))
+    // Running it again changes nothing.
+    assert.ok(!(await expireCredits(bdb)).some((x) => x.uid === bob.uid))
+    await bdb.doc(`wallets/${bob.uid}`).update({ held: 0 })
+  })
+
+  it('counts 12 calendar months', () => {
+    assert.equal(expiryFrom(new Date('2026-10-25T10:00:00Z')).toISOString(), '2027-10-25T10:00:00.000Z')
   })
 })
 

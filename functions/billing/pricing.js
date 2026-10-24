@@ -33,7 +33,7 @@ export const DEFAULT_BILLING = {
     email: 'qualitytoolsx@gmail.com',
     website: 'quality-toolsx.web.app',
     address: '',
-    note: 'Payment processed by Paystack. Credits work in every Quality Tools app.',
+    note: 'Payment processed by Paystack. Credits work in every Quality Tools app and expire 12 months after your most recent top-up.',
   },
   models: {
     'gemini-3.5-flash-lite': { inUsdPerM: 0.3, outUsdPerM: 2.5 },

@@ -4,7 +4,8 @@ import { FieldValue } from 'firebase-admin/firestore'
 // ledger entry written alongside it. `bdb` is the suite-wide billing
 // database (one wallet per Quality Tools account, whichever app spends it).
 //
-//   wallets/{uid}     { balance, held, lifetimeTopupKobo }      (millicredits)
+//   wallets/{uid}     { balance, held, lifetimeTopupKobo,      (millicredits)
+//                       expiresAt, lastTopupAt }
 //   ledger/{id}       { uid, type, millicredits (signed), balanceAfter, ref, … }
 //   holds/{id}        { uid, app, feature, model, heldMillicredits, status }
 //   payments/{ref}    { uid, packId, amountKobo, millicredits, status, credited,
@@ -19,6 +20,16 @@ export class BillingError extends Error {
   }
 }
 
+// Credits expire 12 months after the most recent top-up (starter credits:
+// 12 months after the account was made). Each top-up moves the date for
+// the whole balance.
+export const EXPIRY_MONTHS = 12
+export function expiryFrom(date) {
+  const d = new Date(date)
+  d.setUTCMonth(d.getUTCMonth() + EXPIRY_MONTHS)
+  return d
+}
+
 function ledgerEntry(tx, bdb, entry) {
   tx.create(bdb.collection('ledger').doc(), { ...entry, createdAt: FieldValue.serverTimestamp() })
 }
@@ -29,11 +40,20 @@ export async function ensureWallet(bdb, uid, billing) {
   const ref = bdb.doc(`wallets/${uid}`)
   return bdb.runTransaction(async (tx) => {
     const snap = await tx.get(ref)
-    if (snap.exists) return snap.data()
+    if (snap.exists) {
+      const found = snap.data()
+      // Wallets made before expiry existed get their date now.
+      if (found.expiresAt === undefined) {
+        const from = found.lastTopupAt?.toDate?.() ?? found.createdAt?.toDate?.() ?? new Date()
+        tx.update(ref, { expiresAt: expiryFrom(from) })
+      }
+      return found
+    }
     const starter = billing.starterMillicredits
     const wallet = { balance: starter, held: 0, lifetimeTopupKobo: 0 }
     tx.create(ref, {
       ...wallet,
+      expiresAt: expiryFrom(new Date()),
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     })
@@ -169,6 +189,40 @@ export async function sweepStaleHolds(bdb, maxAgeMs = 10 * 60_000) {
   return released
 }
 
+// Removes the credits of wallets whose expiry date has passed (daily).
+// Credits reserved by a run in progress are left for it to settle. Returns
+// [{ uid, millicredits }] for what expired.
+export async function expireCredits(bdb, now = new Date()) {
+  const due = await bdb.collection('wallets').where('expiresAt', '<=', now).limit(500).get()
+  const expired = []
+  for (const doc of due.docs) {
+    const amount = await bdb.runTransaction(async (tx) => {
+      const wallet = (await tx.get(doc.ref)).data()
+      if (!wallet?.expiresAt || wallet.expiresAt.toDate() > now) return 0
+      const spare = Math.max(0, wallet.balance - wallet.held)
+      tx.update(doc.ref, {
+        balance: wallet.balance - spare,
+        expiresAt: null, // until the next top-up
+        expiredAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      })
+      if (spare > 0) {
+        ledgerEntry(tx, bdb, {
+          uid: doc.id,
+          type: 'expiry',
+          millicredits: -spare,
+          balanceAfter: wallet.balance - spare,
+          ref: 'expiry',
+          note: `No top-up for ${EXPIRY_MONTHS} months`,
+        })
+      }
+      return spare
+    })
+    if (amount) expired.push({ uid: doc.id, millicredits: amount })
+  }
+  return expired
+}
+
 // Credits a successful payment exactly once, however many times it's
 // called (webhook retries, the return page racing the webhook). `paid` is
 // Paystack's verified transaction.
@@ -209,6 +263,9 @@ export async function creditPayment(bdb, reference, paid) {
         balance: balanceAfter,
         held: wallet?.held ?? 0,
         lifetimeTopupKobo: (wallet?.lifetimeTopupKobo ?? 0) + payment.amountKobo,
+        // A top-up keeps the whole balance for another 12 months.
+        lastTopupAt: FieldValue.serverTimestamp(),
+        expiresAt: expiryFrom(new Date()),
         updatedAt: FieldValue.serverTimestamp(),
         ...(wallet ? {} : { createdAt: FieldValue.serverTimestamp() }),
       },

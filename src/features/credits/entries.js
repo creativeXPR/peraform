@@ -19,6 +19,8 @@ export function entryLabel(e) {
       return 'Refund'
     case 'chargeback':
       return 'Chargeback'
+    case 'expiry':
+      return 'Credits expired (no top-up for 12 months)'
     default:
       return e.type
   }

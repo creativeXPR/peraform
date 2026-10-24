@@ -66,13 +66,18 @@ export default function CreditsPage() {
           </span>
           <strong className="credits-amount">{loaded ? formatCredits(spendable) : '…'}</strong>
           {wallet?.held > 0 && <span className="credits-sub">{formatCredits(wallet.held)} reserved for a run in progress</span>}
+          {wallet?.expiresAt && spendable > 0 && (
+            <span className="credits-sub">
+              Use them by {when(wallet.expiresAt).split(',')[0]}. Buying credits moves this date to 12 months from then.
+            </span>
+          )}
           {wallet && wallet.balance < 0 && (
             <span className="credits-sub credits-warn">Your balance is below zero after a refund. Top up to use AI again.</span>
           )}
         </div>
         <p className="credits-note">
-          Credits work across every Quality Tools app. Each AI run reserves the most it could cost, then charges
-          only what it used. A run that fails costs nothing.
+          Credits work across every Quality Tools app and last 12 months from your most recent top-up. Each AI run
+          reserves the most it could cost, then charges only what it used. A run that fails costs nothing.
         </p>
         {isAdmin && (
           <Link to="/admin/credits" className="btn btn-outline credits-admin">

@@ -17,6 +17,7 @@ import {
   BillingError,
   adminAdjust,
   cancelHold,
+  expireCredits as expireWalletCredits,
   creditPayment,
   ensureWallet as ensureWalletDoc,
   placeHold,
@@ -331,6 +332,14 @@ async function fakeRun(featureId, input, inputTokens, onText, signal) {
 export const releaseStaleHolds = onSchedule({ region: REGION, schedule: 'every 15 minutes' }, async () => {
   for (const hold of await sweepStaleHolds(bdb)) logger.warn('Released a stale hold', hold)
 })
+
+// Credits expire 12 months after the most recent top-up (daily, 03:00 Lagos).
+export const expireCredits = onSchedule(
+  { region: REGION, schedule: 'every day 03:00', timeZone: 'Africa/Lagos' },
+  async () => {
+    for (const w of await expireWalletCredits(bdb)) logger.info('Credits expired', w)
+  },
+)
 
 // ── Admin ───────────────────────────────────────────────────
 // One callable for the admin page. Every change is in the ledger with the

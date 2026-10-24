@@ -42,7 +42,9 @@ export default function ActionsEditor({
       {actions.map((a, i) => {
         const t = { ...TRANSITION_DEFAULTS, ...a.transition }
         const props = a.effect.props ?? {}
-        const unused = Object.keys(SET_PROPS).filter((key) => !(key in props))
+        // A whole screen only has a background to change.
+        const forScreen = targets.find((x) => x.id === a.target)?.screen
+        const unused = Object.keys(SET_PROPS).filter((key) => !(key in props) && (!forScreen || key === 'bg'))
         return (
           <div key={a.id} className="action-card">
             <div className="action-row action-title">
@@ -153,6 +155,10 @@ export default function ActionsEditor({
               }
               return null
             })()}
+
+            {targets.find((x) => x.id === a.target)?.screen && ['play'].includes(a.effect.type) && (
+              <p className="action-hint">A whole screen can be shown, hidden or recoloured, but it has no animations of its own.</p>
+            )}
 
             {a.effect.type === 'play' && (
               <div className="action-row">

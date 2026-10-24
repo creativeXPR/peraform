@@ -42,7 +42,7 @@ export default function QuestionCard({
   quiz,
   keyEntry,
   changeKey,
-  actionTargets = [], // [{ id, label }] other items its actions can show or hide
+  actionTargets = [], // [{ id, label }] other items (and sections) its actions can show or hide
 }) {
   // Quiz forms: the card flips between the question and its answer key.
   const [keyMode, setKeyMode] = useState(false)
@@ -106,7 +106,7 @@ export default function QuestionCard({
   const actionTrigger = triggerKindFor(question)
   if (actionTrigger && actionTargets.length) {
     moreItems.push({
-      label: 'Show or hide other questions',
+      label: 'Show or hide questions or sections',
       checked: Boolean(question.actions?.length),
       onSelect: () =>
         question.actions?.length

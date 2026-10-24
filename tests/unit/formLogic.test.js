@@ -5,8 +5,7 @@ import {
   isComplete,
   pageTarget,
   resolveTarget,
-  splitPages,
-} from '../../src/lib/formLogic.js'
+  splitPages, skipHiddenPages } from '../../src/lib/formLogic.js'
 import { changeQuestionType } from '../../src/features/builder/questionTypes.js'
 import { responsesToCsv, summarizeQuestion } from '../../src/features/responses/summarize.js'
 
@@ -218,5 +217,21 @@ describe('top bar title', () => {
     expect(topBarTitle({ title: 'Trip', settings: { topTitleOn: true } })).toBe('Trip')
     expect(topBarTitle({ title: 'Trip', settings: { topTitleOn: true, topTitle: '  Acme survey ' } })).toBe('Acme survey')
     expect(topBarTitle({ title: '', settings: { topTitleOn: true } })).toBe('Untitled form')
+  })
+})
+
+describe('sections hidden by actions', () => {
+  const pages = [
+    { section: null, items: [], questions: [] },
+    { section: { id: 's1' }, items: [], questions: [] },
+    { section: { id: 's2' }, items: [], questions: [] },
+    { section: { id: 's3' }, items: [], questions: [] },
+  ]
+  it('skips hidden sections, to the next shown one or to submit', () => {
+    expect(skipHiddenPages(pages, 1, (id) => id === 's1')).toBe(2)
+    expect(skipHiddenPages(pages, 1, (id) => ['s1', 's2'].includes(id))).toBe(3)
+    expect(skipHiddenPages(pages, 2, () => true)).toBe('submit')
+    expect(skipHiddenPages(pages, 'submit', () => true)).toBe('submit')
+    expect(skipHiddenPages(pages, 2, () => false)).toBe(2)
   })
 })

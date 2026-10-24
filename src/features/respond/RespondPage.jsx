@@ -11,6 +11,7 @@ import {
   pageTarget,
   questionsOnly,
   resolveTarget,
+  skipHiddenPages,
   splitPages,
 } from '../../lib/formLogic.js'
 import { needsSignIn, quizSettings, settingsOf, topBarTitle, fieldPaddingStyle } from '../../lib/formModel.js'
@@ -430,7 +431,6 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false }) {
     let next = 0
     pageItems = pageItems.map((item) => (CONTENT_TYPES.includes(item.type) ? item : order[next++]))
   }
-  const next = resolveTarget(pages, pageIndex, pageTarget(page, answers))
   const preview = form.status === 'draft'
 
   // Interview mode: each page is a designed screen, and only the questions
@@ -439,10 +439,39 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false }) {
   const screens = interview ? screensOf(form) : null
   // Synced first, so a screen saved before its questions moved shows
   // what the question list says (lib/interview.js → syncInterview).
-  const design = interview ? screenDesign(syncInterview(form), screens[pageIndex], screens) : null
+  const synced = interview ? syncInterview(form) : form
+  const designs = interview ? screens.map((s) => screenDesign(synced, s, screens)) : []
+  const design = interview ? designs[pageIndex] : null
   // Blocks' state from actions: button clicks so far + answer conditions.
   const nodeHidden = (id) =>
     design?.nodes[id] ? (frameOf(design.nodes[id], device).hidden ?? false) : false
+  // Whole screens can be shown, hidden or recoloured by actions on any
+  // screen; a screen can also start hidden ("skip until an action shows it").
+  const screenKeys = new Set(screens?.map((s) => s.key))
+  const screenStartsHidden = (key) => Boolean(synced.interview?.screens?.[key]?.hidden)
+  const startHidden = (id) => (screenKeys.has(id) ? screenStartsHidden(id) : nodeHidden(id))
+  const screenSources = interview
+    ? designs.flatMap((d) =>
+        Object.values(d.nodes)
+          .filter((n) => n.actions?.some((a) => screenKeys.has(a.target)))
+          .map((n) => ({ actions: n.actions, questionId: n.type === 'question' ? n.questionId : null })),
+      )
+    : []
+  const screenOverridesFor = (clicks) =>
+    interview ? resolveActions({ sources: screenSources, answers, clickState: clicks, baseHidden: startHidden }) : null
+  const screenOverrides = screenOverridesFor(clickState)
+  // Where Next goes, given the clicks so far. A section is skipped while
+  // hidden: by actions on any screen (interview), or by questions' actions
+  // (normal forms).
+  const nextFor = (clicks) => {
+    const ov = clicks === clickState ? screenOverrides : screenOverridesFor(clicks)
+    const hidden = (id) => (interview ? isHiddenNow(id, ov, screenStartsHidden) : itemHidden(id))
+    return skipHiddenPages(pages, resolveTarget(pages, pageIndex, pageTarget(page, answers)), hidden)
+  }
+  const next = nextFor(clickState)
+  // This screen, with any background colour an action has given it.
+  const screenBg = interview ? screenOverrides[screens[pageIndex].key]?.props?.bg : undefined
+  const shownDesign = screenBg ? { ...design, bg: screenBg } : design
   const overrides = interview
     ? resolveActions({
         sources: Object.values(design.nodes)
@@ -497,10 +526,10 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false }) {
     return false
   }
 
-  function goNext() {
+  function goNext(to = next) {
     if (!pageIsValid()) return
     setHistory((h) => [...h, pageIndex])
-    setPageIndex(next)
+    setPageIndex(to)
   }
 
   function goBack() {
@@ -615,8 +644,14 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false }) {
     }
     const onButton = (action, node) => {
       if (state === 'sending' || leavingRef.current) return
-      // The button's effects on other blocks first, then where it goes.
-      if (node?.actions?.length) setClickState((cs) => applyClick(cs, node.actions, nodeHidden))
+      // The button's effects on other blocks first, then where it goes,
+      // taking those effects into account (it may have just shown a screen).
+      let clicks = clickState
+      if (node?.actions?.length) {
+        clicks = applyClick(clickState, node.actions, startHidden)
+        setClickState(clicks)
+      }
+      const after = nextFor(clicks)
       if (action.type === 'none') return
       if (action.type === 'back') {
         if (history.length) leave(goBack)
@@ -629,16 +664,16 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false }) {
           setHistory((h) => [...h, pageIndex])
           setPageIndex(target)
         })
-      } else if (next === 'submit') {
+      } else if (after === 'submit') {
         finish()
       } else if (pageIsValid()) {
-        leave(goNext)
+        leave(() => goNext(after))
       }
     }
     return (
       <InterviewView
         key={pageIndex}
-        design={design}
+        design={shownDesign}
         device={device}
         questions={questionsOnly(form.questions)}
         renderQuestion={(q) => (

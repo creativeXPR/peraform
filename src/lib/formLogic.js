@@ -92,6 +92,17 @@ export function resolveTarget(pages, pageIndex, target) {
   return pageIndex + 1 < pages.length ? pageIndex + 1 : 'submit'
 }
 
+// Where to go after resolveTarget, passing over sections that are hidden
+// right now (an action can show or hide a whole section; a hidden one is
+// skipped like a page nobody needs). Returns a page index or 'submit'.
+export function skipHiddenPages(pages, target, isHidden) {
+  let i = target
+  while (i !== 'submit' && pages[i]?.section && isHidden(pages[i].section.id)) {
+    i = i + 1 < pages.length ? i + 1 : 'submit'
+  }
+  return i
+}
+
 // After deleting a section, point anything that targeted it back at 'next'.
 export function dropSectionRefs(items, sectionId) {
   return items.map((item) => {

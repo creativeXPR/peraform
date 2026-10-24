@@ -239,8 +239,13 @@ export default function BuilderPage() {
                   keyEntry={draft.answerKey?.[item.id]}
                   changeKey={changeKey(item.id)}
                   actionTargets={questions
-                    .filter((x) => x.id !== item.id && !isSection(x))
-                    .map((x) => ({ id: x.id, label: x.title || (isQuestion(x) ? 'Untitled question' : 'Untitled block') }))}
+                    .filter((x) => x.id !== item.id)
+                    .map((x) => ({
+                      id: x.id,
+                      label: isSection(x)
+                        ? `Section: ${x.title || 'Untitled section'} (its whole page)`
+                        : x.title || (isQuestion(x) ? 'Untitled question' : 'Untitled block'),
+                    }))}
                 />
               ),
             )}
