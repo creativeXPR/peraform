@@ -238,7 +238,7 @@ export function starterScreen(form, screen, isLast) {
       node.style = { ...node.style, color: 'muted' }
     } else if (item.kind === 'question') {
       add(newNode('question', { ...common, questionId: item.q.id }))
-    } else {
+    } else if (screen.index === 0) {
       const node = add(
         newNode('button', {
           ...common,
@@ -248,6 +248,32 @@ export function starterScreen(form, screen, isLast) {
       )
       // Buttons hug their label on wide screens.
       node.frames.desktop = { ...node.frames.desktop, w: 200 }
+    } else {
+      // Later screens: Back, then Next/Submit, side by side (as in normal mode).
+      const { phone, desktop } = f
+      const half = Math.floor((phone.w - 12) / 2)
+      const back = add(
+        newNode('button', {
+          parentId: card.id,
+          seq: seq++,
+          frames: { phone: { ...phone, w: half }, desktop: { ...desktop, w: 140 } },
+          label: 'Back',
+          action: { type: 'back' },
+        }),
+      )
+      // Quieter than the main button.
+      back.style = { ...back.style, bg: 'accent-soft', color: 'accent' }
+      add(
+        newNode('button', {
+          ...common,
+          frames: {
+            phone: { ...phone, x: phone.x + half + 12, w: phone.w - half - 12 },
+            desktop: { ...desktop, x: desktop.x + 152, w: 200 },
+          },
+          label: isLast ? 'Submit' : 'Next',
+          action: { type: isLast ? 'submit' : 'next' },
+        }),
+      )
     }
   })
   return { bg: null, nodes }
@@ -523,6 +549,116 @@ function cardName(design, card) {
     .map((id) => design.nodes[id])
     .find((n) => n.type === 'text' && n.text?.trim())
   return text ? `Card · ${text.text.trim().split(/\s*\n/)[0].slice(0, 40)}` : 'Card'
+}
+
+// ── Keeping designs in step with the question list ─────────────
+// The question list (normal mode) is the source of truth for which screen
+// a question is on. After it changes (questions moved between sections,
+// added, deleted; sections added or removed), saved screen designs are
+// brought back in line:
+//   - a question block on a screen its question no longer belongs to comes
+//     off it, and goes to the new screen (keeping its look) if that screen
+//     has a saved design; a screen without one gets a fresh starter design
+//   - a question new to a screen is added to its main card, above the
+//     buttons, and the card grows to fit
+//   - a screen that's no longer last gets Next instead of Submit (and the
+//     last screen Submit instead of Next), so the flow always works
+//   - designs of sections that no longer exist are dropped
+// Returns the same form object when nothing needed changing.
+export function syncInterview(form) {
+  const saved = form.interview?.screens
+  if (!saved || !Object.keys(saved).length) return form
+  const screens = screensOf(form)
+  const home = new Map() // questionId -> screen key
+  for (const s of screens) for (const q of s.page.items) if (isQuestion(q)) home.set(q.id, s.key)
+
+  let changed = false
+  const carried = {} // screen key -> question nodes moving there
+  const next = {}
+  for (const [key, design] of Object.entries(saved)) {
+    if (!screens.some((s) => s.key === key)) {
+      changed = true
+      continue
+    }
+    let d = design
+    for (const n of Object.values(design.nodes)) {
+      if (n.type !== 'question' || home.get(n.questionId) === key) continue
+      d = deleteNode(d, n.id)
+      changed = true
+      const to = home.get(n.questionId)
+      if (to) (carried[to] ??= []).push(n)
+    }
+    next[key] = d
+  }
+
+  screens.forEach((screen, index) => {
+    let d = next[screen.key]
+    if (!d) return
+    const isLast = index === screens.length - 1
+    // Questions on this page with no block yet.
+    const placed = placedQuestionIds(d)
+    for (const q of screen.page.items.filter(isQuestion)) {
+      if (placed.has(q.id)) continue
+      const reuse = carried[screen.key]?.find((n) => n.questionId === q.id)
+      d = addQuestionBlock(d, q, reuse)
+      changed = true
+    }
+    // Keep the way forward working.
+    for (const n of Object.values(d.nodes)) {
+      if (n.type !== 'button') continue
+      const action = n.action?.type
+      if (!isLast && action === 'submit') {
+        d = setContent(d, n.id, { action: { type: 'next' }, label: n.label === 'Submit' ? 'Next' : n.label })
+        changed = true
+      } else if (isLast && action === 'next') {
+        d = setContent(d, n.id, { action: { type: 'submit' }, label: n.label === 'Next' ? 'Submit' : n.label })
+        changed = true
+      }
+    }
+    next[screen.key] = d
+  })
+
+  return changed ? { ...form, interview: { ...form.interview, screens: next } } : form
+}
+
+// Adds a question's block to a design's main card (the first card), just
+// above its buttons, pushing the buttons down. `reuse`: a block that held
+// this question on another screen; its look is kept.
+function addQuestionBlock(design, question, reuse) {
+  const cards = Object.values(design.nodes)
+    .filter((n) => n.type === 'card' && !n.parentId)
+    .sort((a, b) => a.seq - b.seq)
+  const card = cards[0]
+  if (!card) return design
+  const node = reuse
+    ? { ...reuse, parentId: card.id }
+    : newNode('question', { parentId: card.id, seq: nextSeq(design), questionId: question.id })
+  const h = questionHeight(question)
+  const frames = {}
+  const nodes = { ...design.nodes }
+  for (const device of Object.keys(DEVICES)) {
+    const kids = childrenOf(design.nodes, card.id, device)
+    const box = frameOf(card, device)
+    const pad = kids.length ? Math.min(...kids.map((k) => frameOf(k, device).x)) : 20
+    const buttons = kids.filter((k) => k.type === 'button').map((k) => frameOf(k, device).y)
+    const bottom = kids.reduce((max, k) => Math.max(max, frameOf(k, device).y + frameOf(k, device).h + 16), pad)
+    const y = buttons.length ? Math.min(...buttons) : bottom
+    // Everything at or below the insertion point moves down to make room.
+    for (const k of kids) {
+      const f = frameOf(k, device)
+      if (f.y >= y) nodes[k.id] = { ...nodes[k.id], frames: { ...nodes[k.id].frames, [device]: { ...f, y: f.y + h + 16 } } }
+    }
+    frames[device] = { x: pad, y, w: Math.max(MIN_SIZE, box.w - pad * 2), h, r: 0, z: 0 }
+  }
+  nodes[node.id] = { ...node, frames }
+  // The card grows to hold everything, pushed-down buttons included.
+  let d = { ...design, nodes }
+  for (const kid of Object.values(nodes).filter((n) => n.parentId === card.id)) d = growToFit(d, kid.id)
+  return d
+}
+
+function nextSeq(design) {
+  return Object.values(design.nodes).reduce((max, n) => Math.max(max, n.seq ?? 0), 0) + 1
 }
 
 // Where a block may go: { key (screen), parentId (card id, or null for the

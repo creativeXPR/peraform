@@ -14,6 +14,7 @@ import {
   snapFrame,
   stageHeight,
   starterScreen,
+  syncInterview,
   visibleQuestionIds,
 } from '../../src/lib/interview.js'
 
@@ -52,8 +53,12 @@ describe('starter design', () => {
     expect(kids.map((n) => n.type)).toEqual(['text', 'text', 'question', 'question', 'button'])
     expect([...placedQuestionIds(design)]).toEqual(['q1', 'q2'])
     expect(kids.at(-1).action).toEqual({ type: 'next' })
-    const last = Object.values(starterScreen(form, screens[1], true).nodes).find((n) => n.type === 'button')
-    expect(last.action).toEqual({ type: 'submit' })
+    // Later screens: Back, then Submit (or Next), side by side.
+    const later = Object.values(starterScreen(form, screens[1], true).nodes).filter((n) => n.type === 'button')
+    expect(later.map((b) => b.action.type)).toEqual(['back', 'submit'])
+    const [back, submit] = later.map((b) => b.frames.phone)
+    expect(back.y).toBe(submit.y)
+    expect(back.x + back.w).toBeLessThan(submit.x)
   })
 
   it('fits each device: children stay inside the card', () => {
@@ -217,5 +222,79 @@ describe('duplicating and moving blocks', () => {
     expect(moved.questions.map((q) => q.id)).toEqual(['s1', 'q3', 'q1'])
     expect(moved.interview.screens.s1.nodes[node.id].parentId).toBe(details.cards[0].id)
     expect(moved.interview.screens.start.nodes[node.id]).toBeUndefined()
+  })
+})
+
+describe('keeping saved screens in step with the question list', () => {
+  // Saved first-screen design while everything was on one page.
+  const onePage = {
+    ...form,
+    questions: form.questions.filter((q) => q.type !== 'section'),
+  }
+  const startScreen = screensOf(onePage)[0]
+  const saved = starterScreen(onePage, startScreen, true)
+  // Then a section is added before q3 (and q2 moved after it, like dragging).
+  const moved = {
+    ...onePage,
+    interview: { screens: { start: saved } },
+    questions: [
+      { id: 'q1', type: 'shortAnswer', title: 'Name', required: true },
+      { id: 's2', type: 'section', title: 'Section 2' },
+      { id: 'q2', type: 'multipleChoice', title: 'Plan', options: ['A', 'B', 'C'] },
+      { id: 'q3', type: 'paragraph', title: 'Anything else?' },
+    ],
+  }
+
+  it('takes moved questions off the old screen', () => {
+    const synced = syncInterview(moved)
+    expect([...placedQuestionIds(synced.interview.screens.start)]).toEqual(['q1'])
+  })
+
+  it('turns the old screen’s Submit into Next once it is no longer last', () => {
+    const synced = syncInterview(moved)
+    const buttons = Object.values(synced.interview.screens.start.nodes).filter((n) => n.type === 'button')
+    expect(buttons.map((b) => [b.label, b.action.type])).toEqual([['Next', 'next']])
+  })
+
+  it('gives the new screen its questions, with Back and Submit', () => {
+    const synced = syncInterview(moved)
+    const screens = screensOf(synced)
+    const design = screenDesign(synced, screens[1], screens)
+    expect([...placedQuestionIds(design)]).toEqual(['q2', 'q3'])
+    const buttons = Object.values(design.nodes).filter((n) => n.type === 'button')
+    expect(buttons.map((b) => b.action.type)).toEqual(['back', 'submit'])
+  })
+
+  it('carries a moved block (and its look) to a screen that has a saved design', () => {
+    const screens = screensOf(moved)
+    const target = starterScreen(moved, screens[1], true)
+    // That screen was saved before q1 moved there too.
+    const q1Block = Object.values(saved.nodes).find((n) => n.questionId === 'q1')
+    const styled = { ...saved, nodes: { ...saved.nodes, [q1Block.id]: { ...q1Block, style: { bg: 'accent-soft' } } } }
+    const later = {
+      ...moved,
+      interview: { screens: { start: styled, s2: target } },
+      questions: [
+        { id: 's0', type: 'shortAnswer', title: 'Intro' },
+        { id: 's2', type: 'section', title: 'Section 2' },
+        ...moved.questions.filter((q) => q.id !== 's2'),
+      ],
+    }
+    const synced = syncInterview(later)
+    const s2 = synced.interview.screens.s2
+    const carried = Object.values(s2.nodes).find((n) => n.questionId === 'q1')
+    expect(carried.style).toEqual({ bg: 'accent-soft' })
+    // It sits above the buttons, and the card grew to hold everything.
+    const [card] = childrenOf(s2.nodes, null, 'phone')
+    const kids = childrenOf(s2.nodes, card.id, 'phone')
+    const buttonY = Math.min(...kids.filter((k) => k.type === 'button').map((k) => frameOf(k, 'phone').y))
+    expect(frameOf(carried, 'phone').y + frameOf(carried, 'phone').h).toBeLessThanOrEqual(buttonY)
+    for (const k of kids) expect(frameOf(k, 'phone').y + frameOf(k, 'phone').h).toBeLessThanOrEqual(frameOf(card, 'phone').h)
+  })
+
+  it('leaves forms alone when nothing changed', () => {
+    const synced = syncInterview(moved)
+    expect(syncInterview(synced)).toBe(synced)
+    expect(syncInterview(form)).toBe(form)
   })
 })

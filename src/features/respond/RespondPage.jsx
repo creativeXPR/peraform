@@ -15,7 +15,7 @@ import {
 } from '../../lib/formLogic.js'
 import { needsSignIn, quizSettings, settingsOf, topBarTitle } from '../../lib/formModel.js'
 import { applyClick, isHiddenNow, resolveActions, shownByActions } from '../../lib/actions.js'
-import { frameOf, screenDesign, screensOf, visibleQuestionIds } from '../../lib/interview.js'
+import { frameOf, screenDesign, screensOf, syncInterview, visibleQuestionIds } from '../../lib/interview.js'
 import { useViewportDevice } from '../../lib/useViewportDevice.js'
 import { parsePrefill } from '../../lib/prefill.js'
 import { shuffled } from '../../lib/shuffle.js'
@@ -417,7 +417,9 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false }) {
   // shown on it (on this device) are asked.
   const interview = form.mode === 'interview'
   const screens = interview ? screensOf(form) : null
-  const design = interview ? screenDesign(form, screens[pageIndex], screens) : null
+  // Synced first, so a screen saved before its questions moved shows
+  // what the question list says (lib/interview.js → syncInterview).
+  const design = interview ? screenDesign(syncInterview(form), screens[pageIndex], screens) : null
   // Blocks' state from actions: button clicks so far + answer conditions.
   const nodeHidden = (id) =>
     design?.nodes[id] ? (frameOf(design.nodes[id], device).hidden ?? false) : false
