@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { getAuth } from 'firebase-admin/auth'
+import { FieldValue } from 'firebase-admin/firestore'
 import { logger } from 'firebase-functions'
 import { defineSecret, defineString } from 'firebase-functions/params'
 import { HttpsError, onCall, onRequest } from 'firebase-functions/v2/https'
@@ -77,9 +78,28 @@ function isAdmin(token) {
 export const ensureWallet = onCall({ region: REGION }, async (request) => {
   const uid = requireAccount(request)
   const { billing } = await loadConfig()
-  await ensureWalletDoc(bdb, uid, billing)
+  await Promise.all([ensureWalletDoc(bdb, uid, billing), recordActive(uid)])
   return { isAdmin: isAdmin(request.auth.token) }
 })
+
+// The day in Lagos (UTC+1, no daylight saving), e.g. '2026-10-25'.
+const lagosDay = (ms = Date.now()) => new Date(ms + 3600_000).toISOString().slice(0, 10)
+
+// Daily active users (admin page): one marker per user per day, and the
+// day's count goes up the first time only. Never fails the wallet call.
+async function recordActive(uid) {
+  const day = lagosDay()
+  try {
+    await bdb.doc(`activity/${day}/users/${uid}`).create({ at: FieldValue.serverTimestamp() })
+  } catch {
+    return // already counted today
+  }
+  try {
+    await bdb.doc(`activity/${day}`).set({ users: FieldValue.increment(1) }, { merge: true })
+  } catch (err) {
+    logger.warn('Activity count failed', { err: err.message })
+  }
+}
 
 // ── Top-ups (Paystack) ──────────────────────────────────────
 // Starts a payment for a pack. The price comes from config, never the app.
@@ -432,8 +452,12 @@ export const billingAdmin = onCall({ region: REGION, secrets: [PAYSTACK_SECRET_K
         totals.topupKobo += e.amountKobo ?? 0
       }
     }
+    // Users active each day, the last 14 days (Lagos time), oldest first.
+    const days = Array.from({ length: 14 }, (_, i) => lagosDay(Date.now() - (13 - i) * 86400_000))
+    const activity = await bdb.getAll(...days.map((d) => bdb.doc(`activity/${d}`)))
     const { billing } = await loadConfig()
     return {
+      daily: days.map((day, i) => ({ day, users: activity[i].data()?.users ?? 0 })),
       totals,
       fxNgnPerUsd: billing.fxNgnPerUsd,
       failed: failed.docs.map((d) => ({ id: d.id, ...plain(d.data()) })),

@@ -107,6 +107,7 @@ export default function AdminCreditsPage() {
           </div>
         </section>
       )}
+      {report?.daily && <DailyUsers daily={report.daily} />}
       {report?.failed.length > 0 && (
         <details className="credits-failed">
           <summary>{report.failed.length} recent failed payments</summary>
@@ -218,5 +219,31 @@ export default function AdminCreditsPage() {
         onCancel={() => setPending(null)}
       />
     </div>
+  )
+}
+
+// Signed-in users who opened the app each day (Lagos time), last 14 days.
+function DailyUsers({ daily }) {
+  const today = daily.at(-1)?.users ?? 0
+  const week = daily.slice(-7)
+  const average = Math.round(week.reduce((n, d) => n + d.users, 0) / week.length)
+  const top = Math.max(1, ...daily.map((d) => d.users))
+  const label = (day) => new Date(`${day}T12:00:00Z`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+  return (
+    <section className="admin-daily" aria-label="Daily users">
+      <h2>Daily users</h2>
+      <p className="credits-sub">
+        <strong>{today}</strong> today · {average} a day over the last 7 days
+      </p>
+      <div className="admin-daily-bars">
+        {daily.map((d) => (
+          <div key={d.day} className="admin-daily-bar" title={`${label(d.day)}: ${d.users} users`}>
+            <span className="admin-daily-count">{d.users}</span>
+            <span className="admin-daily-fill" style={{ height: `${(d.users / top) * 100}%` }} />
+            <span className="admin-daily-day">{label(d.day)}</span>
+          </div>
+        ))}
+      </div>
+    </section>
   )
 }

@@ -421,3 +421,50 @@
   justify-content: center;
   gap: 8px;
 }
+
+/* Admin: daily users, last 14 days. */
+.admin-daily {
+  margin-top: 24px;
+}
+
+.admin-daily h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.admin-daily-bars {
+  display: grid;
+  grid-template-columns: repeat(14, minmax(0, 1fr));
+  gap: 6px;
+  height: 160px;
+  margin-top: 12px;
+}
+
+.admin-daily-bar {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.admin-daily-fill {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 6px 6px 2px 2px;
+  background: var(--accent);
+}
+
+.admin-daily-count,
+.admin-daily-day {
+  color: var(--text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .admin-daily-day {
+    display: none;
+  }
+}
