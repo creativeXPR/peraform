@@ -513,6 +513,97 @@ export function setStyle(design, id, patch) {
   return updateNode(design, id, (n) => ({ ...n, style: { ...n.style, ...patch } }))
 }
 
+// ── Shared or per-device look ─────────────────────────────────────────
+// Position and size are always per device (frames). A block's look (style)
+// and words (text, button label) are shared by phone and desktop unless
+// the creator turns sharing off: then node.split = true and each device
+// has its own copy in node.byDevice[device] = { style, text?, label? }.
+export const DEVICE_CONTENT = ['text', 'label']
+
+// The block as a device shows it.
+export function resolveNode(node, device) {
+  if (!node?.split) return node
+  const own = node.byDevice?.[device]
+  if (!own) return node
+  const out = { ...node, style: { ...node.style, ...own.style } }
+  for (const k of DEVICE_CONTENT) if (own[k] !== undefined) out[k] = own[k]
+  return out
+}
+
+// Turns sharing off (each device starts from the shared values) or on
+// (the device being edited wins; the other's differences go).
+export function setSplit(design, id, split, device) {
+  return updateNode(design, id, (n) => {
+    if (split) {
+      const copy = () => ({
+        style: { ...n.style },
+        ...Object.fromEntries(DEVICE_CONTENT.filter((k) => n[k] !== undefined).map((k) => [k, n[k]])),
+      })
+      return { ...n, split: true, byDevice: Object.fromEntries(Object.keys(DEVICES).map((d) => [d, copy()])) }
+    }
+    // eslint-disable-next-line no-unused-vars -- dropping the per-device copies
+    const { split: _s, byDevice, ...rest } = resolveNode(n, device)
+    return rest
+  })
+}
+
+// Do phone and desktop differ? (Turning sharing back on would lose that.)
+export function differsByDevice(node) {
+  if (!node?.split) return false
+  const looks = Object.keys(DEVICES).map((d) => {
+    const r = resolveNode(node, d)
+    const style = Object.fromEntries(Object.entries(r.style ?? {}).sort(([a], [b]) => a.localeCompare(b)))
+    return JSON.stringify([style, ...DEVICE_CONTENT.map((k) => r[k])])
+  })
+  return looks[0] !== looks[1]
+}
+
+// A style change: on the device being edited when the block has its own
+// per device, otherwise shared.
+export function setStyleOn(design, id, device, patch) {
+  const n = design.nodes[id]
+  if (!n?.split) return setStyle(design, id, patch)
+  return updateNode(design, id, (x) => {
+    const own = x.byDevice?.[device] ?? {}
+    return { ...x, byDevice: { ...x.byDevice, [device]: { ...own, style: { ...own.style, ...patch } } } }
+  })
+}
+
+// A content change: text and labels go to the device being edited when
+// the block is split; everything else (actions, images…) is shared.
+export function setContentOn(design, id, device, patch) {
+  const n = design.nodes[id]
+  if (!n?.split) return setContent(design, id, patch)
+  const own = Object.fromEntries(Object.entries(patch).filter(([k]) => DEVICE_CONTENT.includes(k)))
+  const shared = Object.fromEntries(Object.entries(patch).filter(([k]) => !DEVICE_CONTENT.includes(k)))
+  return updateNode(design, id, (x) => ({
+    ...x,
+    ...shared,
+    ...(Object.keys(own).length && { byDevice: { ...x.byDevice, [device]: { ...x.byDevice?.[device], ...own } } }),
+  }))
+}
+
+// fn(style) → style applied everywhere a block keeps a style (shared and
+// each device's own): design styles, dark mode.
+export function mapStyle(node, fn) {
+  const next = { ...node, style: fn(node.style ?? {}) }
+  if (node.byDevice) {
+    next.byDevice = Object.fromEntries(
+      Object.entries(node.byDevice).map(([d, own]) => [d, { ...own, style: fn(own.style ?? {}) }]),
+    )
+  }
+  return next
+}
+
+// Words set everywhere (AI headings): shared and each device's own.
+export function setContentEverywhere(node, patch) {
+  const next = { ...node, ...patch }
+  if (node.byDevice) {
+    next.byDevice = Object.fromEntries(Object.entries(node.byDevice).map(([d, own]) => [d, { ...own, ...patch }]))
+  }
+  return next
+}
+
 export function setContent(design, id, patch) {
   return updateNode(design, id, (n) => ({ ...n, ...patch }))
 }

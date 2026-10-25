@@ -28,9 +28,13 @@ import {
   questionHeight,
   screenDesign,
   screensOf,
-  setContent,
-  setFrame,
+  differsByDevice,
+  resolveNode,
+  setContentOn,
+  setSplit,
   setStyle,
+  setStyleOn,
+  setFrame,
   starterScreen,
 } from '../../lib/interview.js'
 import QuestionField from '../respond/QuestionField.jsx'
@@ -63,7 +67,7 @@ export default function InterviewEditor({ viewSwitch }) {
   // Selected blocks, in the order picked; the last one is shown in the
   // Inspector (and gets the resize handles when it's the only one).
   const [selection, setSelection] = useState([])
-  const [pending, setPending] = useState(null) // { kind: 'delete', ids } | { kind: 'reset' }
+  const [pending, setPending] = useState(null) // { kind: 'delete' | 'share', ids } | { kind: 'reset' }
   // Inspector → Preview: { nodeId, anim, nonce } plays it on the canvas.
   const [preview, setPreview] = useState(null)
   const [moving, setMoving] = useState(null) // block id for "Move to…"
@@ -346,7 +350,7 @@ export default function InterviewEditor({ viewSwitch }) {
           {selected ? (
             <Inspector
               key={selectedIds.join()}
-              node={selected}
+              node={resolveNode(selected, device)}
               multi={selectedIds.length > 1 ? selectedIds.length : 0}
               onAlign={align}
               onStartHidden={(hidden) => startHidden(selectedIds, hidden)}
@@ -379,15 +383,22 @@ export default function InterviewEditor({ viewSwitch }) {
               onFrame={(patch) => changeFrames(Object.fromEntries(selectedIds.map((id) => [id, patch])))}
               onStyle={(patch) =>
                 change(`style:${selectedIds.join()}:${Object.keys(patch).join()}`, (dsn) =>
-                  selectedIds.reduce((d, id) => setStyle(d, id, patch), dsn),
+                  selectedIds.reduce((d, id) => setStyleOn(d, id, device, patch), dsn),
                 )
               }
               onContent={(patch) =>
                 change(`content:${selected.id}:${Object.keys(patch).join()}`, (dsn) =>
-                  setContent(dsn, selected.id, patch),
+                  setContentOn(dsn, selected.id, device, patch),
                 )
               }
               onPreview={(anim) => setPreview({ nodeId: selected.id, anim, nonce: Date.now() })}
+              // Shared look on both devices, or each its own. Sharing again
+              // when they differ asks first (the other device's look goes).
+              onSplit={(split) => {
+                if (!split && selectedIds.some((id) => differsByDevice(design.nodes[id]))) {
+                  setPending({ kind: 'share', ids: selectedIds })
+                } else change(`split:${selectedIds.join()}:${split}`, (dsn) => selectedIds.reduce((d, id) => setSplit(d, id, split, device), dsn))
+              }}
               onDuplicate={() => duplicate(selectedIds)}
               onKeep={keepBlock}
               onMove={() => setMoving(selected.id)}
@@ -490,23 +501,29 @@ export default function InterviewEditor({ viewSwitch }) {
         title={
           pending?.kind === 'reset'
             ? 'Start this screen over?'
-            : pending?.ids?.length > 1
+            : pending?.kind === 'share'
+              ? `Use the ${DEVICES[device].label.toLowerCase()} look on both devices?`
+              : pending?.ids?.length > 1
               ? `Delete these ${pending.ids.length} blocks?`
               : `Delete this ${design.nodes[pending?.ids?.[0]]?.type === 'card' ? 'card' : 'block'}?`
         }
         message={
           pending?.kind === 'reset'
             ? 'Its design is replaced by a fresh starter layout on both devices. You can undo this.'
-            : pending?.ids?.some((id) => design.nodes[id]?.type === 'card')
+            : pending?.kind === 'share'
+              ? `The ${DEVICES[device === 'phone' ? 'desktop' : 'phone'].label.toLowerCase()} design’s own colours, fonts and words for this block are replaced by the ${DEVICES[device].label.toLowerCase()} ones. Position and size stay per device. You can undo this.`
+              : pending?.ids?.some((id) => design.nodes[id]?.type === 'card')
               ? 'Cards go with everything inside them. They’re removed from this screen on both devices. You can undo this.'
               : 'Removed from this screen on both devices. You can undo this.'
         }
-        confirmLabel={pending?.kind === 'reset' ? 'Start over' : 'Delete'}
+        confirmLabel={pending?.kind === 'reset' ? 'Start over' : pending?.kind === 'share' ? 'Share' : 'Delete'}
         onConfirm={() => {
           if (pending.kind === 'reset') {
             const isLast = screen.index === screens.length - 1
             change('reset', () => starterScreen(draft, screen, isLast))
             setSelection([])
+          } else if (pending.kind === 'share') {
+            change(`split:${pending.ids.join()}:false`, (dsn) => pending.ids.reduce((d, id) => setSplit(d, id, false, device), dsn))
           } else remove(pending.ids)
           setPending(null)
         }}

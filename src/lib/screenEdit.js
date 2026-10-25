@@ -9,8 +9,10 @@ import {
   descendantIds,
   frameOf,
   placeNew,
+  resolveNode,
+  setContentOn,
   setFrame,
-  updateNode,
+  setStyleOn,
 } from './interview.js'
 import { THEME_FONTS } from './theme.js'
 
@@ -34,7 +36,8 @@ const BUTTON_TYPES = ['next', 'back', 'submit', 'none']
 export function screenForAi(design, device, questions = []) {
   const blocks = Object.values(design.nodes)
     .sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0))
-    .map((n) => {
+    .map((raw) => {
+      const n = resolveNode(raw, device)
       const f = frameOf(n, device)
       const block = { id: n.id, type: n.type, parent: n.parentId ?? null, x: f.x, y: f.y, w: f.w, h: f.h }
       if (f.hidden) block.hidden = true
@@ -153,8 +156,9 @@ export function applyScreenEdit(design, { changes = [], background } = {}, devic
       const id = real(c.id)
       const node = d.nodes[id]
       if (!node) continue
-      const patch = contentPatch(node, c)
-      if (Object.keys(patch).length) d = updateNode(d, id, (n) => ({ ...n, ...patch }))
+      const { style, ...patch } = contentPatch(resolveNode(node, device), c)
+      if (style) d = setStyleOn(d, id, device, style)
+      if (Object.keys(patch).length) d = setContentOn(d, id, device, patch)
       const frame = framePatch(c)
       // Questions always stay visible (hidden ones can't be answered).
       if (typeof c.hidden === 'boolean' && node.type !== 'question') {

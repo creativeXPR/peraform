@@ -446,3 +446,31 @@ describe('overflowOf', () => {
     expect(overflowOf({ type: 'text', style: { overflow: 'nonsense' } })).toBe('scroll')
   })
 })
+
+describe('shared or per-device look', () => {
+  it('splits, edits one device, and shares again', async () => {
+    const { resolveNode, setSplit, setStyleOn, setContentOn, differsByDevice, mapStyle } = await import('../../src/lib/interview.js')
+    const at = { phone: { x: 0, y: 0, w: 100, h: 40, r: 0, z: 0 }, desktop: { x: 0, y: 0, w: 300, h: 40, r: 0, z: 0 } }
+    let d = { bg: null, nodes: { t: { id: 't', type: 'text', parentId: 'c', seq: 1, text: 'Hello', style: { size: 30, color: '#111111' }, frames: at } } }
+    // Shared: a change shows on both.
+    d = setStyleOn(d, 't', 'phone', { size: 24 })
+    expect(resolveNode(d.nodes.t, 'desktop').style.size).toBe(24)
+    // Split: phone gets its own size and words; desktop keeps its.
+    d = setSplit(d, 't', true, 'phone')
+    expect(differsByDevice(d.nodes.t)).toBe(false)
+    d = setStyleOn(d, 't', 'phone', { size: 18 })
+    d = setContentOn(d, 't', 'phone', { text: 'Hi' })
+    expect(resolveNode(d.nodes.t, 'phone')).toMatchObject({ text: 'Hi', style: { size: 18 } })
+    expect(resolveNode(d.nodes.t, 'desktop')).toMatchObject({ text: 'Hello', style: { size: 24 } })
+    expect(differsByDevice(d.nodes.t)).toBe(true)
+    // A design style or dark mode reaches every copy.
+    const recoloured = mapStyle(d.nodes.t, (s) => ({ ...s, color: '#eeeeee' }))
+    expect(resolveNode(recoloured, 'phone').style.color).toBe('#eeeeee')
+    expect(resolveNode(recoloured, 'desktop').style.color).toBe('#eeeeee')
+    // Sharing again keeps the device being edited.
+    d = setSplit(d, 't', false, 'phone')
+    expect(d.nodes.t.split).toBeUndefined()
+    expect(d.nodes.t.byDevice).toBeUndefined()
+    expect(resolveNode(d.nodes.t, 'desktop')).toMatchObject({ text: 'Hi', style: { size: 18 } })
+  })
+})

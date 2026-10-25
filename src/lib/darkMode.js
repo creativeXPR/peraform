@@ -1,3 +1,5 @@
+import { mapStyle } from './interview.js'
+
 // Dark mode for designed screens (interview mode). Theme tokens already
 // follow the respondent's light/dark setting; fixed colours ('#rrggbb', in
 // gradients too) don't. When a respondent picks dark mode and the screen
@@ -69,10 +71,12 @@ export function darkDesign(design) {
   if (!isLightDesign(design)) return design
   const nodes = {}
   for (const [id, n] of Object.entries(design.nodes)) {
-    const style = { ...n.style }
-    for (const k of COLOUR_FIELDS) if (style[k]) style[k] = flipColours(style[k])
-    if (SCHEME_FLIP[style.scheme]) style.scheme = SCHEME_FLIP[style.scheme]
-    nodes[id] = { ...n, style }
+    nodes[id] = mapStyle(n, (st) => {
+      const style = { ...st }
+      for (const k of COLOUR_FIELDS) if (style[k]) style[k] = flipColours(style[k])
+      if (SCHEME_FLIP[style.scheme]) style.scheme = SCHEME_FLIP[style.scheme]
+      return style
+    })
   }
   return { ...design, bg: flipColours(design.bg), nodes, dark: true }
 }

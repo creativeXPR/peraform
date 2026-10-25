@@ -1,6 +1,6 @@
 import { newAnimation } from './animations.js'
 import { gradient } from './gradient.js'
-import { frameOf } from './interview.js'
+import { frameOf, mapStyle, setContentEverywhere } from './interview.js'
 
 // Design styles for interview screens: a look applied in one go (by the
 // creator, or chosen by "Design with AI"). A style restyles what's there:
@@ -154,7 +154,7 @@ export function applyStyle(design, styleKey, palette) {
     else if (n.type === 'question') patch = s.question
     else if (n.type === 'button') patch = isBack(n) ? s.back : s.button
     else if (n.type === 'image' || n.type === 'video' || n.type === 'embed') patch = s.media
-    let next = patch ? { ...n, style: { ...n.style, ...patch } } : n
+    let next = patch ? mapStyle(n, (st) => ({ ...st, ...patch })) : n
     if (n.type === 'card' && !n.parentId) {
       const own = (n.animations ?? []).filter((a) => !a.fromStyle)
       const added = s.entrance ? [{ ...newAnimation(s.entrance), fromStyle: true }] : []
@@ -171,7 +171,9 @@ export function applyStyle(design, styleKey, palette) {
 
 function snapshot(design) {
   const looks = {}
-  for (const n of Object.values(design.nodes)) looks[n.id] = { style: n.style ?? {}, animations: n.animations ?? [] }
+  for (const n of Object.values(design.nodes)) {
+    looks[n.id] = { style: n.style ?? {}, animations: n.animations ?? [], ...(n.byDevice && { byDevice: n.byDevice }) }
+  }
   return { bg: design.bg ?? null, looks }
 }
 
@@ -185,7 +187,7 @@ export function restoreOriginal(design) {
   for (const n of Object.values(design.nodes)) {
     const before = looks[n.id]
     nodes[n.id] = before
-      ? { ...n, style: before.style, animations: before.animations }
+      ? { ...n, style: before.style, animations: before.animations, ...(before.byDevice && n.byDevice && { byDevice: before.byDevice }) }
       : { ...n, animations: (n.animations ?? []).filter((a) => !a.fromStyle) }
   }
   // eslint-disable-next-line no-unused-vars -- dropping style and original
@@ -195,7 +197,8 @@ export function restoreOriginal(design) {
 
 // The fonts a design uses (to load them).
 export function fontsUsed(design) {
-  return [...new Set(Object.values(design.nodes).map((n) => n.style?.font).filter(Boolean))]
+  const fonts = Object.values(design.nodes).flatMap((n) => [n.style?.font, ...Object.values(n.byDevice ?? {}).map((o) => o.style?.font)])
+  return [...new Set(fonts.filter(Boolean))]
 }
 
 // "Design with AI" words for a screen: the heading goes into its heading
@@ -204,12 +207,12 @@ export function screenWords(design, { heading, subtitle }) {
   const ids = headingIds(design)
   const nodes = { ...design.nodes }
   const headingNode = Object.values(nodes).find((n) => ids.has(n.id))
-  if (headingNode && heading) nodes[headingNode.id] = { ...headingNode, text: heading.slice(0, 80) }
+  if (headingNode && heading) nodes[headingNode.id] = setContentEverywhere(headingNode, { text: heading.slice(0, 80) })
   if (headingNode && subtitle) {
     const sub = Object.values(nodes)
       .filter((n) => n.type === 'text' && n.parentId === headingNode.parentId && n.id !== headingNode.id)
       .sort((a, b) => frameOf(a, 'phone').y - frameOf(b, 'phone').y)[0]
-    if (sub) nodes[sub.id] = { ...sub, text: subtitle.slice(0, 160) }
+    if (sub) nodes[sub.id] = setContentEverywhere(sub, { text: subtitle.slice(0, 160) })
   }
   return { ...design, nodes }
 }

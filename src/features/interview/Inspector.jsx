@@ -211,6 +211,7 @@ export default function Inspector({
   onStyle,
   onContent,
   onDuplicate,
+  onSplit, // (split) its own look and words per device, or shared
   onKeep, // saves the block (and what's inside) to the Keep
   onMove, // opens "Move to…"
   onDelete,
@@ -359,6 +360,18 @@ export default function Inspector({
           </p>
         </Group>
       )}
+
+      <Group title="Phone and desktop">
+        <label className="insp-check">
+          <input type="checkbox" checked={!node.split} onChange={(e) => onSplit(!e.target.checked)} />
+          Same look and words on both
+        </label>
+        <p className="insp-note">
+          {node.split
+            ? `Its own look and words on each device: colours, fonts, sizes and text you change here apply to the ${DEVICES[device].label.toLowerCase()} design only.`
+            : `Colours, fonts, sizes and text are shared; turn this off to give the ${DEVICES[otherDevice].label.toLowerCase()} design its own. Position and size are always per device.`}
+        </p>
+      </Group>
 
       {!multi && (
         <>

@@ -12,6 +12,7 @@ import {
   liveLayout,
   overflowCss,
   overflowOf,
+  resolveNode,
   stageHeight,
 } from '../../lib/interview.js'
 // Question fields look exactly as on the normal form, in the editor too.
@@ -115,7 +116,9 @@ function nodeStyle(node, frame, editing, override) {
 //   onButton(action, node) — live buttons
 //   overrides — live: each block's state from actions (lib/actions.js)
 //   onNodePointerDown(e, node) — edit: select / start dragging
-export function StageNode({ node, ctx }) {
+export function StageNode({ node: raw, ctx }) {
+  // Its look and words for this device (shared, or its own: lib/interview.js).
+  const node = resolveNode(raw, ctx.device)
   const {
     design,
     device,
