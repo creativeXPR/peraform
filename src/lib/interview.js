@@ -298,6 +298,23 @@ export function alignFrames(frames, how) {
   return Object.fromEntries(list.map(([id, f]) => [id, at(f)]))
 }
 
+// What a block does with content that doesn't fit (style.overflow), for
+// every kind of block. Before this setting: cards used style.clip, text and
+// questions scrolled, the rest showed it.
+export const OVERFLOW = {
+  scroll: 'Scroll',
+  hidden: 'Hidden',
+  visible: 'Visible',
+}
+export function overflowOf(node) {
+  const o = node.style?.overflow
+  if (OVERFLOW[o]) return o
+  if (node.type === 'card') return node.style?.clip ? 'hidden' : 'visible'
+  return node.type === 'text' || node.type === 'question' ? 'scroll' : 'visible'
+}
+// The CSS value: "scroll" only shows a scrollbar when it's needed.
+export const overflowCss = (value) => (value === 'scroll' ? 'auto' : value)
+
 // The address for an embed block from what the creator pasted: a web
 // address, or an <iframe> embed code (its src). Only https; null otherwise.
 export function embedSrc(input) {

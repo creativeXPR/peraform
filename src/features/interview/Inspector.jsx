@@ -21,7 +21,19 @@ import { useEffect, useState } from 'react'
 import ColorPicker from '../../lib/ColorPicker.jsx'
 import { GRADIENT_PRESETS } from '../../lib/gradient.js'
 import { youtubeId } from '../../lib/formModel.js'
-import { BUTTON_ACTIONS, COLOR_TOKENS, DEVICES, GLASS, MIN_SIZE, NODE_TYPES, SHADOWS, embedSrc, frameOf } from '../../lib/interview.js'
+import {
+  BUTTON_ACTIONS,
+  COLOR_TOKENS,
+  DEVICES,
+  GLASS,
+  MIN_SIZE,
+  NODE_TYPES,
+  OVERFLOW,
+  SHADOWS,
+  embedSrc,
+  frameOf,
+  overflowOf,
+} from '../../lib/interview.js'
 import { THEME_FONTS } from '../../lib/theme.js'
 import ImagePicker from '../builder/ImagePicker.jsx'
 import { triggerKindFor } from '../../lib/actions.js'
@@ -93,6 +105,13 @@ function StartHidden({ node, onStartHidden }) {
 }
 const DEVICES_LIST = Object.keys(DEVICES)
 
+// What each Overflow choice does with content that doesn't fit.
+const OVERFLOW_HELP = {
+  scroll: 'Scroll: it scrolls inside the block (a scrollbar shows only when needed)',
+  hidden: 'Hidden: whatever doesn’t fit is cut off at the block’s edge',
+  visible: 'Visible: it spills out past the block’s edge, over what’s around it',
+}
+
 // Why a size won't go lower, so it never looks broken: the smallest size,
 // text or a question needing more room than its box (it scrolls inside
 // the box; "Fit height" makes room), contents wider than the box, or
@@ -109,7 +128,7 @@ function SizeLimits({ node, frame, onFitHeight }) {
       const kind = node.type === 'text' ? 'text' : 'question'
       const needed = box.scrollHeight + (el.offsetHeight - box.clientHeight)
       out.push({
-        text: `This ${kind} needs ${needed}px of height to show everything; at ${Math.round(frame.h)}px it scrolls inside its box. ${kind === 'text' ? 'A smaller font, a wider block or' : 'A wider block or'} “Fit height” makes room (the blocks below move down).`,
+        text: `This ${kind} needs ${needed}px of height to show everything; at ${Math.round(frame.h)}px ${{ scroll: 'it scrolls inside its box', hidden: 'the rest is cut off', visible: 'the rest spills over what’s below' }[overflowOf(node)]}. ${kind === 'text' ? 'A smaller font, a wider block or' : 'A wider block or'} “Fit height” makes room (the blocks below move down).`,
         fitH: needed,
       })
     }
@@ -459,16 +478,6 @@ export default function Inspector({
               </label>
             )}
             {node.type === 'card' && <FitCard key={node.id} pad={s.fitPad ?? 16} device={device} onFit={onFit} />}
-            {node.type === 'card' && (
-              <label className="insp-check">
-                <input
-                  type="checkbox"
-                  checked={Boolean(s.clip)}
-                  onChange={(e) => onStyle({ clip: e.target.checked })}
-                />
-                Clip contents to the card
-              </label>
-            )}
           </Group>
 
           {(node.type === 'button' || trigger) && (
@@ -553,6 +562,22 @@ export default function Inspector({
               {Object.entries(SHADOWS).map(([key, sh]) => (
                 <option key={key} value={key}>
                   {sh.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="insp-field" title={OVERFLOW_HELP[overflowOf(node)]}>
+            <span>Overflow</span>
+            <select
+              value={overflowOf(node)}
+              // Cards also keep the older "clip" flag in step.
+              onChange={(e) =>
+                onStyle({ overflow: e.target.value, ...(node.type === 'card' && { clip: e.target.value === 'hidden' }) })
+              }
+            >
+              {Object.entries(OVERFLOW).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
                 </option>
               ))}
             </select>

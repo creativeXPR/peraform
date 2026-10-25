@@ -110,9 +110,6 @@
   border-radius: inherit;
 }
 
-.stage-card-inner.is-clipped {
-  overflow: hidden;
-}
 
 /* Selection: outline, resize handles and the rotate knob keep a constant
    on-screen size whatever the zoom (--inv = 1 / zoom). */

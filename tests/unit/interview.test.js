@@ -433,3 +433,16 @@ describe('fitBlockHeight (the Fit height button)', () => {
     expect(frameOf(out.nodes.card, 'phone').h).toBe(136 + 100 + 16)
   })
 })
+
+describe('overflowOf', () => {
+  it('reads the setting, or what each block did before it existed', async () => {
+    const { overflowOf } = await import('../../src/lib/interview.js')
+    expect(overflowOf({ type: 'text', style: {} })).toBe('scroll')
+    expect(overflowOf({ type: 'question' })).toBe('scroll')
+    expect(overflowOf({ type: 'card', style: { clip: true } })).toBe('hidden')
+    expect(overflowOf({ type: 'card', style: {} })).toBe('visible')
+    expect(overflowOf({ type: 'image', style: {} })).toBe('visible')
+    expect(overflowOf({ type: 'card', style: { clip: true, overflow: 'scroll' } })).toBe('scroll')
+    expect(overflowOf({ type: 'text', style: { overflow: 'nonsense' } })).toBe('scroll')
+  })
+})

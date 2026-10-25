@@ -10,6 +10,8 @@ import {
   colorCss,
   frameOf,
   liveLayout,
+  overflowCss,
+  overflowOf,
   stageHeight,
 } from '../../lib/interview.js'
 // Question fields look exactly as on the normal form, in the editor too.
@@ -183,12 +185,16 @@ export function StageNode({ node, ctx }) {
     .filter(Boolean)
     .join(' ')
 
+  // Content that doesn't fit (Inspector → Overflow): cards and text or
+  // questions apply it to their inner box, so the block's own edges and
+  // handles stay put; other blocks apply it to themselves.
+  const overflow = overflowOf(node)
   let content = null
   if (node.type === 'card') {
     // Children live in an inner layer, which does the clipping — so the
     // card's own selection handles (edit mode) are never clipped away.
     content = (
-      <div className={`stage-card-inner${node.style?.clip ? ' is-clipped' : ''}`}>
+      <div className="stage-card-inner" style={{ overflow: overflowCss(overflow) }}>
         {childrenOf(design.nodes, node.id, device).map((child) => (
           <StageNode key={child.id} node={child} ctx={ctx} />
         ))}
@@ -258,7 +264,17 @@ export function StageNode({ node, ctx }) {
       {/* Text and questions scroll inside an inner box when they need more
           room, so the block's own edges (and its selection handles) never
           scroll or get clipped. */}
-      {node.type === 'text' || node.type === 'question' ? <div className="stage-scroll">{content}</div> : content}
+      {node.type === 'text' || node.type === 'question' ? (
+        <div className="stage-scroll" style={{ overflowY: overflowCss(overflow) }}>
+          {content}
+        </div>
+      ) : node.type !== 'card' && overflow !== 'visible' ? (
+        <div className="stage-scroll" style={{ overflow: overflowCss(overflow) }}>
+          {content}
+        </div>
+      ) : (
+        content
+      )}
       {editing && selectedId === node.id && (selectedIds?.length ?? 1) <= 1 && renderHandles?.(node)}
     </div>
   )
