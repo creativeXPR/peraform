@@ -10,7 +10,6 @@ import {
   colorCss,
   frameOf,
   liveLayout,
-  overflowCss,
   overflowOf,
   resolveNode,
   stageHeight,
@@ -212,7 +211,7 @@ export function StageNode({ node: raw, ctx }) {
     // Children live in an inner layer, which does the clipping — so the
     // card's own selection handles (edit mode) are never clipped away.
     content = (
-      <div className="stage-card-inner" style={{ overflow: overflowCss(overflow) }}>
+      <div className={`stage-card-inner ov-${overflow}`}>
         {childrenOf(design.nodes, node.id, device).map((child) => (
           <StageNode key={child.id} node={child} ctx={ctx} />
         ))}
@@ -283,11 +282,11 @@ export function StageNode({ node: raw, ctx }) {
           room, so the block's own edges (and its selection handles) never
           scroll or get clipped. */}
       {node.type === 'text' || node.type === 'question' ? (
-        <div className="stage-scroll" style={{ overflowY: overflowCss(overflow) }}>
+        <div className={`stage-scroll ov-${overflow}`}>
           {content}
         </div>
       ) : node.type !== 'card' && overflow !== 'visible' ? (
-        <div className="stage-scroll" style={{ overflow: overflowCss(overflow) }}>
+        <div className={`stage-scroll ov-${overflow}`}>
           {content}
         </div>
       ) : (

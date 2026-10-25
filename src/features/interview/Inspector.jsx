@@ -118,7 +118,7 @@ const OVERFLOW_HELP = {
 // the box; "Fit height" makes room), contents wider than the box, or
 // blocks reaching past a card. Measured on the canvas after each change.
 // Blocks never resize themselves: every fix is a button.
-function SizeLimits({ node, frame, onFitHeight }) {
+function SizeLimits({ node, frame, onFitHeight, parentOverflow }) {
   const [notes, setNotes] = useState([]) // [{ text, fitH? }]
   const measure = () => {
     const el = document.querySelector(`.canvas-stage [data-node-id="${node.id}"]`)
@@ -131,6 +131,12 @@ function SizeLimits({ node, frame, onFitHeight }) {
       out.push({
         text: `This ${kind} needs ${needed}px of height to show everything; at ${Math.round(frame.h)}px ${{ scroll: 'it scrolls inside its box', hidden: 'the rest is cut off', visible: 'the rest spills over what’s below' }[overflowOf(node)]}. ${kind === 'text' ? 'A smaller font, a wider block or' : 'A wider block or'} “Fit height” makes room (the blocks below move down).`,
         fitH: needed,
+      })
+    }
+    // Visible here, but the card around it decides what shows past its edge.
+    if (overflowOf(node) === 'visible' && parentOverflow && parentOverflow !== 'visible') {
+      out.push({
+        text: `This block is set to Visible, but the card around it is set to ${parentOverflow === 'hidden' ? 'Hidden, so anything past the card’s edge is cut off there' : 'Scroll, so anything past the card’s edge scrolls inside the card'}. To let it show, select the card and set its Overflow to Visible, or use Fit to blocks on the card.`,
       })
     }
     if (el && node.type !== 'card' && el.scrollWidth > el.clientWidth + 1) {
@@ -219,6 +225,7 @@ export default function Inspector({
   onLevel,
   onFit, // (pad) cards: hug the blocks inside, pad px from each edge
   onFitHeight, // (h) text/questions: this tall, blocks below move down
+  parentOverflow, // the Overflow of the card it's in (scroll | hidden | visible), if any
   onPreview, // (animation) plays it on the canvas
 }) {
   const f = frameOf(node, device)
@@ -342,7 +349,7 @@ export default function Inspector({
             />
             <NumberField label="Level" value={f.z || 0} min={0} max={99} onChange={(z) => onFrame({ z })} />
           </div>
-          <SizeLimits node={node} frame={f} onFitHeight={onFitHeight} />
+          <SizeLimits node={node} frame={f} onFitHeight={onFitHeight} parentOverflow={parentOverflow} />
           <button
             type="button"
             className={`insp-toggle${f.hidden ? '' : ' is-on'}`}

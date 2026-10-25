@@ -2,6 +2,9 @@
 .stage {
   position: relative;
   overflow: hidden;
+  /* Clipped, and never scrolled by the browser (e.g. bringing a focused
+     field into view), which hidden still allows. */
+  overflow: clip;
   color: var(--text);
   font-family: var(--font);
 }
@@ -15,8 +18,24 @@
    than the block was given. */
 .stage-scroll {
   height: 100%;
-  overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+/* A block's or card's Overflow setting (Inspector), on its inner box.
+   Hidden clips without ever being scrolled (clip; hidden for older
+   browsers): with plain hidden, the browser could still scroll it to show
+   a focused field or an error, shifting the content out of place. */
+.ov-scroll {
+  overflow: auto;
+}
+
+.ov-hidden {
+  overflow: hidden;
+  overflow: clip;
+}
+
+.ov-visible {
+  overflow: visible;
 }
 
 .stage-text {
@@ -192,6 +211,9 @@
   min-width: 0;
   height: max(480px, calc(100dvh - 250px));
   overflow: hidden;
+  /* Clipped, and never scrolled by the browser (e.g. bringing a focused
+     field into view), which hidden still allows. */
+  overflow: clip;
   border-radius: var(--radius-card);
   background-color: var(--fill);
   background-image: radial-gradient(circle, color-mix(in srgb, var(--text) 18%, transparent) 1px, transparent 1.2px);
@@ -218,6 +240,9 @@
 
 .canvas-frame {
   overflow: hidden;
+  /* Clipped, and never scrolled by the browser (e.g. bringing a focused
+     field into view), which hidden still allows. */
+  overflow: clip;
   border-radius: 12px;
   box-shadow: var(--shadow), 0 0 0 calc(1px * var(--inv)) var(--line);
 }
@@ -682,6 +707,9 @@ textarea.insp-input {
 .interview-frame {
   margin: 0 auto;
   overflow: hidden;
+  /* Clipped, and never scrolled by the browser (e.g. bringing a focused
+     field into view), which hidden still allows. */
+  overflow: clip;
   /* Glides with the blocks when hidden ones give their space back. */
   transition: height 320ms var(--ease);
 }

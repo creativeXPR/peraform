@@ -34,6 +34,7 @@ import {
   screenDesign,
   screensOf,
   differsByDevice,
+  overflowOf,
   resolveNode,
   setContentOn,
   setSplit,
@@ -385,6 +386,7 @@ export default function InterviewEditor({ viewSwitch }) {
             <Inspector
               key={selectedIds.join()}
               node={resolveNode(selected, device)}
+              parentOverflow={selected.parentId && design.nodes[selected.parentId] ? overflowOf(resolveNode(design.nodes[selected.parentId], device)) : undefined}
               multi={selectedIds.length > 1 ? selectedIds.length : 0}
               onAlign={align}
               onStartHidden={(hidden) => startHidden(selectedIds, hidden)}

@@ -312,8 +312,6 @@ export function overflowOf(node) {
   if (node.type === 'card') return node.style?.clip ? 'hidden' : 'visible'
   return node.type === 'text' || node.type === 'question' ? 'scroll' : 'visible'
 }
-// The CSS value: "scroll" only shows a scrollbar when it's needed.
-export const overflowCss = (value) => (value === 'scroll' ? 'auto' : value)
 
 // The address for an embed block from what the creator pasted: a web
 // address, or an <iframe> embed code (its src). Only https; null otherwise.
