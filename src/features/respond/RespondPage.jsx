@@ -24,6 +24,7 @@ import { shuffled } from '../../lib/shuffle.js'
 import { loadThemeFont, themeOf, themeStyle } from '../../lib/theme.js'
 import { validateAnswer } from '../../lib/validation.js'
 import { useTheme } from '../../lib/useTheme.js'
+import { darkDesign, darkOverrides } from '../../lib/darkMode.js'
 import { ensureSignedIn } from '../auth/authActions.js'
 import { isCreator, useAuth } from '../auth/useAuth.js'
 import AccessGate from './AccessGate.jsx'
@@ -135,6 +136,7 @@ export default function RespondPage() {
             user={user}
             initialAnswers={parsePrefill(form, modes.search)}
             prefillMode={modes.prefill && Boolean(user && form.memberIds.includes(user.uid))}
+            dark={mode === 'dark'}
           />
         )}
       </main>
@@ -216,7 +218,7 @@ function cleanAnswer(question, value) {
 //   initialAnswers: from a pre-filled link (lib/prefill.js)
 //   prefillMode: an editor making a pre-filled link — nothing is required
 //   or submitted; the bar at the top turns the answers into a link.
-function FormView({ form, user, initialAnswers = {}, prefillMode = false }) {
+function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark = false }) {
   const formTheme = themeOf(form)
   const [answers, setAnswers] = useState(initialAnswers)
   // Interview mode: what button clicks have changed so far (lib/actions.js).
@@ -479,6 +481,8 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false }) {
   // This screen, with any background colour an action has given it.
   const screenBg = interview ? screenOverrides[screens[pageIndex].key]?.props?.bg : undefined
   const shownDesign = screenBg ? { ...design, bg: screenBg } : design
+  // Dark mode: a light design gets its dark version (lib/darkMode.js).
+  const darkShown = interview && dark ? darkDesign(shownDesign) : shownDesign
   const overrides = interview
     ? resolveActions({
         sources: Object.values(design.nodes)
@@ -680,7 +684,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false }) {
     return (
       <InterviewView
         key={pageIndex}
-        design={shownDesign}
+        design={darkShown}
         device={device}
         questions={questionsOnly(form.questions)}
         renderQuestion={(q) => (
@@ -694,7 +698,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false }) {
           />
         )}
         onButton={onButton}
-        overrides={overrides}
+        overrides={darkShown.dark ? darkOverrides(overrides) : overrides}
         leaveRef={leaveRef}
         overlay={
           (prefillMode ||
