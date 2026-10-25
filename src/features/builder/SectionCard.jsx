@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripHorizontal, Trash2 } from 'lucide-react'
+import { BookmarkPlus, GripHorizontal, Trash2 } from 'lucide-react'
 import AutoTextarea from '../../lib/AutoTextarea.jsx'
 import TargetSelect from './TargetSelect.jsx'
 import ShowIf from './ShowIf.jsx'
@@ -16,6 +16,7 @@ export default function SectionCard({
   onActivate,
   change,
   onDelete,
+  onKeep, // saves it to the Keep (features/keep)
   showIf, // "Show only if…" rules for this section (ShowIf.jsx)
 }) {
   const {
@@ -83,6 +84,15 @@ export default function SectionCard({
                 onChange={(next) => change('next', (s) => ({ ...s, next }))}
               />
             </label>
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={onKeep}
+              aria-label="Keep (save it to paste later)"
+              title="Keep: save it to paste later, in any form"
+            >
+              <BookmarkPlus size={18} />
+            </button>
             <button
               type="button"
               className="icon-btn"

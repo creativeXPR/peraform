@@ -11,6 +11,14 @@
   box-sizing: border-box;
 }
 
+/* Text and questions: the inner box that scrolls when they need more room
+   than the block was given. */
+.stage-scroll {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .stage-text {
   white-space: pre-wrap;
   overflow-wrap: anywhere;

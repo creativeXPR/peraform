@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import WalletProvider from '../credits/WalletProvider.jsx'
+import KeepProvider from '../keep/KeepProvider.jsx'
 import { isCreator, useAuth } from './useAuth.js'
 
 // Gate for creator screens: anyone without a real account goes to /signin
@@ -13,10 +14,13 @@ export default function RequireCreator() {
     const next = location.pathname + location.search
     return <Navigate to={`/signin?next=${encodeURIComponent(next)}`} replace />
   }
-  // Creators have a credit wallet (AI features); the balance streams in.
+  // Creators have a credit wallet (AI features; the balance streams in)
+  // and a Keep (saved items shared across Quality Tools).
   return (
     <WalletProvider>
-      <Outlet />
+      <KeepProvider>
+        <Outlet />
+      </KeepProvider>
     </WalletProvider>
   )
 }

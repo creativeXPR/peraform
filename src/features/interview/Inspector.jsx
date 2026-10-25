@@ -7,6 +7,7 @@ import {
   AlignStartVertical,
   ArrowDownToLine,
   ArrowUpToLine,
+  BookmarkPlus,
   Copy,
   Eye,
   EyeOff,
@@ -20,7 +21,7 @@ import { useEffect, useState } from 'react'
 import ColorPicker from '../../lib/ColorPicker.jsx'
 import { GRADIENT_PRESETS } from '../../lib/gradient.js'
 import { youtubeId } from '../../lib/formModel.js'
-import { BUTTON_ACTIONS, COLOR_TOKENS, DEVICES, GLASS, MIN_SIZE, NODE_TYPES, SHADOWS, frameOf } from '../../lib/interview.js'
+import { BUTTON_ACTIONS, COLOR_TOKENS, DEVICES, GLASS, MIN_SIZE, NODE_TYPES, SHADOWS, embedSrc, frameOf } from '../../lib/interview.js'
 import { THEME_FONTS } from '../../lib/theme.js'
 import ImagePicker from '../builder/ImagePicker.jsx'
 import { triggerKindFor } from '../../lib/actions.js'
@@ -103,11 +104,13 @@ function SizeLimits({ node, frame, onFitHeight }) {
     const el = document.querySelector(`.canvas-stage [data-node-id="${node.id}"]`)
     const out = []
     if (frame.w <= MIN_SIZE || frame.h <= MIN_SIZE) out.push({ text: `${MIN_SIZE}px is the smallest a block can be.` })
-    if (el && (node.type === 'text' || node.type === 'question') && el.scrollHeight > el.clientHeight + 1) {
+    const box = el?.querySelector(':scope > .stage-scroll')
+    if (box && box.scrollHeight > box.clientHeight + 1) {
       const kind = node.type === 'text' ? 'text' : 'question'
+      const needed = box.scrollHeight + (el.offsetHeight - box.clientHeight)
       out.push({
-        text: `This ${kind} needs ${el.scrollHeight}px of height to show everything; at ${Math.round(frame.h)}px it scrolls inside its box. ${kind === 'text' ? 'A smaller font, a wider block or' : 'A wider block or'} “Fit height” makes room (the blocks below move down).`,
-        fitH: el.scrollHeight,
+        text: `This ${kind} needs ${needed}px of height to show everything; at ${Math.round(frame.h)}px it scrolls inside its box. ${kind === 'text' ? 'A smaller font, a wider block or' : 'A wider block or'} “Fit height” makes room (the blocks below move down).`,
+        fitH: needed,
       })
     }
     if (el && node.type !== 'card' && el.scrollWidth > el.clientWidth + 1) {
@@ -189,6 +192,7 @@ export default function Inspector({
   onStyle,
   onContent,
   onDuplicate,
+  onKeep, // saves the block (and what's inside) to the Keep
   onMove, // opens "Move to…"
   onDelete,
   onLevel,
@@ -240,6 +244,17 @@ export default function Inspector({
           >
             <Copy size={16} />
           </button>
+          {!multi && (
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={onKeep}
+              title="Keep: save it to paste later, on any screen or form"
+              aria-label="Keep (save it to paste later)"
+            >
+              <BookmarkPlus size={16} />
+            </button>
+          )}
           {!multi && (
             <button
               type="button"
@@ -414,18 +429,20 @@ export default function Inspector({
             )}
             {node.type === 'embed' && (
               <>
-                <input
+                <textarea
                   className="insp-input"
+                  rows={3}
                   defaultValue={node.url ?? ''}
                   onBlur={(e) => {
-                    const url = e.target.value.trim()
-                    if (/^https:\/\/\S+$/i.test(url)) onContent({ url })
+                    const url = embedSrc(e.target.value)
+                    if (url) onContent({ url })
                   }}
-                  placeholder="https://…"
-                  aria-label="Web page address"
+                  placeholder={'https://…  or  <iframe src="https://…"></iframe>'}
+                  aria-label="Web page address or iframe embed code"
                 />
                 <p className="insp-note">
-                  Any https page that allows embedding (maps, slides, calendars…). Some sites block it.
+                  A web address, or the embed code a site gives you (“&lt;iframe …&gt;” from YouTube, Google Maps,
+                  Slides, Canva, Calendly…). Any https page that allows embedding; some sites block it.
                 </p>
               </>
             )}

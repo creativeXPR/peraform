@@ -62,9 +62,9 @@ function nodeStyle(node, frame, editing, override) {
     width: frame.w,
     // Exactly the size the creator set: blocks never grow over the ones
     // around them (that blocked taps on phones). Text or a question that
-    // needs more room scrolls inside its block; the Inspector says so.
+    // needs more room scrolls inside its block (.stage-scroll); the
+    // Inspector says so.
     height: frame.h,
-    overflowY: node.type === 'question' || node.type === 'text' ? 'auto' : undefined,
     transform: transform || undefined,
     zIndex: frame.z || undefined,
     background: backgroundCss(p.bg ?? s.bg, s.bgAlpha ?? 100),
@@ -255,7 +255,10 @@ export function StageNode({ node, ctx }) {
       style={nodeStyle(node, frame, editing, override)}
       onPointerDown={editing ? (e) => onNodePointerDown?.(e, node) : undefined}
     >
-      {content}
+      {/* Text and questions scroll inside an inner box when they need more
+          room, so the block's own edges (and its selection handles) never
+          scroll or get clipped. */}
+      {node.type === 'text' || node.type === 'question' ? <div className="stage-scroll">{content}</div> : content}
       {editing && selectedId === node.id && (selectedIds?.length ?? 1) <= 1 && renderHandles?.(node)}
     </div>
   )

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
-import { LayoutGrid, Menu, Moon, PanelLeft, Search, Sun, X } from 'lucide-react'
+import { Bookmark, LayoutGrid, Menu, Moon, PanelLeft, Search, Sun, X } from 'lucide-react'
 import AccountMenu from '../features/auth/AccountMenu.jsx'
 import BalanceChip from '../features/credits/BalanceChip.jsx'
+import { useKeep } from '../features/keep/keepContext.js'
 import { useTheme } from './useTheme.js'
 import './AppShell.css'
 import LogoMark from './LogoMark.jsx'
@@ -26,6 +27,7 @@ export default function AppShell({
   style,
 }) {
   const { theme, toggleTheme } = useTheme()
+  const keep = useKeep() // null outside creator screens
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [searchText, setSearchText] = useState('')
@@ -68,6 +70,11 @@ export default function AppShell({
         )}
         <div className="topbar-actions">
           {actions}
+          {keep && (
+            <button type="button" className="icon-btn topbar-keep" onClick={keep.openKeep} aria-label="Keep" title="Keep">
+              <Bookmark size={18} />
+            </button>
+          )}
           <BalanceChip />
           <button
             type="button"
@@ -86,7 +93,20 @@ export default function AppShell({
           <aside className="sidebar" aria-label="Main navigation">
             <div className="drawer-head">
               <span className="logo"><LogoMark />PeraForm</span>
-              {/* Narrow phones: the top bar's theme switch lives here. */}
+              {/* Narrow phones: the top bar's Keep and theme switch live here. */}
+              {keep && (
+                <button
+                  type="button"
+                  className="icon-btn drawer-theme"
+                  onClick={() => {
+                    setDrawerOpen(false)
+                    keep.openKeep()
+                  }}
+                  aria-label="Keep"
+                >
+                  <Bookmark size={18} />
+                </button>
+              )}
               <button
                 type="button"
                 className="icon-btn drawer-theme"

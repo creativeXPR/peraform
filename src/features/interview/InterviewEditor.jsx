@@ -20,6 +20,8 @@ import {
   moveBlock,
   moveTargets,
   interviewOf,
+  keepBlockData,
+  pasteBlock,
   nodeLabel,
   placeNew,
   placedQuestionIds,
@@ -33,6 +35,8 @@ import {
 } from '../../lib/interview.js'
 import QuestionField from '../respond/QuestionField.jsx'
 import { useFormEditor } from '../builder/editorContext.js'
+import { makeKeep } from '../../lib/keep.js'
+import { useKeep, useKeepTargets } from '../keep/keepContext.js'
 import Canvas from './Canvas.jsx'
 import Inspector from './Inspector.jsx'
 import LayersPanel from './LayersPanel.jsx'
@@ -228,6 +232,38 @@ export default function InterviewEditor({ viewSwitch }) {
     setSelection([id])
   }
 
+  // Keep: the selected block (with what's inside it and its questions).
+  // Kept blocks paste into the selected card (cards: onto the screen when
+  // none is selected); text and links become a text block.
+  const keepStore = useKeep()
+  function keepBlock() {
+    if (!selected) return
+    keepStore?.keep(makeKeep('block', keepBlockData(design, selected.id, draft.questions), nodeLabel(selected, questions)))
+  }
+  function pasteKeptBlock(data) {
+    const result = pasteBlock(draft, screen.key, data, selectedId)
+    if (!result.id) return keepStore?.showToast('Add a card to this screen first, then paste into it.')
+    edit(`interview:${screen.key}:paste:${result.id}`, (d) => ({
+      ...d,
+      questions: result.form.questions,
+      interview: result.form.interview,
+    }))
+    setSelection([result.id])
+  }
+  function pasteKeptText(data) {
+    const parent =
+      targetCard ??
+      Object.values(design.nodes)
+        .filter((n) => n.type === 'card' && !n.parentId)
+        .sort((a, b) => a.seq - b.seq)[0]
+    if (!parent) return keepStore?.showToast('Add a card to this screen first, then paste into it.')
+    const node = placeNew(design, 'text', parent)
+    node.text = data.url ?? data.text ?? ''
+    change(`paste-text:${node.id}`, (dsn) => addNode(dsn, node))
+    setSelection([node.id])
+  }
+  useKeepTargets({ block: pasteKeptBlock, text: pasteKeptText })
+
   const renderQuestion = (q) => (
     <QuestionField question={q} formId={draft.id} value={undefined} onChange={() => {}} />
   )
@@ -353,6 +389,7 @@ export default function InterviewEditor({ viewSwitch }) {
               }
               onPreview={(anim) => setPreview({ nodeId: selected.id, anim, nonce: Date.now() })}
               onDuplicate={() => duplicate(selectedIds)}
+              onKeep={keepBlock}
               onMove={() => setMoving(selected.id)}
               onDelete={() => setPending({ kind: 'delete', ids: selectedIds })}
               onFitHeight={(h) =>

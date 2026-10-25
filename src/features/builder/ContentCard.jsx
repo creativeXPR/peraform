@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Copy, GripHorizontal, Image as ImageIcon, SquarePlay, Trash2, Type } from 'lucide-react'
+import { BookmarkPlus, Copy, GripHorizontal, Image as ImageIcon, SquarePlay, Trash2, Type } from 'lucide-react'
 import AutoTextarea from '../../lib/AutoTextarea.jsx'
 import { youtubeId } from '../../lib/formModel.js'
 import ImagePicker from './ImagePicker.jsx'
@@ -14,7 +14,7 @@ const KIND = {
 
 // A non-question block in the builder: title-and-description, image, or
 // YouTube video. Same card shape as questions so the list reads as one.
-export default function ContentCard({ item, active, onActivate, change, onDuplicate, onDelete, showIf }) {
+export default function ContentCard({ item, active, onActivate, change, onDuplicate, onDelete, onKeep, showIf }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id })
   const kind = KIND[item.type]
@@ -85,6 +85,15 @@ export default function ContentCard({ item, active, onActivate, change, onDuplic
 
           {showIf && <ShowIf {...showIf} />}
           <footer className="q-foot">
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={onKeep}
+              aria-label="Keep (save it to paste later)"
+              title="Keep: save it to paste later, in any form"
+            >
+              <BookmarkPlus size={18} />
+            </button>
             <button
               type="button"
               className="icon-btn"

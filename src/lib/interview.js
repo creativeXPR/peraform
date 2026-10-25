@@ -1,4 +1,4 @@
-import { isQuestion, splitPages } from './formLogic.js'
+import { isQuestion, isSection, splitPages } from './formLogic.js'
 
 // Interview mode: each section of the form is one designed screen, like an
 // onboarding flow. Questions are shared with the normal form (same ids, same
@@ -30,7 +30,7 @@ export const NODE_TYPES = {
   text: { label: 'Text' },
   image: { label: 'Image' },
   video: { label: 'Video' },
-  embed: { label: 'Web page' },
+  embed: { label: 'Web page or embed' },
   question: { label: 'Question' },
   button: { label: 'Button' },
 }
@@ -296,6 +296,15 @@ export function alignFrames(frames, how) {
     bottom: (f) => ({ y: bottom - f.h }),
   }[how]
   return Object.fromEntries(list.map(([id, f]) => [id, at(f)]))
+}
+
+// The address for an embed block from what the creator pasted: a web
+// address, or an <iframe> embed code (its src). Only https; null otherwise.
+export function embedSrc(input) {
+  const text = String(input ?? '').trim()
+  const fromIframe = text.match(/<iframe\b[^>]*\bsrc\s*=\s*(["'])(.*?)\1/i)?.[2]
+  const url = (fromIframe ?? text).replace(/&amp;/g, '&').trim()
+  return /^https:\/\/[^\s"'<>]+$/i.test(url) ? url : null
 }
 
 export function newId() {
@@ -866,6 +875,78 @@ function addQuestionBlock(design, question, reuse) {
 
 function nextSeq(design) {
   return Object.values(design.nodes).reduce((max, n) => Math.max(max, n.seq ?? 0), 0) + 1
+}
+
+// ── Keep (lib/keep.js): design blocks ────────────────────────────────
+// What a kept block carries: it, everything inside it, and the questions
+// its question blocks show (so it can be pasted into another form).
+export function keepBlockData(design, id, questions = []) {
+  const ids = descendantIds(design.nodes, id)
+  const nodes = Object.fromEntries(ids.map((nid) => [nid, design.nodes[nid]]))
+  const shown = new Set(ids.map((nid) => nodes[nid]).filter((n) => n.type === 'question').map((n) => n.questionId))
+  return { rootId: id, nodes, questions: questions.filter((q) => shown.has(q.id)) }
+}
+
+// Where a screen's questions end in the form's list (new ones go there).
+function pageEnd(questions, key) {
+  const start = key === 'start' ? 0 : questions.findIndex((q) => q.id === key) + 1
+  if (key !== 'start' && start === 0) return questions.length
+  const next = questions.findIndex((q, i) => i >= start && isSection(q))
+  return next < 0 ? questions.length : next
+}
+
+// A kept block pasted onto a screen: into the card `parentId` (or the card
+// around that block), or — for a card — onto the screen when none is
+// picked; anything else with no card picked goes into the screen's first
+// card. Everything gets new ids; its questions are copied into this
+// screen's section. Actions only keep targets that come along or exist
+// here. Returns { form, id } (the pasted block's id, or null).
+export function pasteBlock(form, key, data, parentId = null) {
+  const design = designFor(form, key)
+  const root = data?.nodes?.[data.rootId]
+  if (!design || !root) return { form, id: null }
+  let parent = parentId ? design.nodes[parentId] : null
+  if (parent && parent.type !== 'card') parent = parent.parentId ? design.nodes[parent.parentId] : null
+  if (!parent && root.type !== 'card') {
+    parent = Object.values(design.nodes)
+      .filter((n) => n.type === 'card' && !n.parentId)
+      .sort((a, b) => a.seq - b.seq)[0]
+    if (!parent) return { form, id: null }
+  }
+
+  const map = Object.fromEntries(Object.keys(data.nodes).map((old) => [old, newId()]))
+  const qmap = {}
+  const existing = new Set((form.questions ?? []).map((q) => q.id))
+  const copies = (data.questions ?? []).map((q) => {
+    const id = newId()
+    qmap[q.id] = id
+    const copy = { ...structuredClone(q), id }
+    if (copy.actions) copy.actions = copy.actions.filter((a) => existing.has(a.target))
+    return copy
+  })
+  const keepTarget = (t) => map[t] ?? (design.nodes[t] || screensOf(form).some((s) => s.key === t) ? t : null)
+  let seq = nextSeq(design)
+  const nodes = { ...design.nodes }
+  for (const [old, n] of Object.entries(data.nodes)) {
+    const copy = structuredClone(n)
+    copy.id = map[old]
+    copy.seq = seq++
+    copy.parentId = old === data.rootId ? (parent?.id ?? null) : (map[n.parentId] ?? null)
+    if (copy.questionId) copy.questionId = qmap[copy.questionId] ?? copy.questionId
+    if (copy.actions) {
+      copy.actions = copy.actions
+        .map((a) => ({ ...a, target: keepTarget(a.target) }))
+        .filter((a) => a.target)
+    }
+    nodes[copy.id] = copy
+  }
+  const rootCopy = nodes[map[data.rootId]]
+  nodes[rootCopy.id] = { ...rootCopy, frames: placeIn({ ...design, nodes }, parent, rootCopy) }
+
+  const qs = [...(form.questions ?? [])]
+  const at = pageEnd(qs, key)
+  const questions = [...qs.slice(0, at), ...copies, ...qs.slice(at)]
+  return { form: withDesign({ ...form, questions }, key, { ...design, nodes }), id: rootCopy.id }
 }
 
 // Where a block may go: { key (screen), parentId (card id, or null for the

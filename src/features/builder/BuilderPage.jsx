@@ -28,6 +28,8 @@ import QuestionCard from './QuestionCard.jsx'
 import SectionCard from './SectionCard.jsx'
 import { useFormEditor } from './editorContext.js'
 import { buildTargets } from './questionTypes.js'
+import { keepField, pasteFields, textAsField } from '../../lib/keep.js'
+import { useKeep, useKeepTargets } from '../keep/keepContext.js'
 
 // Questions tab: header card (title + description), the question and
 // section cards, and the floating toolbar (add question / add section).
@@ -36,6 +38,7 @@ export default function BuilderPage() {
   const [activeId, setActiveId] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [importing, setImporting] = useState(false)
+  const keepStore = useKeep()
   const { theme: mode } = useTheme()
   const formTheme = themeOf(draft)
   useEffect(() => loadThemeFont(formTheme.font), [formTheme.font])
@@ -44,6 +47,9 @@ export default function BuilderPage() {
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
+
+  // Kept fields, text and links paste below the selected card (pasteKept).
+  useKeepTargets(draft ? { field: pasteKept, text: (data) => pasteKept(textAsField(data)) } : null)
 
   if (!draft) return <div className="builder-loading" aria-busy="true" />
 
@@ -149,6 +155,22 @@ export default function BuilderPage() {
     setActiveId(copy.id)
   }
 
+  // Keep: a card kept with all its properties (and quiz answer key); kept
+  // fields, text and links pasted below the selected card.
+  const keepItem = (item) => keepStore?.keep(keepField(item, draft.answerKey?.[item.id]))
+  function pasteKept(data) {
+    const after = questions.some((q) => q.id === activeId) ? activeId : null
+    // Worked out once, here, so the new ids are known (as in duplicate).
+    const { questions: next, ids, answerKey } = pasteFields(draft.questions, data, after)
+    if (!ids.length) return
+    edit(`paste:${ids[0]}`, (d) => ({
+      ...d,
+      questions: next,
+      ...(Object.keys(answerKey).length && { answerKey: { ...d.answerKey, ...answerKey } }),
+    }))
+    setActiveId(ids.at(-1))
+  }
+
   function deleteItem(id) {
     setQuestions('delete', (qs) =>
       dropSectionRefs(
@@ -241,6 +263,7 @@ export default function BuilderPage() {
                   onActivate={() => setActiveId(item.id)}
                   change={changeQuestion(item.id)}
                   onDelete={() => setPendingDelete(item.id)}
+                  onKeep={() => keepItem(item)}
                   showIf={showIfFor(item, index)}
                 />
               ) : CONTENT_TYPES.includes(item.type) ? (
@@ -252,6 +275,7 @@ export default function BuilderPage() {
                   change={changeQuestion(item.id)}
                   onDuplicate={() => duplicateQuestion(item.id)}
                   onDelete={() => setPendingDelete(item.id)}
+                  onKeep={() => keepItem(item)}
                   showIf={showIfFor(item, index)}
                 />
               ) : (
@@ -264,6 +288,7 @@ export default function BuilderPage() {
                   change={changeQuestion(item.id)}
                   onDuplicate={() => duplicateQuestion(item.id)}
                   onDelete={() => setPendingDelete(item.id)}
+                  onKeep={() => keepItem(item)}
                   renameOption={renameOption(item.id)}
                   quiz={quiz}
                   keyEntry={draft.answerKey?.[item.id]}

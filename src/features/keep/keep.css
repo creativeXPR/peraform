@@ -1,0 +1,167 @@
+/* Keep (KeepDialog.jsx). */
+.keep-dialog {
+  width: min(600px, calc(100vw - 24px));
+}
+
+.keep-dialog h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.keep-dialog h2 svg {
+  color: var(--accent);
+}
+
+.keep-intro,
+.keep-where {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.keep-add {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.keep-add textarea {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.keep-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.keep-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.keep-tabs button.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.keep-count {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.keep-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: min(50dvh, 420px);
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.keep-empty {
+  padding: 16px 4px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.keep-empty svg {
+  vertical-align: -2px;
+}
+
+.keep-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.keep-icon {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.keep-main {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.keep-main strong {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.keep-main input {
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.keep-sub {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.keep-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+}
+
+.keep-paste {
+  height: 32px;
+  font-size: 13px;
+}
+
+@media (max-width: 480px) {
+  .keep-item {
+    flex-wrap: wrap;
+  }
+
+  .keep-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

@@ -425,7 +425,8 @@
     display: none;
   }
 
-  .shell:not([data-sidebar='none']) .topbar-theme {
+  .shell:not([data-sidebar='none']) .topbar-theme,
+  .shell:not([data-sidebar='none']) .topbar-keep {
     display: none;
   }
 
@@ -441,5 +442,11 @@
 
   .credit-chip {
     padding: 0 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .drawer-theme + .drawer-theme {
+    margin-left: 0;
   }
 }

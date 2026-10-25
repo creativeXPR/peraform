@@ -10,6 +10,7 @@ import {
   Star,
   Trash2,
   X,
+  BookmarkPlus,
 } from 'lucide-react'
 import AutoTextarea from '../../lib/AutoTextarea.jsx'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
@@ -38,6 +39,7 @@ export default function QuestionCard({
   change,
   onDuplicate,
   onDelete,
+  onKeep, // saves it to the Keep (features/keep)
   targets,
   renameOption,
   quiz,
@@ -252,6 +254,15 @@ export default function QuestionCard({
                 <span className="key-btn-points">({pointsLabel(question.points)})</span>
               </button>
             )}
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={onKeep}
+              aria-label="Keep (save it to paste later)"
+              title="Keep: save it to paste later, in any form"
+            >
+              <BookmarkPlus size={18} />
+            </button>
             <button
               type="button"
               className="icon-btn"
