@@ -31,7 +31,11 @@ const port = (base) => base + Number(import.meta.env.VITE_EMULATOR_PORT_OFFSET |
 // VITE_APPCHECK_DEBUG_TOKEN to a debug token registered in the console.
 const recaptchaKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY
 if (recaptchaKey && !useEmulators) {
-  if (location.hostname === 'localhost') {
+  // Development builds only (npm run dev): import.meta.env.DEV is false in
+  // production builds, so this whole branch — and the token — is left out
+  // of the published site. A debug token in a public bundle would let
+  // anyone pass App Check.
+  if (import.meta.env.DEV && location.hostname === 'localhost') {
     self.FIREBASE_APPCHECK_DEBUG_TOKEN = import.meta.env.VITE_APPCHECK_DEBUG_TOKEN || true
   }
   initializeAppCheck(firebaseApp, {
