@@ -256,8 +256,126 @@ FEATURES['design-screens'] = {
   },
 }
 
+const SCREEN_SYSTEM = `You are the layout designer for one screen of an interview-style form in PeraForm (each section of the form is a screen, like an app's onboarding).
+You get the screen as JSON and the creator's instruction. Make exactly the change asked for, and return it as a list of changes.
+
+The screen: "width" and "height" are the device size in pixels. Blocks are cards (only cards sit on the screen itself) and, inside cards, text, image, video, embed, question and button blocks. "parent" is the card a block is in (null = on the screen). x, y, w, h are in pixels, relative to the parent card's top-left. "hidden" blocks start hidden until an action shows them.
+
+Changes:
+- {"op":"update","id":…} with only the fields that change: x, y, w, h; text (text blocks); label and action (buttons: next, back, submit or none); hidden; style.
+- {"op":"add","id":"new-1","type":"card"|"text"|"button"|"image","parent":<card id or "new-…" of a card you added>,"x","y","w","h", plus text, label, action or style}. Number new blocks new-1, new-2… An added image is an empty placeholder the creator fills in.
+- {"op":"remove","id":…}. Never remove question blocks, or cards holding them.
+- To change the screen background, set "background": {"color":"#rrggbb"} or a gradient {"color","to","angle"}.
+Style fields: bg, color, borderColor (6-digit hex, "transparent", or theme tokens: surface, bg, accent, accent-soft, on-accent, text, muted); size (font px), weight (300–900), align (left, center, right), radius, padding, borderWidth (px), opacity (0–1), font (inter, serif, rounded, mono), shadow (none, soft, medium, strong, glow).
+
+Layout rules: keep blocks inside their card (x ≥ 0, x + w ≤ the card's w) and inside the screen width; don't let blocks overlap unless asked; when you move or add something, move the blocks below it so nothing collides, and make the card taller if needed. Don't change question wording (that's done in the form editor). Change only what the instruction asks.
+Put one or two plain sentences saying what you changed in "summary" (for the creator). Write in the language of the instruction.`
+
+const SCREEN_STYLE = {
+  type: 'object',
+  additionalProperties: false,
+  properties: Object.fromEntries(
+    [
+      ['bg', 'string'],
+      ['color', 'string'],
+      ['borderColor', 'string'],
+      ['size', 'number'],
+      ['weight', 'number'],
+      ['align', 'string'],
+      ['radius', 'number'],
+      ['padding', 'number'],
+      ['borderWidth', 'number'],
+      ['opacity', 'number'],
+      ['font', 'string'],
+      ['shadow', 'string'],
+    ].map(([k, type]) => [k, { type }]),
+  ),
+}
+
+const SCREEN_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['changes', 'summary'],
+  properties: {
+    changes: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['op', 'id'],
+        properties: {
+          op: { type: 'string', enum: ['update', 'add', 'remove'] },
+          id: { type: 'string' },
+          type: { type: 'string', enum: ['card', 'text', 'button', 'image'] },
+          parent: { type: 'string' },
+          x: { type: 'number' },
+          y: { type: 'number' },
+          w: { type: 'number' },
+          h: { type: 'number' },
+          text: { type: 'string' },
+          label: { type: 'string' },
+          action: { type: 'string', enum: ['next', 'back', 'submit', 'none'] },
+          hidden: { type: 'boolean' },
+          style: SCREEN_STYLE,
+        },
+      },
+    },
+    background: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['color'],
+      properties: { color: { type: 'string' }, to: { type: 'string' }, angle: { type: 'number' } },
+    },
+    summary: { type: 'string' },
+  },
+}
+
+FEATURES['edit-screen'] = {
+  ...AI_FEATURES['edit-screen'],
+  system: SCREEN_SYSTEM,
+  schema: SCREEN_SCHEMA,
+  effort: 'low',
+  // input: { formId, instruction, screen } — screen is what the creator sees
+  // (src/lib/screenEdit.js → screenForAi), possibly unsaved; only editors of
+  // the form may run it.
+  async prepare(input, ctx) {
+    const instruction = cleanText(input?.instruction, this.maxChars.screen)
+    const formId = typeof input?.formId === 'string' ? input.formId : ''
+    const form = formId && ctx?.db ? (await ctx.db.doc(`forms/${formId}`).get()).data() : null
+    if (!form || !form.memberIds?.includes(ctx.uid)) throw new InputError('Form not found.')
+    const screen = input?.screen
+    if (!screen || typeof screen !== 'object' || !Array.isArray(screen.blocks)) throw new InputError('Screen not found.')
+    const json = JSON.stringify(screen)
+    if (json.length > this.maxScreenChars) {
+      throw new InputError('This screen has too many blocks to change with AI in one go.')
+    }
+    const prompt = `Screen:\n${json}\n\nInstruction:\n${instruction}`
+    return { prompt, mode: 'screen', chars: json.length + instruction.length }
+  },
+  result(json) {
+    if (!json || !Array.isArray(json.changes)) return null
+    return {
+      changes: json.changes,
+      background: json.background ?? null,
+      summary: typeof json.summary === 'string' ? json.summary : '',
+    }
+  },
+  // Progress: how many changes are written so far.
+  progress(text) {
+    const ops = [...text.matchAll(/"op"\s*:\s*"(\w+)"/g)].map((m) => m[1])
+    return { title: null, questions: ops.length, written: [] }
+  },
+}
+
 // Canned output for the emulators (AI_FAKE=1), so tests never call the AI.
 export const FAKE_OUTPUT = {
+  'edit-screen': {
+    changes: [
+      { op: 'add', id: 'new-1', type: 'text', parent: 'start-1', x: 20, y: 0, w: 300, h: 24, text: '✨ Changed by AI' },
+    ],
+    background: { color: '#e0f2fe', to: '#fef9c3', angle: 180 },
+    summary: 'Added a note at the top and a soft morning background.',
+  },
   'design-screens': {
     style: 'playful',
     palette: { from: '#ffd166', to: '#ef476f', accent: '#7c3aed' },

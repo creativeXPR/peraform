@@ -231,6 +231,12 @@
   }
 }
 
+/* Design with AI: this screen or all screens. */
+.ai-modes {
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+
 /* Edit with AI: example instructions, and the result. */
 .ai-examples {
   display: flex;

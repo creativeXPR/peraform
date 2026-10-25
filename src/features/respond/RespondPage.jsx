@@ -154,9 +154,9 @@ function RespondTopBar({ theme, toggleTheme, title, icon }) {
   return (
     <header className="respond-top">
       {title ? (
-        <span className="logo respond-top-title">
+        <span className="logo respond-top-title" title={title}>
           {icon && <img className="respond-top-icon" src={icon} alt="" />}
-          {title}
+          <span className="respond-top-text">{title}</span>
         </span>
       ) : (
         <span className="logo">

@@ -51,6 +51,20 @@ export const AI_FEATURES = {
     overheadTokens: 1600, // system prompt, schema, and the screens list
     typical: { inputTokens: 1800, outputTokens: 900 },
   },
+  // Interview mode, one screen: free-form layout changes ("move the button
+  // left", "add an image under the title"). The screen's blocks go in; a
+  // list of changes comes back (src/lib/screenEdit.js applies them).
+  'edit-screen': {
+    label: 'Change a screen with AI',
+    tiers: ['quick', 'standard', 'best'],
+    defaultTier: 'standard',
+    maxChars: { screen: 1000 }, // the instruction
+    maxScreenChars: 24000, // the screen, as compact JSON
+    maxTokens: { screen: 4000 },
+    minTokens: { screen: 1500 },
+    overheadTokens: 1500,
+    typical: { inputTokens: 2500, outputTokens: 900 },
+  },
 }
 
 // The design styles "Design with AI" can choose (src/lib/designStyles.js).

@@ -433,7 +433,12 @@ export default function InterviewEditor({ viewSwitch }) {
         />
       )}
 
-      <DesignScreensDialog open={designing} onClose={() => setDesigning(false)} />
+      <DesignScreensDialog
+        open={designing}
+        onClose={() => setDesigning(false)}
+        screenKey={screen.key}
+        device={device}
+      />
 
       <ConfirmModal
         open={Boolean(pending)}

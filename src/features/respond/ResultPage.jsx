@@ -51,7 +51,9 @@ export default function ResultPage() {
     >
       <header className="respond-top">
         {state.form && topBarTitle(state.form) ? (
-          <span className="logo respond-top-title">{topBarTitle(state.form)}</span>
+          <span className="logo respond-top-title" title={topBarTitle(state.form)}>
+            <span className="respond-top-text">{topBarTitle(state.form)}</span>
+          </span>
         ) : (
           <span className="logo">
             <LogoMark />
