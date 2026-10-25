@@ -261,7 +261,6 @@ export function fitText(design) {
         const sameColumn = sf.x < f.x + f.w && f.x < sf.x + sf.w
         if (sameColumn && sf.y >= bottom - 1) d = setFrame(d, sib.id, device, { y: sf.y + grow })
       }
-      for (const sib of childrenOf(d.nodes, current.parentId ?? null, device)) d = growToFit(d, sib.id)
     }
   }
   return d
@@ -523,8 +522,8 @@ export function placeNew(design, type, parent, extra = {}) {
     const h = height ?? h0
     const siblings = childrenOf(design.nodes, parent?.id ?? null, device)
     const z = siblings.reduce((max, n) => Math.max(max, frameOf(n, device).z || 0), 0)
-    // Inside a card: below what's already there (the editor then grows the
-    // card to fit, see growToFit).
+    // Inside a card: below what’s already there (the card keeps its size;
+    // "Fit to blocks" makes room, see fitCard).
     const y = siblings.reduce((max, n) => {
       const f = frameOf(n, device)
       return Math.max(max, f.y + f.h + 16)
@@ -728,7 +727,7 @@ export function duplicateBlock(form, key, id) {
     questions = [...questions.slice(0, at + 1), q, ...questions.slice(at + 1)]
     nodes[nid] = { ...n, questionId: q.id }
   }
-  const next = growToFit({ ...copied, nodes }, copyId)
+  const next = { ...copied, nodes }
   return { form: withDesign({ ...form, questions }, key, next), id: copyId }
 }
 
@@ -847,10 +846,8 @@ function addQuestionBlock(design, question, reuse) {
     frames[device] = { x: pad, y, w: Math.max(MIN_SIZE, box.w - pad * 2), h, r: 0, z: 0 }
   }
   nodes[node.id] = { ...node, frames }
-  // The card grows to hold everything, pushed-down buttons included.
-  let d = { ...design, nodes }
-  for (const kid of Object.values(nodes).filter((n) => n.parentId === card.id)) d = growToFit(d, kid.id)
-  return d
+  // The card keeps its size ("Fit to blocks" makes room when wanted).
+  return { ...design, nodes }
 }
 
 function nextSeq(design) {
@@ -891,7 +888,6 @@ export function moveBlock(form, fromKey, id, toKey, parentId) {
   const root = { ...moving[id], parentId: parentId ?? null }
   root.frames = placeIn(target, parent, root)
   target = { ...target, nodes: { ...target.nodes, ...moving, [id]: root } }
-  target = growToFit(target, id)
   if (fromKey === toKey) source = target
 
   let next = withDesign(form, toKey, target)

@@ -9,7 +9,6 @@ import {
   descendantIds,
   fitText,
   frameOf,
-  growToFit,
   placeNew,
   setFrame,
   updateNode,
@@ -168,6 +167,5 @@ export function applyScreenEdit(design, { changes = [], background } = {}, devic
     }
   }
 
-  for (const id of touched) if (d.nodes[id]) d = growToFit(d, id)
   return { design: fitText(d), applied }
 }

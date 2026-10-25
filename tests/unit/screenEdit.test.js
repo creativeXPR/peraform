@@ -60,9 +60,8 @@ describe('applyScreenEdit', () => {
     expect(added.map((n) => n.type).sort()).toEqual(['card', 'image', 'text'])
     const newCard = added.find((n) => n.type === 'card')
     expect(added.find((n) => n.type === 'text')).toMatchObject({ parentId: newCard.id, text: 'Hi' })
-    // The first card grew to hold the image.
-    const image = added.find((n) => n.type === 'image')
-    expect(design.nodes[card.id].frames.phone.h).toBeGreaterThanOrEqual(image.frames.phone.y + image.frames.phone.h)
+    // Cards keep their size ("Fit to blocks" is a button).
+    expect(design.nodes[card.id].frames.phone.h).toBe(start.nodes[card.id].frames.phone.h)
   })
 
   it('never removes or hides question blocks', () => {

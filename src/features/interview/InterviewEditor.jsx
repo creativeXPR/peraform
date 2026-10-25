@@ -19,7 +19,6 @@ import {
   frameOf,
   moveBlock,
   moveTargets,
-  growToFit,
   interviewOf,
   nodeLabel,
   placeNew,
@@ -187,7 +186,7 @@ export default function InterviewEditor({ viewSwitch }) {
       node.label = 'Next'
       node.action = { type: 'next' }
     }
-    change(`add:${node.id}`, (dsn) => growToFit(addNode(dsn, node), node.id))
+    change(`add:${node.id}`, (dsn) => addNode(dsn, node))
     setSelection([node.id])
   }
 

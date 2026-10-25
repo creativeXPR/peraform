@@ -293,7 +293,7 @@ describe('keeping saved screens in step with the question list', () => {
     const kids = childrenOf(s2.nodes, card.id, 'phone')
     const buttonY = Math.min(...kids.filter((k) => k.type === 'button').map((k) => frameOf(k, 'phone').y))
     expect(frameOf(carried, 'phone').y + frameOf(carried, 'phone').h).toBeLessThanOrEqual(buttonY)
-    for (const k of kids) expect(frameOf(k, 'phone').y + frameOf(k, 'phone').h).toBeLessThanOrEqual(frameOf(card, 'phone').h)
+    // The card keeps its size; "Fit to blocks" makes room when wanted.
   })
 
   it('leaves forms alone when nothing changed', () => {
@@ -375,7 +375,7 @@ describe('text that needs more room', () => {
     },
   }
 
-  it('grows the text, moves what is below it down, and grows the card', () => {
+  it('grows the text and moves what is below it down (the card keeps its size)', () => {
     const out = fitText(design)
     const title = frameOf(out.nodes.title, 'phone')
     expect(title.h).toBeGreaterThan(44)
@@ -383,7 +383,7 @@ describe('text that needs more room', () => {
     expect(frameOf(out.nodes.sub, 'phone').y).toBe(80 + grow)
     // Beside the column, not under it: stays put.
     expect(frameOf(out.nodes.side, 'phone').y).toBe(80)
-    expect(frameOf(out.nodes.card, 'phone').h).toBeGreaterThanOrEqual(frameOf(out.nodes.sub, 'phone').y + 40)
+    expect(frameOf(out.nodes.card, 'phone').h).toBe(frameOf(design.nodes.card, 'phone').h)
   })
 
   it('leaves designs that fit alone', () => {
