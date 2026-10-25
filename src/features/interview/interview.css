@@ -662,10 +662,15 @@ textarea.insp-input {
 
 /* ── Respondent view (interview mode) ─────────────────────────── */
 .interview-view {
-  /* Full width of the window, out of the page's narrow column. */
   position: relative;
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
+  width: 100%;
+}
+
+/* Full width of the page, out of the narrow form column. (Not 100vw: that
+   includes the vertical scrollbar, and the page would scroll sideways.) */
+.respond:has(.interview-view) .respond-main {
+  max-width: none;
+  padding-inline: 0;
 }
 
 .interview-frame {
@@ -692,6 +697,7 @@ textarea.insp-input {
 
 .respond:has(.interview-view) {
   isolation: isolate;
+  overflow-x: clip;
   background: transparent;
 }
 
