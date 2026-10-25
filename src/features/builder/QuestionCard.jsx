@@ -25,6 +25,7 @@ import ValidationEditor from './ValidationEditor.jsx'
 import { OPTION_TYPES, TYPE_INFO, changeQuestionType } from './questionTypes.js'
 import { newAction, triggerKindFor } from '../../lib/actions.js'
 import ActionsEditor from '../interview/ActionsEditor.jsx'
+import ShowIf from './ShowIf.jsx'
 
 // One question in the builder. Inactive: a read-only preview, click to edit.
 // Active: full editor. `change(field, updater)` edits this question with
@@ -43,6 +44,7 @@ export default function QuestionCard({
   keyEntry,
   changeKey,
   actionTargets = [], // [{ id, label }] other items (and sections) its actions can show or hide
+  showIf, // "Show only if…" rules for this question (ShowIf.jsx)
 }) {
   // Quiz forms: the card flips between the question and its answer key.
   const [keyMode, setKeyMode] = useState(false)
@@ -241,6 +243,7 @@ export default function QuestionCard({
             <ValidationEditor question={question} change={change} onRemove={toggleValidation} />
           )}
 
+          {showIf && <ShowIf {...showIf} />}
           <footer className="q-foot">
             {quiz && (
               <button type="button" className="key-btn" onClick={() => setKeyMode(true)}>
@@ -290,7 +293,10 @@ export default function QuestionCard({
           </footer>
         </>
       ) : (
+<>
         <QuestionPreview question={question} quiz={quiz} />
+          {showIf && <ShowIf {...showIf} compact />}
+        </>
       )}
       <ConfirmModal
         open={clearingActions}

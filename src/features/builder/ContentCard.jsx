@@ -4,6 +4,7 @@ import { Copy, GripHorizontal, Image as ImageIcon, SquarePlay, Trash2, Type } fr
 import AutoTextarea from '../../lib/AutoTextarea.jsx'
 import { youtubeId } from '../../lib/formModel.js'
 import ImagePicker from './ImagePicker.jsx'
+import ShowIf from './ShowIf.jsx'
 
 const KIND = {
   text: { label: 'Title and description', icon: Type },
@@ -13,7 +14,7 @@ const KIND = {
 
 // A non-question block in the builder: title-and-description, image, or
 // YouTube video. Same card shape as questions so the list reads as one.
-export default function ContentCard({ item, active, onActivate, change, onDuplicate, onDelete }) {
+export default function ContentCard({ item, active, onActivate, change, onDuplicate, onDelete, showIf }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id })
   const kind = KIND[item.type]
@@ -82,6 +83,7 @@ export default function ContentCard({ item, active, onActivate, change, onDuplic
           )}
           {item.type === 'video' && <VideoField item={item} change={change} />}
 
+          {showIf && <ShowIf {...showIf} />}
           <footer className="q-foot">
             <button
               type="button"
@@ -104,7 +106,10 @@ export default function ContentCard({ item, active, onActivate, change, onDuplic
           </footer>
         </>
       ) : (
+<>
         <ContentPreview item={item} />
+          {showIf && <ShowIf {...showIf} compact />}
+        </>
       )}
     </section>
   )

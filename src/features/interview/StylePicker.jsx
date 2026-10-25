@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { Check } from 'lucide-react'
+import { Check, RotateCcw } from 'lucide-react'
 import { DESIGN_STYLES } from '../../lib/designStyles.js'
 
 // The design styles as small previews: pick one, then apply it to this
 // screen or every screen. Restyles only: layout, content and actions stay.
-export default function StylePicker({ current, onApply }) {
+//   restorable: a style has been applied (here or elsewhere), so "Back to
+//   original look" is offered: onRestore('screen' | 'all')
+export default function StylePicker({ current, onApply, restorable, onRestore }) {
   const [picked, setPicked] = useState(current ?? null)
   return (
     <div className="style-picker">
@@ -57,6 +59,21 @@ export default function StylePicker({ current, onApply }) {
           All screens
         </button>
       </div>
+      {restorable && (
+        <div className="style-restore">
+          <span>
+            <RotateCcw size={14} aria-hidden="true" /> Back to original look
+          </span>
+          <div className="style-actions">
+            <button type="button" className="btn btn-outline" onClick={() => onRestore('screen')}>
+              This screen
+            </button>
+            <button type="button" className="btn btn-outline" onClick={() => onRestore('all')}>
+              All screens
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { newAnimation } from './animations.js'
 import { gradient } from './gradient.js'
-import { frameOf } from './interview.js'
+import { fitText, frameOf } from './interview.js'
 
 // Design styles for interview screens: a look applied in one go (by the
 // creator, or chosen by "Design with AI"). A style restyles what's there:
@@ -162,7 +162,35 @@ export function applyStyle(design, styleKey, palette) {
     }
     nodes[n.id] = next
   }
-  return { ...design, bg: s.bg, style: styleKey, nodes }
+  // The look before any style, kept the first time one is applied, so
+  // "Back to original look" can bring it back (restoreOriginal).
+  const original = design.original ?? snapshot(design)
+  // A bigger heading font may need more lines: make room for it.
+  return fitText({ ...design, bg: s.bg, style: styleKey, original, nodes })
+}
+
+function snapshot(design) {
+  const looks = {}
+  for (const n of Object.values(design.nodes)) looks[n.id] = { style: n.style ?? {}, animations: n.animations ?? [] }
+  return { bg: design.bg ?? null, looks }
+}
+
+// The screen as it looked before any style was applied: each block's own
+// colours, fonts and animations come back (blocks added since keep theirs,
+// minus style entrances); content, layout and actions stay as they are now.
+export function restoreOriginal(design) {
+  if (!design.original) return design
+  const { bg, looks } = design.original
+  const nodes = {}
+  for (const n of Object.values(design.nodes)) {
+    const before = looks[n.id]
+    nodes[n.id] = before
+      ? { ...n, style: before.style, animations: before.animations }
+      : { ...n, animations: (n.animations ?? []).filter((a) => !a.fromStyle) }
+  }
+  // eslint-disable-next-line no-unused-vars -- dropping style and original
+  const { style, original, ...rest } = design
+  return { ...rest, bg, nodes }
 }
 
 // The fonts a design uses (to load them).
@@ -183,5 +211,5 @@ export function screenWords(design, { heading, subtitle }) {
       .sort((a, b) => frameOf(a, 'phone').y - frameOf(b, 'phone').y)[0]
     if (sub) nodes[sub.id] = { ...sub, text: subtitle.slice(0, 160) }
   }
-  return { ...design, nodes }
+  return fitText({ ...design, nodes })
 }

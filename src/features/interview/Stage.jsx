@@ -275,7 +275,9 @@ export default function Stage({ design, device, children, ...ctx }) {
       style={{
         width: DEVICES[device].width,
         height,
-        background: colorCss(design.bg) ?? 'var(--bg)',
+        // Respondents: the page behind takes the background (it fills the
+        // window), so the screen itself is see-through.
+        background: ctx.transparentBg ? 'transparent' : (backgroundCss(design.bg) ?? 'var(--bg)'),
       }}
     >
       {childrenOf(design.nodes, null, device).map((node) => (

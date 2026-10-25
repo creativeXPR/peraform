@@ -214,6 +214,59 @@ export function collapseHidden(design, device, isHidden) {
   return out
 }
 
+// How tall a text block's words need to be at its font size and width, in
+// px: a word-wrap estimate (average glyph ≈ 0.56 × the font size, lines at
+// 1.35 as on the stage). Errs a little generous.
+export function textHeight(text, size = 16, width = 200) {
+  const perLine = Math.max(1, Math.floor(width / (size * 0.56)))
+  let lines = 0
+  for (const para of String(text ?? '').split('\n')) {
+    lines += 1
+    let used = 0
+    for (const word of para.split(/\s+/).filter(Boolean)) {
+      if (used === 0) used = word.length
+      else if (used + 1 + word.length <= perLine) used += 1 + word.length
+      else {
+        lines += 1
+        used = word.length
+      }
+      while (used > perLine) {
+        lines += 1
+        used -= perLine
+      }
+    }
+  }
+  return Math.ceil(lines * size * 1.35)
+}
+
+// Grows text blocks whose words no longer fit (a bigger font, a longer
+// heading) and moves what's below them in the same column down by as much,
+// growing the card. Returns the same design when everything fits.
+export function fitText(design) {
+  let d = design
+  for (const device of Object.keys(DEVICES)) {
+    for (const node of Object.values(design.nodes)) {
+      if (node.type !== 'text') continue
+      const current = d.nodes[node.id]
+      const f = frameOf(current, device)
+      const pad = (current.style?.padding ?? 0) * 2
+      const needed = textHeight(current.text, current.style?.size ?? 16, f.w - pad) + pad
+      if (needed <= f.h) continue
+      const grow = needed - f.h
+      const bottom = f.y + f.h
+      d = setFrame(d, node.id, device, { h: needed })
+      for (const sib of childrenOf(d.nodes, current.parentId ?? null, device)) {
+        if (sib.id === node.id) continue
+        const sf = frameOf(sib, device)
+        const sameColumn = sf.x < f.x + f.w && f.x < sf.x + sf.w
+        if (sameColumn && sf.y >= bottom - 1) d = setFrame(d, sib.id, device, { y: sf.y + grow })
+      }
+      for (const sib of childrenOf(d.nodes, current.parentId ?? null, device)) d = growToFit(d, sib.id)
+    }
+  }
+  return d
+}
+
 // A live screen's layout: frames moved by hidden blocks (design + action
 // overrides), and the stage height that results.
 export function liveLayout(design, device, overrides = {}) {
@@ -381,7 +434,8 @@ export function starterScreen(form, screen, isLast) {
       )
     }
   })
-  return { bg: null, nodes }
+  // A long title may need more lines than planned.
+  return fitText({ bg: null, nodes })
 }
 
 // The saved design for a screen, or a starter one when there isn't any yet.
@@ -707,6 +761,12 @@ export function syncInterview(form) {
       if (placed.has(q.id)) continue
       const reuse = carried[screen.key]?.find((n) => n.questionId === q.id)
       d = addQuestionBlock(d, q, reuse)
+      changed = true
+    }
+    // Text that no longer fits (e.g. a longer section title) makes room.
+    const fitted = fitText(d)
+    if (fitted !== d) {
+      d = fitted
       changed = true
     }
     // Keep the way forward working.

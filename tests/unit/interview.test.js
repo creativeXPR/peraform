@@ -6,6 +6,7 @@ import {
   childrenOf,
   deleteNode,
   duplicateNode,
+  fitText,
   frameOf,
   placeNew,
   placedQuestionIds,
@@ -17,6 +18,7 @@ import {
   stageHeight,
   starterScreen,
   syncInterview,
+  textHeight,
   visibleQuestionIds,
 } from '../../src/lib/interview.js'
 
@@ -358,5 +360,38 @@ describe('aligning several blocks', () => {
     expect(alignFrames(frames, 'right')).toEqual({ a: { x: 10 }, b: { x: 50 } })
     expect(alignFrames(frames, 'center')).toEqual({ a: { x: 10 }, b: { x: 30 } })
     expect(alignFrames(frames, 'bottom')).toEqual({ a: { y: 40 }, b: { y: 40 } })
+  })
+})
+
+describe('text that needs more room', () => {
+  const at = (x, y, w, h) => ({ phone: { x, y, w, h, r: 0, z: 0 }, desktop: { x, y, w, h, r: 0, z: 0 } })
+  const design = {
+    bg: null,
+    nodes: {
+      card: { id: 'card', type: 'card', parentId: null, seq: 1, frames: at(16, 40, 360, 220) },
+      title: { id: 'title', type: 'text', parentId: 'card', seq: 2, text: 'Section A: Departmental Identification & Contacts', style: { size: 30 }, frames: at(20, 20, 320, 44) },
+      sub: { id: 'sub', type: 'text', parentId: 'card', seq: 3, text: 'Please provide details.', style: { size: 16 }, frames: at(20, 80, 320, 40) },
+      side: { id: 'side', type: 'button', parentId: 'card', seq: 4, frames: at(350, 80, 4, 20) },
+    },
+  }
+
+  it('grows the text, moves what is below it down, and grows the card', () => {
+    const out = fitText(design)
+    const title = frameOf(out.nodes.title, 'phone')
+    expect(title.h).toBeGreaterThan(44)
+    const grow = title.h - 44
+    expect(frameOf(out.nodes.sub, 'phone').y).toBe(80 + grow)
+    // Beside the column, not under it: stays put.
+    expect(frameOf(out.nodes.side, 'phone').y).toBe(80)
+    expect(frameOf(out.nodes.card, 'phone').h).toBeGreaterThanOrEqual(frameOf(out.nodes.sub, 'phone').y + 40)
+  })
+
+  it('leaves designs that fit alone', () => {
+    const roomy = { ...design, nodes: { ...design.nodes, title: { ...design.nodes.title, text: 'Hi' } } }
+    expect(fitText(roomy)).toBe(roomy)
+  })
+
+  it('estimates more lines for longer text', () => {
+    expect(textHeight('short', 16, 300)).toBeLessThan(textHeight('a much longer piece of text that wraps onto several lines', 16, 120))
   })
 })

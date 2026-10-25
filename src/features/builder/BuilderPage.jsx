@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { newAction, triggerKindFor } from '../../lib/actions.js'
 import {
   DndContext,
   KeyboardSensor,
@@ -75,6 +76,33 @@ export default function BuilderPage() {
       ...d,
       answerKey: { ...d.answerKey, [id]: update(d.answerKey?.[id] ?? {}) },
     }))
+
+  // "Show only if…": an item's rules are the show-actions that target it,
+  // stored on the questions above it that they read.
+  const showIfFor = (item, index) => {
+    const sources = questions.slice(0, index).filter((q) => isQuestion(q) && triggerKindFor(q))
+    const rules = []
+    for (const q of questions) {
+      for (const a of q.actions ?? []) {
+        if (a.target === item.id && a.effect?.type === 'show' && a.trigger?.type !== 'click') {
+          rules.push({ sourceId: q.id, actionId: a.id, trigger: a.trigger })
+        }
+      }
+    }
+    return {
+      rules,
+      sources,
+      noun: isSection(item) ? 'section' : isQuestion(item) ? 'question' : 'block',
+      onAdd: (sourceId, trigger) =>
+        setQuestions(`showif:${item.id}:add`, (qs) =>
+          qs.map((q) => (q.id === sourceId ? { ...q, actions: [...(q.actions ?? []), newAction(trigger, item.id)] } : q)),
+        ),
+      onRemove: (sourceId, actionId) =>
+        setQuestions(`showif:${item.id}:remove`, (qs) =>
+          qs.map((q) => (q.id === sourceId ? { ...q, actions: (q.actions ?? []).filter((a) => a.id !== actionId) } : q)),
+        ),
+    }
+  }
 
   const changeQuestion = (id) => (field, update) =>
     setQuestions(`q:${id}:${field}`, (qs) => qs.map((q) => (q.id === id ? update(q) : q)))
@@ -201,7 +229,7 @@ export default function BuilderPage() {
             items={questions.map((q) => q.id)}
             strategy={verticalListSortingStrategy}
           >
-            {questions.map((item) =>
+            {questions.map((item, index) =>
               isSection(item) ? (
                 <SectionCard
                   key={item.id}
@@ -213,6 +241,7 @@ export default function BuilderPage() {
                   onActivate={() => setActiveId(item.id)}
                   change={changeQuestion(item.id)}
                   onDelete={() => setPendingDelete(item.id)}
+                  showIf={showIfFor(item, index)}
                 />
               ) : CONTENT_TYPES.includes(item.type) ? (
                 <ContentCard
@@ -223,6 +252,7 @@ export default function BuilderPage() {
                   change={changeQuestion(item.id)}
                   onDuplicate={() => duplicateQuestion(item.id)}
                   onDelete={() => setPendingDelete(item.id)}
+                  showIf={showIfFor(item, index)}
                 />
               ) : (
                 <QuestionCard
@@ -238,6 +268,7 @@ export default function BuilderPage() {
                   quiz={quiz}
                   keyEntry={draft.answerKey?.[item.id]}
                   changeKey={changeKey(item.id)}
+                  showIf={showIfFor(item, index)}
                   actionTargets={questions
                     .filter((x) => x.id !== item.id)
                     .map((x) => ({

@@ -681,9 +681,18 @@ textarea.insp-input {
   }
 }
 
-.interview-desktop .interview-frame {
-  border-radius: 16px;
-  box-shadow: var(--shadow);
+/* The screen's background fills the window behind everything (the page's
+   own colour stays behind it, so the top bar keeps its look). */
+.interview-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  transition: background 320ms var(--ease);
+}
+
+.respond:has(.interview-view) {
+  isolation: isolate;
+  background: transparent;
 }
 
 .interview-scale {
@@ -873,4 +882,22 @@ textarea.insp-input {
 
 .ie-ai + .segmented {
   margin-left: 0;
+}
+
+.style-restore {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.style-restore > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
 }

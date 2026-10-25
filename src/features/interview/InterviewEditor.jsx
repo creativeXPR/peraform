@@ -4,7 +4,7 @@ import ColorPicker from '../../lib/ColorPicker.jsx'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { isQuestion } from '../../lib/formLogic.js'
 import { fieldPaddingStyle } from '../../lib/formModel.js'
-import { applyStyle } from '../../lib/designStyles.js'
+import { applyStyle, restoreOriginal } from '../../lib/designStyles.js'
 import { GRADIENT_PRESETS } from '../../lib/gradient.js'
 import {
   COLOR_TOKENS,
@@ -14,6 +14,7 @@ import {
   canHoldChildren,
   deleteNode,
   duplicateBlock,
+  fitText,
   frameOf,
   moveBlock,
   moveTargets,
@@ -108,6 +109,19 @@ export default function InterviewEditor({ viewSwitch }) {
       const targets = where === 'all' ? all : all.filter((s) => s.key === screen.key)
       const screensNext = { ...iv.screens }
       for (const s of targets) screensNext[s.key] = applyStyle(screenDesign(d, s, all), styleKey, palette)
+      return { ...d, interview: { ...iv, screens: screensNext } }
+    })
+  }
+
+  // Back to how screens looked before any style (one undo step).
+  function restoreDesignStyle(where) {
+    edit(`interview:unstyle:${where}:${Date.now()}`, (d) => {
+      const all = screensOf(d)
+      const iv = interviewOf(d)
+      const screensNext = { ...iv.screens }
+      for (const s of where === 'all' ? all : all.filter((x) => x.key === screen.key)) {
+        if (screensNext[s.key]?.original) screensNext[s.key] = restoreOriginal(screensNext[s.key])
+      }
       return { ...d, interview: { ...iv, screens: screensNext } }
     })
   }
@@ -329,12 +343,12 @@ export default function InterviewEditor({ viewSwitch }) {
               onFrame={(patch) => changeFrames(Object.fromEntries(selectedIds.map((id) => [id, patch])))}
               onStyle={(patch) =>
                 change(`style:${selectedIds.join()}:${Object.keys(patch).join()}`, (dsn) =>
-                  selectedIds.reduce((d, id) => setStyle(d, id, patch), dsn),
+                  fitText(selectedIds.reduce((d, id) => setStyle(d, id, patch), dsn)),
                 )
               }
               onContent={(patch) =>
                 change(`content:${selected.id}:${Object.keys(patch).join()}`, (dsn) =>
-                  setContent(dsn, selected.id, patch),
+                  fitText(setContent(dsn, selected.id, patch)),
                 )
               }
               onPreview={(anim) => setPreview({ nodeId: selected.id, anim, nonce: Date.now() })}
@@ -353,7 +367,13 @@ export default function InterviewEditor({ viewSwitch }) {
               </div>
               <section className="insp-group">
                 <h3>Style</h3>
-                <StylePicker key={screen.key} current={design.style} onApply={(key, where) => applyDesignStyle(key, where)} />
+                <StylePicker
+                  key={screen.key}
+                  current={design.style}
+                  onApply={(key, where) => applyDesignStyle(key, where)}
+                  restorable={Object.values(interviewOf(draft).screens ?? {}).some((s) => s?.original)}
+                  onRestore={restoreDesignStyle}
+                />
               </section>
               {screen.index > 0 && (
                 <section className="insp-group">

@@ -3,6 +3,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { GripHorizontal, Trash2 } from 'lucide-react'
 import AutoTextarea from '../../lib/AutoTextarea.jsx'
 import TargetSelect from './TargetSelect.jsx'
+import ShowIf from './ShowIf.jsx'
 
 // A page break in the builder: "Section N of M", its title/description, and
 // where respondents go after it.
@@ -15,6 +16,7 @@ export default function SectionCard({
   onActivate,
   change,
   onDelete,
+  showIf, // "Show only if…" rules for this section (ShowIf.jsx)
 }) {
   const {
     attributes,
@@ -71,6 +73,7 @@ export default function SectionCard({
               change('description', (s) => ({ ...s, description }))
             }}
           />
+          {showIf && <ShowIf {...showIf} />}
           <footer className="q-foot s-foot">
             <label className="s-after">
               <span>After section {number}</span>
@@ -97,6 +100,7 @@ export default function SectionCard({
             {section.title || <span className="muted">Untitled section</span>}
           </p>
           {section.description && <p className="q-preview-desc">{section.description}</p>}
+          {showIf && <ShowIf {...showIf} compact />}
         </div>
       )}
     </section>

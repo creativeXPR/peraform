@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { MAX_END_WAIT, designedProps, play, prefersReducedMotion } from '../../lib/animations.js'
-import { DEVICES, frameOf, liveLayout } from '../../lib/interview.js'
+import { DEVICES, backgroundCss, frameOf, liveLayout } from '../../lib/interview.js'
 import Stage from '../interview/Stage.jsx'
 
 // A designed screen for respondents (interview mode), scaled to the width
@@ -54,6 +54,8 @@ export default function InterviewView({
 
   return (
     <div ref={ref} className={`interview-view interview-${device}`}>
+      {/* The screen's background, behind the whole window. */}
+      <div className="interview-backdrop" aria-hidden="true" style={{ background: backgroundCss(design.bg) ?? 'var(--bg)' }} />
       {overlay}
       {scale > 0 && (
         <div className="interview-frame" style={{ width: W * scale, height: H * scale }}>
@@ -62,6 +64,7 @@ export default function InterviewView({
               design={design}
               device={device}
               mode="live"
+              transparentBg
               questions={questions}
               renderQuestion={renderQuestion}
               onButton={onButton}

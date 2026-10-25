@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DESIGN_STYLES, applyStyle, paletteFor, screenWords } from '../../src/lib/designStyles.js'
+import { DESIGN_STYLES, applyStyle, paletteFor, restoreOriginal, screenWords } from '../../src/lib/designStyles.js'
 import { gradient, isGradient, parseGradient } from '../../src/lib/gradient.js'
 import { screensOf, starterScreen } from '../../src/lib/interview.js'
 
@@ -71,5 +71,27 @@ describe('gradients', () => {
     const g = gradient('#AABBCC', '#112233', 90)
     expect(parseGradient(g)).toEqual({ from: '#aabbcc', to: '#112233', angle: 90 })
     expect(parseGradient('#ffffff')).toBeNull()
+  })
+})
+
+describe('back to the original look', () => {
+  it('restores each block’s own look and the background, keeping later text edits', () => {
+    const card = Object.values(start.nodes).find((n) => n.type === 'card')
+    const mine = { ...start, bg: '#123456', nodes: { ...start.nodes, [card.id]: { ...card, style: { ...card.style, radius: 3 } } } }
+    const styled = applyStyle(applyStyle(mine, 'glass'), 'midnight')
+    expect(styled.original.bg).toBe('#123456') // the first style's snapshot is kept
+    const heading = Object.values(styled.nodes).find((n) => n.type === 'text' && n.text === 'Welcome')
+    const edited = { ...styled, nodes: { ...styled.nodes, [heading.id]: { ...heading, text: 'Hello' } } }
+    const back = restoreOriginal(edited)
+    expect(back.bg).toBe('#123456')
+    expect(back.style).toBeUndefined()
+    expect(back.original).toBeUndefined()
+    expect(back.nodes[card.id].style.radius).toBe(3)
+    expect(back.nodes[card.id].animations).toEqual([])
+    expect(back.nodes[heading.id].text).toBe('Hello')
+  })
+
+  it('does nothing to a screen that was never styled', () => {
+    expect(restoreOriginal(start)).toBe(start)
   })
 })
