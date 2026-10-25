@@ -26,19 +26,6 @@ service cloud.firestore {
       allow read: if signedIn() && resource.data.uid == request.auth.uid;
       allow write: if false;
     }
-    // Keep: each person's saved items, shared by every Quality Tools app
-    // (src/lib/keep.js). Only they can see or change them.
-    match /keeps/{uid}/items/{id} {
-      allow read, delete: if signedIn() && request.auth.uid == uid;
-      allow create, update: if signedIn() && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['kind', 'app', 'label', 'payload', 'createdAt'])
-        && request.resource.data.kind is string && request.resource.data.kind.size() <= 30
-        && (request.resource.data.app == null
-          || (request.resource.data.app is string && request.resource.data.app.size() <= 30))
-        && request.resource.data.label is string && request.resource.data.label.size() <= 200
-        && request.resource.data.payload is string && request.resource.data.payload.size() <= 200000
-        && request.resource.data.createdAt is timestamp;
-    }
     // holds and anything else: functions only.
   }
 }

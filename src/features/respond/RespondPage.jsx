@@ -17,7 +17,7 @@ import {
 import { needsSignIn, quizSettings, settingsOf, topBarIcon, topBarTitle, fieldPaddingStyle } from '../../lib/formModel.js'
 import { usePageTitle } from '../../lib/usePageTitle.js'
 import { applyClick, isHiddenNow, resolveActions, shownByActions } from '../../lib/actions.js'
-import { frameOf, screenDesign, screensOf, syncInterview, visibleQuestionIds } from '../../lib/interview.js'
+import { frameOf, nextAsSubmit, screenDesign, screensOf, syncInterview, visibleQuestionIds } from '../../lib/interview.js'
 import { useViewportDevice } from '../../lib/useViewportDevice.js'
 import { parsePrefill } from '../../lib/prefill.js'
 import { shuffled } from '../../lib/shuffle.js'
@@ -457,14 +457,25 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
   // Whole screens can be shown, hidden or recoloured by actions on any
   // screen; a screen can also start hidden ("skip until an action shows it").
   const screenKeys = new Set(screens?.map((s) => s.key))
-  const screenStartsHidden = (key) => Boolean(synced.interview?.screens?.[key]?.hidden)
+  // Actions set under "Edit questions" (on the questions themselves) count
+  // here too: a section target is its screen, a question target is the
+  // block showing it. Like normal forms, what they can show starts hidden.
+  const questionSources = interview
+    ? questionsOnly(form.questions)
+        .filter((q) => q.actions?.length)
+        .map((q) => ({ actions: q.actions, questionId: q.id }))
+    : []
+  const screenStartsHidden = (key) => Boolean(synced.interview?.screens?.[key]?.hidden) || startsHidden.has(key)
   const startHidden = (id) => (screenKeys.has(id) ? screenStartsHidden(id) : nodeHidden(id))
   const screenSources = interview
-    ? designs.flatMap((d) =>
-        Object.values(d.nodes)
-          .filter((n) => n.actions?.some((a) => screenKeys.has(a.target)))
-          .map((n) => ({ actions: n.actions, questionId: n.type === 'question' ? n.questionId : null })),
-      )
+    ? [
+        ...designs.flatMap((d) =>
+          Object.values(d.nodes)
+            .filter((n) => n.actions?.some((a) => screenKeys.has(a.target)))
+            .map((n) => ({ actions: n.actions, questionId: n.type === 'question' ? n.questionId : null })),
+        ),
+        ...questionSources.filter((s) => s.actions.some((a) => screenKeys.has(a.target))),
+      ]
     : []
   const screenOverridesFor = (clicks) =>
     interview ? resolveActions({ sources: screenSources, answers, clickState: clicks, baseHidden: startHidden }) : null
@@ -483,17 +494,29 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
   const shownDesign = screenBg ? { ...design, bg: screenBg } : design
   // Dark mode: a light design gets its dark version (lib/darkMode.js).
   const darkShown = interview && dark ? darkDesign(shownDesign) : shownDesign
+  // Nothing left after this screen (actions hid the rest): Next reads Submit.
+  const finalShown = interview && next === 'submit' ? nextAsSubmit(darkShown) : darkShown
+  // Question blocks on this screen, by the question they show (question
+  // actions target questions; the screen hides or shows their blocks).
+  const blocksOf = (questionId) =>
+    interview ? Object.values(design.nodes).filter((n) => n.type === 'question' && n.questionId === questionId) : []
   const overrides = interview
     ? resolveActions({
-        sources: Object.values(design.nodes)
-          .filter((n) => n.actions?.length)
-          .map((n) => ({
-            actions: n.actions,
-            questionId: n.type === 'question' ? n.questionId : null,
+        sources: [
+          ...Object.values(design.nodes)
+            .filter((n) => n.actions?.length)
+            .map((n) => ({
+              actions: n.actions,
+              questionId: n.type === 'question' ? n.questionId : null,
+            })),
+          ...questionSources.map((s) => ({
+            ...s,
+            actions: s.actions.flatMap((a) => blocksOf(a.target).map((b) => ({ ...a, target: b.id }))),
           })),
+        ],
         answers,
         clickState,
-        baseHidden: nodeHidden,
+        baseHidden: (id) => nodeHidden(id) || (design.nodes[id]?.type === 'question' && startsHidden.has(design.nodes[id].questionId)),
       })
     : null
   const shownIds = interview ? visibleQuestionIds(design, device, overrides) : null
@@ -684,7 +707,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
     return (
       <InterviewView
         key={pageIndex}
-        design={darkShown}
+        design={finalShown}
         device={device}
         questions={questionsOnly(form.questions)}
         renderQuestion={(q) => (
@@ -698,7 +721,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
           />
         )}
         onButton={onButton}
-        overrides={darkShown.dark ? darkOverrides(overrides) : overrides}
+        overrides={finalShown.dark ? darkOverrides(overrides) : overrides}
         leaveRef={leaveRef}
         overlay={
           (prefillMode ||

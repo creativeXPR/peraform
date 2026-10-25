@@ -1,9 +1,9 @@
 import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc } from 'firebase/firestore'
-import { billingDb } from '../../lib/firebase.js'
+import { suiteDb } from '../../lib/firebase.js'
 
-// Keep items live in the suite-wide database, so every Quality Tools app
-// sees the same ones (lib/keep.js describes them).
-const items = (uid) => collection(billingDb, 'keeps', uid, 'items')
+// Keep items live in the suite-wide "suite" database, so every Quality
+// Tools app sees the same ones (lib/keep.js describes them).
+const items = (uid) => collection(suiteDb, 'keeps', uid, 'items')
 
 export function saveKeep(uid, item) {
   return addDoc(items(uid), { ...item, createdAt: serverTimestamp() })

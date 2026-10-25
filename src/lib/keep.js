@@ -1,8 +1,8 @@
 import { isSection } from './formLogic.js'
 
 // Keep: a person's saved items, shared by every Quality Tools app (stored
-// in the suite-wide "billing" database: keeps/{uid}/items/{id}, see
-// firestore.billing.rules). Text and links work everywhere; some kinds
+// in the suite-wide "suite" database: keeps/{uid}/items/{id}, see
+// firestore.suite.rules). Text and links work everywhere; some kinds
 // belong to one app and only show there (fields and design blocks are
 // PeraForm's; Docs will have headers and footers).
 //

@@ -50,6 +50,12 @@ if (useEmulators) connectFirestoreEmulator(db, '127.0.0.1', port(8080))
 export const billingDb = getFirestore(firebaseApp, 'billing')
 if (useEmulators) connectFirestoreEmulator(billingDb, '127.0.0.1', port(8080))
 
+// The suite-wide "suite" database: each person's own things that follow
+// them across Quality Tools apps (Keep). People write here themselves, so
+// it's kept apart from billing.
+export const suiteDb = getFirestore(firebaseApp, 'suite')
+if (useEmulators) connectFirestoreEmulator(suiteDb, '127.0.0.1', port(8080))
+
 // Points at PeraForm's own bucket (VITE_FIREBASE_STORAGE_BUCKET), so its
 // storage rules stay separate from other Quality Tools apps.
 export const storage = getStorage(firebaseApp)

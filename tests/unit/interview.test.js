@@ -474,3 +474,23 @@ describe('shared or per-device look', () => {
     expect(resolveNode(d.nodes.t, 'desktop')).toMatchObject({ text: 'Hi', style: { size: 18 } })
   })
 })
+
+describe('nextAsSubmit', () => {
+  it('turns default Next buttons into Submit, keeping custom labels and other buttons', async () => {
+    const { nextAsSubmit } = await import('../../src/lib/interview.js')
+    const d = {
+      nodes: {
+        n: { id: 'n', type: 'button', label: 'Next', action: { type: 'next' } },
+        b: { id: 'b', type: 'button', label: 'Back', action: { type: 'back' } },
+        c: { id: 'c', type: 'button', label: 'Let’s go', action: { type: 'next' } },
+        s: { id: 's', type: 'button', label: 'Next →', split: true, byDevice: { phone: { label: 'Next' }, desktop: { label: 'Continue' } }, action: { type: 'next' } },
+      },
+    }
+    const out = nextAsSubmit(d)
+    expect(out.nodes.n.label).toBe('Submit')
+    expect(out.nodes.b.label).toBe('Back')
+    expect(out.nodes.c.label).toBe('Let’s go')
+    expect(out.nodes.s.byDevice).toEqual({ phone: { label: 'Submit' }, desktop: { label: 'Continue' } })
+    expect(nextAsSubmit({ nodes: { b: d.nodes.b } }).nodes).toEqual({ b: d.nodes.b })
+  })
+})

@@ -595,6 +595,27 @@ export function mapStyle(node, fn) {
   return next
 }
 
+// The last screen a respondent will see (actions hid the ones after it):
+// its "Next" buttons read "Submit", as they now submit. Custom labels stay.
+export function nextAsSubmit(design) {
+  let nodes = null
+  for (const n of Object.values(design.nodes)) {
+    if (n.type !== 'button' || (n.action?.type ?? 'next') !== 'next') continue
+    const labels = [n.label, ...Object.values(n.byDevice ?? {}).map((o) => o.label)]
+    if (!labels.some((l) => /^\s*next\b/i.test(l ?? 'Next'))) continue
+    nodes ??= { ...design.nodes }
+    const relabel = (l) => (/^\s*next\b/i.test(l ?? 'Next') ? 'Submit' : l)
+    nodes[n.id] = {
+      ...n,
+      label: relabel(n.label),
+      ...(n.byDevice && {
+        byDevice: Object.fromEntries(Object.entries(n.byDevice).map(([d, o]) => [d, o.label === undefined ? o : { ...o, label: relabel(o.label) }])),
+      }),
+    }
+  }
+  return nodes ? { ...design, nodes } : design
+}
+
 // Words set everywhere (AI headings): shared and each device's own.
 export function setContentEverywhere(node, patch) {
   const next = { ...node, ...patch }
