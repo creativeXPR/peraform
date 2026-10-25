@@ -383,6 +383,28 @@
   .invoice-meta {
     grid-template-columns: 1fr 1fr;
   }
+
+  /* Phones: the title above the seller, so nothing runs off the side. */
+  .invoice-head {
+    flex-direction: column-reverse;
+    gap: 16px;
+  }
+
+  .invoice-head > div {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .invoice-title {
+    flex-direction: row !important;
+    align-items: center;
+    gap: 10px !important;
+    text-align: left;
+  }
+
+  .invoice-title h1 {
+    font-size: 22px;
+  }
 }
 
 @media print {

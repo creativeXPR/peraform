@@ -71,7 +71,7 @@ export default function AppShell({
           <BalanceChip />
           <button
             type="button"
-            className="icon-btn"
+            className="icon-btn topbar-theme"
             onClick={toggleTheme}
             aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
           >
@@ -86,6 +86,15 @@ export default function AppShell({
           <aside className="sidebar" aria-label="Main navigation">
             <div className="drawer-head">
               <span className="logo"><LogoMark />PeraForm</span>
+              {/* Narrow phones: the top bar's theme switch lives here. */}
+              <button
+                type="button"
+                className="icon-btn drawer-theme"
+                onClick={toggleTheme}
+                aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+              >
+                {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
               <button
                 type="button"
                 className="icon-btn"

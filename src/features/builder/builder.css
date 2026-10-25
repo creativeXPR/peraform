@@ -636,6 +636,8 @@
 
   .builder {
     grid-template-columns: minmax(0, 1fr);
+    /* Room to scroll the last card up clear of the floating toolbar. */
+    padding-bottom: 96px;
   }
 
   /* Toolbar becomes a floating add button. */

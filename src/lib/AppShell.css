@@ -408,3 +408,38 @@
   background: var(--danger-soft);
   color: var(--danger);
 }
+
+/* The drawer's own theme switch: only on narrow phones (below). */
+.drawer-theme {
+  display: none;
+}
+
+/* Narrow phones: the first row must fit. With a menu (☰), the logo and the
+   theme switch move into it; the gutter tightens. */
+@media (max-width: 480px) {
+  .shell {
+    --gutter: 12px;
+  }
+
+  .drawer-btn + .logo {
+    display: none;
+  }
+
+  .shell:not([data-sidebar='none']) .topbar-theme {
+    display: none;
+  }
+
+  .drawer-theme {
+    display: inline-grid;
+    margin-left: auto;
+  }
+
+  .topbar-actions {
+    min-width: 0;
+    gap: 2px;
+  }
+
+  .credit-chip {
+    padding: 0 10px;
+  }
+}

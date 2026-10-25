@@ -11,6 +11,9 @@
   z-index: 1000;
   min-width: 190px;
   max-width: calc(100vw - 16px);
+  /* Too long for the room on screen: scrolls (placeMenu sets max-height). */
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 6px;
   border: 1px solid var(--line);
   border-radius: var(--radius-card);

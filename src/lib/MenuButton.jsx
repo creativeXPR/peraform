@@ -15,6 +15,25 @@ function portalTarget(button) {
   return button.closest('.shell, .respond') ?? document.body
 }
 
+// Puts a fixed-position popover beside the box `b` (a button's rect),
+// inside the visible part of the window.
+function placeMenu(pop, b, align = 'right') {
+  const vh = window.visualViewport?.height ?? window.innerHeight
+  const vw = window.visualViewport?.width ?? window.innerWidth
+  pop.style.maxHeight = ''
+  const w = pop.offsetWidth
+  const h = pop.offsetHeight
+  const roomBelow = vh - EDGE - (b.bottom + GAP)
+  const roomAbove = b.top - GAP - EDGE
+  const below = h <= roomBelow || roomBelow >= roomAbove
+  const fit = Math.min(h, below ? roomBelow : roomAbove)
+  if (fit < h) pop.style.maxHeight = `${Math.max(120, Math.floor(fit))}px`
+  const top = below ? b.bottom + GAP : b.top - GAP - Math.max(120, fit)
+  const left = align === 'left' ? b.left : b.right - w
+  pop.style.top = `${Math.round(Math.max(EDGE, top))}px`
+  pop.style.left = `${Math.round(Math.min(Math.max(EDGE, left), vw - w - EDGE))}px`
+}
+
 // Icon button that opens a small popover list.
 // items: [{ label, onSelect, checked?, danger?, icon? }]
 export default function MenuButton({ icon, label, items, align = 'right', className = '' }) {
@@ -23,20 +42,15 @@ export default function MenuButton({ icon, label, items, align = 'right', classN
   const rootRef = useRef(null)
   const popRef = useRef(null)
 
-  // Placed next to the button: below it (above when there's no room), lined
-  // up with its right or left edge, and nudged to stay on screen.
+  // Placed next to the button: below it (above when there's more room
+  // there), lined up with its right or left edge, and nudged to stay on
+  // screen. Too long for either side: it scrolls (phones' browser bars
+  // included — the visible viewport, not the layout one).
   useLayoutEffect(() => {
     const pop = popRef.current
     const button = rootRef.current
     if (!pop || !button) return
-    const b = button.getBoundingClientRect()
-    const w = pop.offsetWidth
-    const h = pop.offsetHeight
-    const below = b.bottom + GAP
-    const top = below + h > window.innerHeight - EDGE && b.top - GAP - h >= EDGE ? b.top - GAP - h : below
-    const left = align === 'left' ? b.left : b.right - w
-    pop.style.top = `${Math.round(top)}px`
-    pop.style.left = `${Math.round(Math.min(Math.max(EDGE, left), window.innerWidth - w - EDGE))}px`
+    placeMenu(pop, button.getBoundingClientRect(), align)
   }, [open, align])
 
   useEffect(() => {
