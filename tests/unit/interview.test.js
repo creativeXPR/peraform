@@ -395,3 +395,20 @@ describe('text that needs more room', () => {
     expect(textHeight('short', 16, 300)).toBeLessThan(textHeight('a much longer piece of text that wraps onto several lines', 16, 120))
   })
 })
+
+describe('fitCard', () => {
+  it('hugs the blocks with the given space, keeping them in place on screen', async () => {
+    const { fitCard, frameOf } = await import('../../src/lib/interview.js')
+    const card = { id: 'c', type: 'card', parentId: null, seq: 1, frames: { phone: { x: 10, y: 20, w: 370, h: 600, r: 0, z: 0 } } }
+    const a = { id: 'a', type: 'text', parentId: 'c', seq: 2, frames: { phone: { x: 50, y: 80, w: 200, h: 40, r: 0, z: 0 } } }
+    const b = { id: 'b', type: 'button', parentId: 'c', seq: 3, frames: { phone: { x: 60, y: 140, w: 100, h: 48, r: 0, z: 0 } } }
+    const d = fitCard({ bg: null, nodes: { c: card, a, b } }, 'c', 'phone', 12)
+    expect(frameOf(d.nodes.c, 'phone')).toMatchObject({ x: 48, y: 88, w: 224, h: 132 })
+    expect(frameOf(d.nodes.a, 'phone')).toMatchObject({ x: 12, y: 12 })
+    expect(frameOf(d.nodes.b, 'phone')).toMatchObject({ x: 22, y: 72 })
+    // On screen: card x + block x is unchanged.
+    expect(48 + 12).toBe(10 + 50)
+    const empty = { bg: null, nodes: { c: card } }
+    expect(fitCard(empty, 'c', 'phone', 12)).toBe(empty)
+  })
+})

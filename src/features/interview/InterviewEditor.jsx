@@ -14,6 +14,7 @@ import {
   canHoldChildren,
   deleteNode,
   duplicateBlock,
+  fitCard,
   fitText,
   frameOf,
   moveBlock,
@@ -355,6 +356,11 @@ export default function InterviewEditor({ viewSwitch }) {
               onDuplicate={() => duplicate(selectedIds)}
               onMove={() => setMoving(selected.id)}
               onDelete={() => setPending({ kind: 'delete', ids: selectedIds })}
+              onFit={(pad) =>
+                change(`fit:${selected.id}:${device}:${Date.now()}`, (dsn) =>
+                  setStyle(fitCard(dsn, selected.id, device, pad), selected.id, { fitPad: pad }),
+                )
+              }
               onLevel={(delta) => {
                 const z = Math.max(0, (frameOf(selected, device).z || 0) + delta)
                 change(`frame:${selected.id}:${device}`, (dsn) => setFrame(dsn, selected.id, device, { z }))

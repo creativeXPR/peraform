@@ -907,3 +907,21 @@ textarea.insp-input {
   font-size: 12px;
   font-weight: 600;
 }
+
+/* Cards: "Fit to blocks" with the space to leave. */
+.insp-fit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.insp-fit .insp-num {
+  flex: 1;
+  min-width: 90px;
+}
+
+.insp-fit .btn {
+  height: 34px;
+  font-size: 13px;
+}

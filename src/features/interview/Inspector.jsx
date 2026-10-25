@@ -11,9 +11,11 @@ import {
   Eye,
   EyeOff,
   FolderInput,
+  Shrink,
   Sparkle,
   Trash2,
 } from 'lucide-react'
+import { useState } from 'react'
 import ColorPicker from '../../lib/ColorPicker.jsx'
 import { GRADIENT_PRESETS } from '../../lib/gradient.js'
 import { youtubeId } from '../../lib/formModel.js'
@@ -89,6 +91,25 @@ function StartHidden({ node, onStartHidden }) {
 }
 const DEVICES_LIST = Object.keys(DEVICES)
 
+// Cards: "Fit to blocks" — removes the extra space around what's inside,
+// leaving `pad` px to each edge (remembered on the card), on this device.
+function FitCard({ pad: saved, device, onFit }) {
+  const [pad, setPad] = useState(saved)
+  return (
+    <div className="insp-fit">
+      <NumberField label="Space" value={pad} min={0} max={200} suffix="px" onChange={setPad} />
+      <button
+        type="button"
+        className="btn btn-outline"
+        onClick={() => onFit(pad)}
+        title={`Shrink or grow the card to its blocks, ${pad}px from each edge (${DEVICES[device].label.toLowerCase()} design)`}
+      >
+        <Shrink size={15} /> Fit to blocks
+      </button>
+    </div>
+  )
+}
+
 // The menu for the selected block: where it sits (on this device), how it
 // looks, and what it holds. With several selected (multi = how many), it
 // shows what can apply to all of them: alignment, visibility and looks;
@@ -111,6 +132,7 @@ export default function Inspector({
   onMove, // opens "Move to…"
   onDelete,
   onLevel,
+  onFit, // (pad) cards: hug the blocks inside, pad px from each edge
   onPreview, // (animation) plays it on the canvas
 }) {
   const f = frameOf(node, device)
@@ -357,6 +379,7 @@ export default function Inspector({
                 </select>
               </label>
             )}
+            {node.type === 'card' && <FitCard key={node.id} pad={s.fitPad ?? 16} device={device} onFit={onFit} />}
             {node.type === 'card' && (
               <label className="insp-check">
                 <input

@@ -577,6 +577,36 @@ export function growToFit(design, childId) {
   return d
 }
 
+// "Fit to blocks": a card hugs what's inside it, with `pad` px between the
+// blocks and every edge, on one device. Extra space goes (or missing space
+// is added); the blocks stay where they are on the screen and the card
+// moves to meet them. A card with nothing in it is left as it is.
+export function fitCard(design, id, device, pad = 16) {
+  const card = design.nodes[id]
+  const kids = card?.type === 'card' ? childrenOf(design.nodes, id, device) : []
+  if (!kids.length) return design
+  const frames = kids.map((k) => frameOf(k, device))
+  const minX = Math.min(...frames.map((f) => f.x))
+  const minY = Math.min(...frames.map((f) => f.y))
+  const maxX = Math.max(...frames.map((f) => f.x + f.w))
+  const maxY = Math.max(...frames.map((f) => f.y + f.h))
+  const dx = minX - pad
+  const dy = minY - pad
+  let d = design
+  kids.forEach((k, i) => {
+    d = setFrame(d, k.id, device, { x: frames[i].x - dx, y: frames[i].y - dy })
+  })
+  const cf = frameOf(card, device)
+  d = setFrame(d, id, device, {
+    x: cf.x + dx,
+    y: cf.y + dy,
+    w: Math.max(MIN_SIZE, maxX - minX + pad * 2),
+    h: Math.max(MIN_SIZE, maxY - minY + pad * 2),
+  })
+  // A card inside a card: the outer one still holds it.
+  return growToFit(d, id)
+}
+
 export function deleteNode(design, id) {
   return { ...design, nodes: removeNode(design.nodes, id) }
 }
