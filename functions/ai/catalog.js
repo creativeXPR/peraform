@@ -39,7 +39,22 @@ export const AI_FEATURES = {
     overheadTokens: 1300,
     typical: { inputTokens: 2500, outputTokens: 2200 },
   },
+  // Interview mode: the AI picks a design style and colours, and writes each
+  // screen's heading and subtitle; the app restyles the screens with them.
+  'design-screens': {
+    label: 'Design screens with AI',
+    tiers: ['quick', 'standard', 'best'],
+    defaultTier: 'standard',
+    maxChars: { design: 1000 }, // the instruction
+    maxTokens: { design: 2500 },
+    minTokens: { design: 1200 },
+    overheadTokens: 1600, // system prompt, schema, and the screens list
+    typical: { inputTokens: 1800, outputTokens: 900 },
+  },
 }
+
+// The design styles "Design with AI" can choose (src/lib/designStyles.js).
+export const STYLE_KEYS = ['playful', 'classroom', 'official', 'flow', 'glass', 'midnight']
 
 // The form as the AI sees it: just what it may read and change.
 const EDITABLE = ['id', 'type', 'title', 'description', 'required', 'options', 'min', 'max', 'minLabel', 'maxLabel', 'rows', 'columns']

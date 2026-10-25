@@ -14,7 +14,8 @@ import {
   skipHiddenPages,
   splitPages,
 } from '../../lib/formLogic.js'
-import { needsSignIn, quizSettings, settingsOf, topBarTitle, fieldPaddingStyle } from '../../lib/formModel.js'
+import { needsSignIn, quizSettings, settingsOf, topBarIcon, topBarTitle, fieldPaddingStyle } from '../../lib/formModel.js'
+import { usePageTitle } from '../../lib/usePageTitle.js'
 import { applyClick, isHiddenNow, resolveActions, shownByActions } from '../../lib/actions.js'
 import { frameOf, screenDesign, screensOf, syncInterview, visibleQuestionIds } from '../../lib/interview.js'
 import { useViewportDevice } from '../../lib/useViewportDevice.js'
@@ -49,6 +50,8 @@ export default function RespondPage() {
   const { theme: mode, toggleTheme } = useTheme()
   const formTheme = themeOf(form)
   useEffect(() => loadThemeFont(formTheme.font), [formTheme.font])
+  // The tab shows the form's name (and its own icon, if it has one).
+  usePageTitle(form ? form.title || 'Untitled form' : null, form ? topBarIcon(form) : null)
 
   // Wait for auth first: whether a draft is visible depends on who's asking.
   const uid = user?.uid
@@ -112,6 +115,7 @@ export default function RespondPage() {
           theme={mode}
           toggleTheme={toggleTheme}
           title={form ? topBarTitle(form) : null}
+          icon={form ? topBarIcon(form) : null}
         />
       )}
       <main className="respond-main">
@@ -146,11 +150,14 @@ export default function RespondPage() {
 
 // title: the creator's own title (Settings → "Show a title at the top"),
 // shown instead of the PeraForm logo.
-function RespondTopBar({ theme, toggleTheme, title }) {
+function RespondTopBar({ theme, toggleTheme, title, icon }) {
   return (
     <header className="respond-top">
       {title ? (
-        <span className="logo respond-top-title">{title}</span>
+        <span className="logo respond-top-title">
+          {icon && <img className="respond-top-icon" src={icon} alt="" />}
+          {title}
+        </span>
       ) : (
         <span className="logo">
           <LogoMark />

@@ -115,6 +115,8 @@ export const PRESENTATION_DEFAULTS = {
   // of the creator's own, which starts as the form's name.
   topTitleOn: false,
   topTitle: '',
+  // An image ({ url, path }) shown before that title, and as the tab's icon.
+  topIcon: null,
   // Space inside answer fields (text boxes, dropdowns, dates), in px.
   fieldPadding: 7,
 }
@@ -131,6 +133,12 @@ export function fieldPaddingStyle(form) {
 }
 
 // What the respondent page shows at the top instead of the logo, or null.
+// The icon shown with that title (when the title is on), or null.
+export function topBarIcon(form) {
+  const { topTitleOn, topIcon } = settingsOf(form)
+  return topTitleOn && topIcon?.url ? topIcon.url : null
+}
+
 export function topBarTitle(form) {
   const { topTitleOn, topTitle } = settingsOf(form)
   if (!topTitleOn) return null

@@ -1,4 +1,8 @@
+import { useState } from 'react'
+import { Trash2 } from 'lucide-react'
 import AutoTextarea from '../../lib/AutoTextarea.jsx'
+import ConfirmModal from '../../lib/ConfirmModal.jsx'
+import ImagePicker from './ImagePicker.jsx'
 import { quizSettings, settingsOf } from '../../lib/formModel.js'
 import { useFormEditor } from './editorContext.js'
 import SheetsSettings from './SheetsSettings.jsx'
@@ -7,6 +11,7 @@ import SheetsSettings from './SheetsSettings.jsx'
 // Saved through the same autosave/undo pipeline as the questions.
 export default function SettingsPage() {
   const { form, draft, edit } = useFormEditor()
+  const [removingIcon, setRemovingIcon] = useState(false)
   if (!draft) return <div className="builder-loading" aria-busy="true" />
 
   const {
@@ -19,6 +24,7 @@ export default function SettingsPage() {
     showSubmitAnother,
     topTitleOn,
     topTitle,
+    topIcon,
     fieldPadding,
   } = settingsOf(draft)
   const quiz = quizSettings(draft)
@@ -153,6 +159,30 @@ export default function SettingsPage() {
               onChange={(e) => set('topTitle', e.target.value)}
             />
           </label>
+        )}
+        {topTitleOn && (
+          <div className="setting-field setting-icon">
+            <span>Icon beside the title</span>
+            <div className="setting-icon-row">
+              {topIcon?.url ? (
+                <img className="setting-icon-preview" src={topIcon.url} alt="" />
+              ) : (
+                <span className="setting-icon-empty">None</span>
+              )}
+              <ImagePicker
+                variant="button"
+                label={topIcon?.url ? 'Change icon' : 'Add icon'}
+                onPicked={(image) => set('topIcon', image)}
+              />
+              {topIcon?.url && (
+                <button type="button" className="btn btn-ghost" onClick={() => setRemovingIcon(true)}>
+                  <Trash2 size={16} />
+                  Remove
+                </button>
+              )}
+            </div>
+            <span className="setting-hint">Also shown as the browser tab’s icon. A square image works best.</span>
+          </div>
         )}
         <label className="setting setting-number">
           <span className="setting-text">
@@ -290,6 +320,17 @@ export default function SettingsPage() {
           </>
         )}
       </section>
+      <ConfirmModal
+        open={removingIcon}
+        title="Remove the icon?"
+        message="The title at the top shows without it. You can add it again any time."
+        confirmLabel="Remove"
+        onConfirm={() => {
+          set('topIcon', null)
+          setRemovingIcon(false)
+        }}
+        onCancel={() => setRemovingIcon(false)}
+      />
     </div>
   )
 }

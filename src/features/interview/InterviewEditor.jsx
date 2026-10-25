@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import { Monitor, RotateCcw, Smartphone } from 'lucide-react'
+import { Monitor, RotateCcw, Smartphone, Sparkles } from 'lucide-react'
 import ColorPicker from '../../lib/ColorPicker.jsx'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { isQuestion } from '../../lib/formLogic.js'
 import { fieldPaddingStyle } from '../../lib/formModel.js'
+import { applyStyle } from '../../lib/designStyles.js'
+import { GRADIENT_PRESETS } from '../../lib/gradient.js'
 import {
   COLOR_TOKENS,
   DEVICES,
@@ -34,6 +36,8 @@ import Canvas from './Canvas.jsx'
 import Inspector from './Inspector.jsx'
 import LayersPanel from './LayersPanel.jsx'
 import MoveBlockDialog from './MoveBlockDialog.jsx'
+import StylePicker from './StylePicker.jsx'
+import DesignScreensDialog from '../ai/DesignScreensDialog.jsx'
 
 const SCREEN_BG_PRESETS = [
   { value: 'bg', label: 'Page (theme)', swatch: COLOR_TOKENS.bg.css },
@@ -58,6 +62,7 @@ export default function InterviewEditor({ viewSwitch }) {
   // Inspector → Preview: { nodeId, anim, nonce } plays it on the canvas.
   const [preview, setPreview] = useState(null)
   const [moving, setMoving] = useState(null) // block id for "Move to…"
+  const [designing, setDesigning] = useState(false) // "Design with AI"
 
   const screens = screensOf(draft)
   const screen = screens.find((s) => s.key === screenKey) ?? screens[0]
@@ -93,6 +98,18 @@ export default function InterviewEditor({ viewSwitch }) {
         dsn,
       ),
     )
+  }
+
+  // A design style on this screen, or on every screen (one undo step).
+  function applyDesignStyle(styleKey, where, palette) {
+    edit(`interview:style:${where}:${Date.now()}`, (d) => {
+      const all = screensOf(d)
+      const iv = interviewOf(d)
+      const targets = where === 'all' ? all : all.filter((s) => s.key === screen.key)
+      const screensNext = { ...iv.screens }
+      for (const s of targets) screensNext[s.key] = applyStyle(screenDesign(d, s, all), styleKey, palette)
+      return { ...d, interview: { ...iv, screens: screensNext } }
+    })
   }
 
   // A whole screen skipped until an action shows it (not the first).
@@ -205,6 +222,10 @@ export default function InterviewEditor({ viewSwitch }) {
     <div className="interview-editor" style={fieldPaddingStyle(draft)}>
       <div className="ie-toolbar">
         {viewSwitch}
+        <button type="button" className="btn btn-outline ie-ai" onClick={() => setDesigning(true)}>
+          <Sparkles size={15} />
+          Design with AI
+        </button>
         <div className="segmented" role="radiogroup" aria-label="Device">
           {Object.entries(DEVICES).map(([key, d]) => (
             <button
@@ -330,6 +351,10 @@ export default function InterviewEditor({ viewSwitch }) {
               <div className="insp-head">
                 <strong>Screen {screen.index + 1}</strong>
               </div>
+              <section className="insp-group">
+                <h3>Style</h3>
+                <StylePicker key={screen.key} current={design.style} onApply={(key, where) => applyDesignStyle(key, where)} />
+              </section>
               {screen.index > 0 && (
                 <section className="insp-group">
                   <h3>Visibility</h3>
@@ -352,6 +377,7 @@ export default function InterviewEditor({ viewSwitch }) {
                 <ColorPicker
                   value={design.bg ?? 'bg'}
                   presets={SCREEN_BG_PRESETS}
+                  gradients={GRADIENT_PRESETS}
                   onChange={(bg) => change('bg', (dsn) => ({ ...dsn, bg: bg === 'bg' ? null : bg }))}
                   label="Screen background"
                 />
@@ -386,6 +412,8 @@ export default function InterviewEditor({ viewSwitch }) {
           onClose={() => setMoving(null)}
         />
       )}
+
+      <DesignScreensDialog open={designing} onClose={() => setDesigning(false)} />
 
       <ConfirmModal
         open={Boolean(pending)}

@@ -1924,3 +1924,30 @@
 .setting-px .setting-input {
   width: 72px;
 }
+
+/* Settings: the top title's icon. */
+.setting-icon-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.setting-icon-preview {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid var(--line);
+}
+
+.setting-icon-empty {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.setting-hint {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 400;
+}

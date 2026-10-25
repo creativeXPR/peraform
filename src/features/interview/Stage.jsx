@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import { designedProps, play, prefersReducedMotion } from '../../lib/animations.js'
-import { THEME_FONTS } from '../../lib/theme.js'
+import { fontsUsed } from '../../lib/designStyles.js'
+import { THEME_FONTS, loadThemeFont } from '../../lib/theme.js'
 import {
   DEVICES,
   SHADOWS,
@@ -14,6 +15,28 @@ import {
 // Question fields look exactly as on the normal form, in the editor too.
 import '../respond/RespondPage.css'
 import './interview.css'
+
+// A card's text scheme: inside it, labels, answer fields and lines use
+// colours that read on its background (a dark or a glass card), whatever
+// the respondent's own light/dark setting.
+const SCHEMES = {
+  dark: {
+    '--text': '#f1f2f6',
+    '--text-muted': '#c4c7d0',
+    '--line': 'rgb(255 255 255 / 0.18)',
+    '--fill': 'rgb(255 255 255 / 0.08)',
+    '--bg': 'rgb(255 255 255 / 0.06)',
+    '--surface': 'rgb(255 255 255 / 0.08)',
+  },
+  light: {
+    '--text': '#14151a',
+    '--text-muted': '#5f6370',
+    '--line': 'rgb(0 0 0 / 0.1)',
+    '--fill': 'rgb(0 0 0 / 0.05)',
+    '--bg': '#fbfcff',
+    '--surface': '#ffffff',
+  },
+}
 
 // Properties an action changes, with how each animates.
 const ANIMATED = ['transform', 'background-color', 'color', 'font-size', 'border-radius']
@@ -55,7 +78,9 @@ function nodeStyle(node, frame, editing, override) {
     fontSize: p.size ?? (s.size || undefined),
     fontWeight: s.weight || undefined,
     textAlign: s.align || undefined,
+    ...SCHEMES[s.scheme],
   }
+  if (s.scheme && !style.color) style.color = 'var(--text)'
   const hidden = editing ? frame.hidden : (override?.hidden ?? frame.hidden)
   if (hidden) {
     if (editing) style.opacity = 0.35
@@ -235,6 +260,11 @@ export function StageNode({ node, ctx }) {
 
 // A whole screen at design size. The caller scales it to fit.
 export default function Stage({ design, device, children, ...ctx }) {
+  // The fonts the blocks use (each loads once).
+  const fonts = fontsUsed(design).join()
+  useEffect(() => {
+    for (const f of fonts.split(',')) if (f) loadThemeFont(f)
+  }, [fonts])
   // Live: hidden blocks (by design or by an action) give their space back.
   const live = ctx.mode === 'edit' ? null : liveLayout(design, device, ctx.overrides)
   const full = { design, device, layout: live?.layout, ...ctx }

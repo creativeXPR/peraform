@@ -587,7 +587,8 @@ export const GLASS = { bgAlpha: 35, blur: 16, borderWidth: 1, borderColor: '#fff
 // blocks without fading their content.
 export function backgroundCss(bg, alpha = 100) {
   const css = colorCss(bg)
-  if (!css || alpha >= 100) return css
+  // Gradients are used as they are (see lib/designStyles.js).
+  if (!css || alpha >= 100 || css.includes('gradient(')) return css
   return `color-mix(in srgb, ${css} ${Math.max(0, alpha)}%, transparent)`
 }
 

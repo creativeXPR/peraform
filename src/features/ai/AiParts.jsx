@@ -48,15 +48,16 @@ export function HoldLine({ range, spendable, loaded, hidden }) {
 
 // What the run is doing right now. The questions appear as they're written.
 //   doing: what "saving" means here ("Saving your form…", "Applying the changes…")
-export function Progress({ progress, elapsed, doing = 'Saving your form…' }) {
+//   unit: what's being written, one by one ("question", "screen")
+export function Progress({ progress, elapsed, doing = 'Saving your form…', unit = 'question' }) {
   const { stage, title, questions = 0, written = [] } = progress ?? {}
   const status =
     stage === 'saving'
       ? doing
       : stage === 'writing' && questions > 0
-        ? `Writing question ${questions}…`
+        ? `${unit === 'screen' ? 'Designing screen' : 'Writing question'} ${questions}…`
         : stage === 'writing' || stage === 'started'
-          ? 'Planning your form…'
+          ? unit === 'screen' ? 'Choosing a style…' : 'Planning your form…'
           : 'Reserving credits…'
   return (
     <section className="ai-progress" aria-live="polite">
@@ -73,7 +74,7 @@ export function Progress({ progress, elapsed, doing = 'Saving your form…' }) {
           {written.slice(-5).map((t, i, shown) => (
             <li key={written.length - shown.length + i}>
               <Check size={14} aria-hidden="true" />
-              {t || 'Untitled question'}
+              {t || `Untitled ${unit}`}
             </li>
           ))}
         </ol>

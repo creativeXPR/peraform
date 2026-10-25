@@ -772,3 +772,105 @@ textarea.insp-input {
   flex-wrap: wrap;
   gap: 4px;
 }
+
+/* Screen panel: design styles. */
+.style-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.style-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.style-card:hover,
+.style-card.is-on {
+  border-color: var(--accent);
+}
+
+.style-card.is-on {
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.style-preview {
+  display: grid;
+  place-items: center;
+  height: 64px;
+  border-radius: 8px;
+}
+
+.style-preview-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 64%;
+  padding: 7px;
+}
+
+.style-preview-title {
+  width: 70%;
+  height: 5px;
+  border-radius: 3px;
+}
+
+.style-preview-line {
+  width: 90%;
+  height: 3px;
+  border-radius: 2px;
+  opacity: 0.5;
+}
+
+.style-preview-btn {
+  width: 46%;
+  height: 7px;
+  margin-top: 2px;
+}
+
+.style-name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px 2px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.style-name svg {
+  color: var(--accent);
+}
+
+.style-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.style-actions .btn {
+  flex: 1;
+  height: 36px;
+  font-size: 13px;
+}
+
+/* Toolbar: "Design with AI". */
+.ie-ai {
+  height: 36px;
+  margin-left: auto;
+  color: var(--accent);
+  font-size: 13px;
+}
+
+.ie-ai + .segmented {
+  margin-left: 0;
+}

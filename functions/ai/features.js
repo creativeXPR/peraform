@@ -1,4 +1,4 @@
-import { AI_FEATURES, compactForm } from './catalog.js'
+import { AI_FEATURES, STYLE_KEYS, compactForm } from './catalog.js'
 
 // The server half of each AI feature: input checks, the prompt and the
 // output schema. The app sends only { feature, tier, input }: never a
@@ -177,8 +177,93 @@ FEATURES['edit-form'] = {
   progress: FEATURES['generate-form'].progress,
 }
 
+const DESIGN_SYSTEM = `You are the visual designer for an interview-style form in PeraForm: each section of the form is a screen people move through, like an app's onboarding.
+Pick the design style that suits the form and the instruction, choose its colours, and write each screen's heading and subtitle.
+
+Styles:
+- playful: bright gradient, round shapes, bouncy. Fun, friendly, kids, parties, community.
+- classroom: calm and clear, classic heading. Schools, quizzes, lessons, training.
+- official: formal, square corners, thin borders, no effects. Government, legal, HR, finance.
+- flow: minimal white onboarding, big heading. Sign-ups, product onboarding, simple surveys.
+- glass: frosted glass over a vivid gradient. Launches, events, modern brands.
+- midnight: dark and bold with a glowing accent. Tech, gaming, night events.
+
+Colours (6-digit hex): "from" and "to" make the screen background gradient; "accent" is the main button colour. Keep text readable: light backgrounds for playful, classroom, official and flow; vivid for glass; dark for midnight. Follow any colours or brand the instruction mentions.
+Screens: return every screen you were given, by its key. Heading: at most 40 characters, may start with one fitting emoji (not for official). Subtitle: one short, warm sentence (at most 90 characters) saying what this screen is about.
+Write in the language of the form.
+Put one or two plain sentences on what you chose and why in "summary".`
+
+const DESIGN_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['style', 'palette', 'screens', 'summary'],
+  properties: {
+    style: { type: 'string', enum: STYLE_KEYS },
+    palette: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['from', 'to', 'accent'],
+      properties: { from: { type: 'string' }, to: { type: 'string' }, accent: { type: 'string' } },
+    },
+    screens: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['key', 'heading', 'subtitle'],
+        properties: { key: { type: 'string' }, heading: { type: 'string' }, subtitle: { type: 'string' } },
+      },
+    },
+    summary: { type: 'string' },
+  },
+}
+
+// The form's screens as the designer sees them: key, title, description
+// and the first few questions (enough to understand each screen).
+function screensForDesign(form) {
+  const out = [{ key: 'start', title: form.title || 'Untitled form', description: form.description ?? '', questions: [] }]
+  for (const item of form.questions ?? []) {
+    if (item.type === 'section') {
+      out.push({ key: item.id, title: item.title || 'Untitled section', description: item.description ?? '', questions: [] })
+    } else if (item.title && out.at(-1).questions.length < 5) out.at(-1).questions.push(item.title)
+  }
+  return out
+}
+
+FEATURES['design-screens'] = {
+  ...AI_FEATURES['design-screens'],
+  system: DESIGN_SYSTEM,
+  schema: DESIGN_SCHEMA,
+  effort: 'low',
+  // input: { formId, instruction }; the form is read here (editors only).
+  async prepare(input, ctx) {
+    const instruction = cleanText(input?.instruction, this.maxChars.design)
+    const formId = typeof input?.formId === 'string' ? input.formId : ''
+    const form = formId && ctx?.db ? (await ctx.db.doc(`forms/${formId}`).get()).data() : null
+    if (!form || !form.memberIds?.includes(ctx.uid)) throw new InputError('Form not found.')
+    const json = JSON.stringify(screensForDesign(form))
+    const prompt = `Screens:\n${json}\n\nWhat the creator wants:\n${instruction}`
+    return { prompt, mode: 'design', chars: json.length + instruction.length }
+  },
+  result(json) {
+    if (!json || !STYLE_KEYS.includes(json.style) || !Array.isArray(json.screens)) return null
+    return { design: json, summary: typeof json.summary === 'string' ? json.summary : '' }
+  },
+  // Progress: the screens designed so far (their headings).
+  progress(text) {
+    const headings = [...text.matchAll(/"heading"\s*:\s*"((?:[^"\\]|\\.)*)"/g)].map((m) => unescapeJson(m[1]))
+    return { title: null, questions: headings.length, written: headings }
+  },
+}
+
 // Canned output for the emulators (AI_FAKE=1), so tests never call the AI.
 export const FAKE_OUTPUT = {
+  'design-screens': {
+    style: 'playful',
+    palette: { from: '#ffd166', to: '#ef476f', accent: '#7c3aed' },
+    screens: [{ key: 'start', heading: '🎉 Let’s plan lunch', subtitle: 'It only takes a minute.' }],
+    summary: 'Playful, warm colours for a friendly team lunch.',
+  },
   'edit-form': {
     title: 'Team lunch (edited)',
     description: 'Help us plan the lunch.',

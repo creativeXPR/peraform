@@ -981,3 +981,18 @@ textarea.respond-input {
     padding: 0;
   }
 }
+
+/* The form's own icon before its title in the top bar. */
+.respond-top-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.respond-top-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}

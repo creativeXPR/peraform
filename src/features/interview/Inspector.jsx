@@ -15,6 +15,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import ColorPicker from '../../lib/ColorPicker.jsx'
+import { GRADIENT_PRESETS } from '../../lib/gradient.js'
 import { youtubeId } from '../../lib/formModel.js'
 import { BUTTON_ACTIONS, COLOR_TOKENS, DEVICES, GLASS, NODE_TYPES, SHADOWS, frameOf } from '../../lib/interview.js'
 import { THEME_FONTS } from '../../lib/theme.js'
@@ -399,6 +400,7 @@ export default function Inspector({
         <ColorPicker
           value={s.bg ?? 'transparent'}
           presets={COLOR_PRESETS}
+          gradients={GRADIENT_PRESETS}
           onChange={(bg) => onStyle({ bg })}
           label="Background"
         />
