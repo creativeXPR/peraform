@@ -25,3 +25,7 @@ export function requireApp(request) {
     throw new HttpsError('failed-precondition', 'This request didn’t come from PeraForm.')
   }
 }
+
+// The day in Lagos (UTC+1, no daylight saving), e.g. '2026-10-25': the
+// admin page's daily counts (billing DB, activity/{day}).
+export const lagosDay = (ms = Date.now()) => new Date(ms + 3600_000).toISOString().slice(0, 10)

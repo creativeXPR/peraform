@@ -7,7 +7,7 @@ import { onDocumentCreated } from 'firebase-functions/v2/firestore'
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
 import { onObjectFinalized } from 'firebase-functions/v2/storage'
 import { isAllowedResponder } from './access.js'
-import { REGION, db, requireApp } from './app.js'
+import { REGION, billingDb, db, lagosDay, requireApp } from './app.js'
 import { MARK, compressBuffer, compressionFor } from './compress.js'
 import { gradeResponse } from './grade.js'
 import { responseTable } from './responseTable.js'
@@ -243,6 +243,20 @@ export const sheetsLink = onCall({ region: REGION, secrets: [GOOGLE_OAUTH_CLIENT
   throw new HttpsError('invalid-argument', 'Unknown action.')
 })
 
+// activity/{day}.responses and activity/{day}/owners/{ownerUid}.responses
+// (billing DB, read by the admin page), once per trigger event.
+async function countResponse(eventId, ownerId) {
+  const day = lagosDay()
+  const inc = { responses: FieldValue.increment(1) }
+  await billingDb.runTransaction(async (tx) => {
+    const seen = billingDb.doc(`activity/${day}/events/${eventId}`)
+    if ((await tx.get(seen)).exists) return
+    tx.create(seen, { at: FieldValue.serverTimestamp() })
+    tx.set(billingDb.doc(`activity/${day}`), inc, { merge: true })
+    if (ownerId) tx.set(billingDb.doc(`activity/${day}/owners/${ownerId}`), inc, { merge: true })
+  })
+}
+
 // ── After each response: grade quizzes, notify subscribers ─────
 export const onResponseCreated = onDocumentCreated(
   {
@@ -255,6 +269,12 @@ export const onResponseCreated = onDocumentCreated(
     const { formId } = event.params
     const form = (await db.doc(`forms/${formId}`).get()).data()
     if (!form) return
+
+    // Admin page: responses per day, and per form owner. Event ids make a
+    // retried event count once.
+    await countResponse(event.id, form.ownerId).catch((err) =>
+      logger.warn('Response count failed', { formId, err: err.message }),
+    )
 
     // Linked Google Sheet: add this response as a row (never blocks grading
     // or emails — problems are shown to the owner in Settings instead).

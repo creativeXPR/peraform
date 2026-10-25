@@ -5,7 +5,7 @@ import { logger } from 'firebase-functions'
 import { defineSecret, defineString } from 'firebase-functions/params'
 import { HttpsError, onCall, onRequest } from 'firebase-functions/v2/https'
 import { onSchedule } from 'firebase-functions/v2/scheduler'
-import { EMULATED, REGION, billingDb as bdb, db, requireApp } from '../app.js'
+import { EMULATED, REGION, billingDb as bdb, db, lagosDay, requireApp } from '../app.js'
 import { holdRange, inputTokensFor, tierFor } from '../ai/catalog.js'
 import { AiError } from '../ai/errors.js'
 import { runModel } from '../ai/run.js'
@@ -81,9 +81,6 @@ export const ensureWallet = onCall({ region: REGION }, async (request) => {
   await Promise.all([ensureWalletDoc(bdb, uid, billing), recordActive(uid)])
   return { isAdmin: isAdmin(request.auth.token) }
 })
-
-// The day in Lagos (UTC+1, no daylight saving), e.g. '2026-10-25'.
-const lagosDay = (ms = Date.now()) => new Date(ms + 3600_000).toISOString().slice(0, 10)
 
 // Daily active users (admin page): one marker per user per day, and the
 // day's count goes up the first time only. Never fails the wallet call.
@@ -455,9 +452,32 @@ export const billingAdmin = onCall({ region: REGION, secrets: [PAYSTACK_SECRET_K
     // Users active each day, the last 14 days (Lagos time), oldest first.
     const days = Array.from({ length: 14 }, (_, i) => lagosDay(Date.now() - (13 - i) * 86400_000))
     const activity = await bdb.getAll(...days.map((d) => bdb.doc(`activity/${d}`)))
+    // Responses each form owner got: today and over the last 7 days.
+    const week = days.slice(-7)
+    const ownerDays = await Promise.all(week.map((d) => bdb.collection(`activity/${d}/owners`).get()))
+    const owners = {}
+    ownerDays.forEach((snap, i) => {
+      for (const doc of snap.docs) {
+        const o = (owners[doc.id] ??= { uid: doc.id, today: 0, week: 0 })
+        o.week += doc.data().responses ?? 0
+        if (i === week.length - 1) o.today += doc.data().responses ?? 0
+      }
+    })
+    const top = Object.values(owners)
+      .sort((a, b) => b.week - a.week)
+      .slice(0, 100)
+    if (top.length) {
+      const { users } = await getAuth().getUsers(top.map((o) => ({ uid: o.uid })))
+      for (const o of top) o.email = users.find((u) => u.uid === o.uid)?.email ?? ''
+    }
     const { billing } = await loadConfig()
     return {
-      daily: days.map((day, i) => ({ day, users: activity[i].data()?.users ?? 0 })),
+      daily: days.map((day, i) => ({
+        day,
+        users: activity[i].data()?.users ?? 0,
+        responses: activity[i].data()?.responses ?? 0,
+      })),
+      owners: top,
       totals,
       fxNgnPerUsd: billing.fxNgnPerUsd,
       failed: failed.docs.map((d) => ({ id: d.id, ...plain(d.data()) })),

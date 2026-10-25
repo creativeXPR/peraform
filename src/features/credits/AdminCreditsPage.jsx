@@ -107,7 +107,11 @@ export default function AdminCreditsPage() {
           </div>
         </section>
       )}
-      {report?.daily && <DailyUsers daily={report.daily} />}
+      {report?.daily && <DailyChart daily={report.daily} field="users" title="Daily users" noun="users" />}
+      {report?.daily && (
+        <DailyChart daily={report.daily} field="responses" title="Daily responses" noun="responses" />
+      )}
+      {report?.owners && <ResponsesByCreator owners={report.owners} />}
       {report?.failed.length > 0 && (
         <details className="credits-failed">
           <summary>{report.failed.length} recent failed payments</summary>
@@ -222,28 +226,60 @@ export default function AdminCreditsPage() {
   )
 }
 
-// Signed-in users who opened the app each day (Lagos time), last 14 days.
-function DailyUsers({ daily }) {
-  const today = daily.at(-1)?.users ?? 0
+// One count per day (Lagos time), last 14 days, as bars.
+//   field: 'users' (signed-in users who opened the app) | 'responses'
+function DailyChart({ daily, field, title, noun }) {
+  const today = daily.at(-1)?.[field] ?? 0
   const week = daily.slice(-7)
-  const average = Math.round(week.reduce((n, d) => n + d.users, 0) / week.length)
-  const top = Math.max(1, ...daily.map((d) => d.users))
+  const average = Math.round(week.reduce((n, d) => n + (d[field] ?? 0), 0) / week.length)
+  const top = Math.max(1, ...daily.map((d) => d[field] ?? 0))
   const label = (day) => new Date(`${day}T12:00:00Z`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
   return (
-    <section className="admin-daily" aria-label="Daily users">
-      <h2>Daily users</h2>
+    <section className="admin-daily" aria-label={title}>
+      <h2>{title}</h2>
       <p className="credits-sub">
         <strong>{today}</strong> today · {average} a day over the last 7 days
       </p>
       <div className="admin-daily-bars">
         {daily.map((d) => (
-          <div key={d.day} className="admin-daily-bar" title={`${label(d.day)}: ${d.users} users`}>
-            <span className="admin-daily-count">{d.users}</span>
-            <span className="admin-daily-fill" style={{ height: `${(d.users / top) * 100}%` }} />
+          <div key={d.day} className="admin-daily-bar" title={`${label(d.day)}: ${d[field] ?? 0} ${noun}`}>
+            <span className="admin-daily-count">{d[field] ?? 0}</span>
+            <span className="admin-daily-fill" style={{ height: `${((d[field] ?? 0) / top) * 100}%` }} />
             <span className="admin-daily-day">{label(d.day)}</span>
           </div>
         ))}
       </div>
+    </section>
+  )
+}
+
+// Responses each creator's forms got: today and over the last 7 days.
+function ResponsesByCreator({ owners }) {
+  return (
+    <section className="admin-daily" aria-label="Responses by creator">
+      <h2>Responses by creator</h2>
+      {owners.length ? (
+        <table className="admin-owners">
+          <thead>
+            <tr>
+              <th scope="col">Creator</th>
+              <th scope="col">Today</th>
+              <th scope="col">Last 7 days</th>
+            </tr>
+          </thead>
+          <tbody>
+            {owners.map((o) => (
+              <tr key={o.uid}>
+                <td>{o.email || o.uid}</td>
+                <td>{o.today}</td>
+                <td>{o.week}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <p className="credits-sub">No responses in the last 7 days.</p>
+      )}
     </section>
   )
 }
