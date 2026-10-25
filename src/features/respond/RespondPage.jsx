@@ -509,7 +509,9 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
   // actions target questions; the screen hides or shows their blocks).
   const blocksOf = (questionId) =>
     interview ? Object.values(design.nodes).filter((n) => n.type === 'question' && n.questionId === questionId) : []
-  const overrides = interview
+  const blockStartsHidden = (id) =>
+    nodeHidden(id) || (design.nodes[id]?.type === 'question' && startsHidden.has(design.nodes[id].questionId))
+  const resolved = interview
     ? resolveActions({
         sources: [
           ...Object.values(design.nodes)
@@ -525,9 +527,18 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
         ],
         answers,
         clickState,
-        baseHidden: (id) => nodeHidden(id) || (design.nodes[id]?.type === 'question' && startsHidden.has(design.nodes[id].questionId)),
+        baseHidden: blockStartsHidden,
       })
     : null
+  // A block that only an action can show starts hidden (and stays hidden
+  // until one does): the screen otherwise falls back to the block's own
+  // design, which shows it.
+  const overrides = interview ? { ...resolved } : null
+  if (interview) {
+    for (const n of Object.values(design.nodes)) {
+      if (!overrides[n.id] && blockStartsHidden(n.id) && !nodeHidden(n.id)) overrides[n.id] = { hidden: true }
+    }
+  }
   const shownIds = interview ? visibleQuestionIds(design, device, overrides) : null
   const asked = interview
     ? page.questions.filter((q) => shownIds.has(q.id))
