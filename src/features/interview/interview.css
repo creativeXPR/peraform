@@ -1011,3 +1011,34 @@ textarea.insp-input {
   font-size: 12px;
   font-weight: 700;
 }
+
+.ie-issues-head {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.ie-issues-head strong,
+.ie-issue strong {
+  color: var(--text);
+}
+
+/* Edit questions (interview mode): the same notice, above the list. */
+.questions-issues {
+  margin: 0 0 12px;
+}
+
+/* Design screens tab: how many things need attention. */
+.tab-issues {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--warning, #d97706);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
