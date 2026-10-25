@@ -35,7 +35,7 @@ function portalTarget(el) {
   return el.closest('.shell, .respond') ?? document.body
 }
 
-export default function Select({ value, onChange, children, className = '', disabled = false, title, ...aria }) {
+export default function Select({ value, onChange, onClick, children, className = '', disabled = false, title, ...aria }) {
   const options = readOptions(children)
   const current = String(value ?? '')
   const selected = options.find((o) => o.value === current)
@@ -142,7 +142,13 @@ export default function Select({ value, onChange, children, className = '', disa
         ref={buttonRef}
         type="button"
         className={`ui-select${current === '' ? ' is-placeholder' : ''} ${className}`}
-        onClick={() => (open ? close() : show())}
+        // The page's own onClick (e.g. stopping a card from activating)
+        // runs too; it never replaces opening the list.
+        onClick={(e) => {
+          onClick?.(e)
+          if (open) close()
+          else show()
+        }}
         onKeyDown={onButtonKey}
         disabled={disabled}
         title={title}

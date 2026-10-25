@@ -5,7 +5,6 @@
 // `version` bumps on every local change; autosave records which version it
 // sent, so a save only marks the draft clean if nothing changed meanwhile.
 
-import { syncInterview } from '../../lib/interview.js'
 
 const HISTORY_LIMIT = 100
 // Edits to the same field within this window merge into one undo step,
@@ -20,9 +19,9 @@ export function pickDraft(form) {
   const draft = Object.fromEntries(
     EDITABLE_FIELDS.filter((key) => form[key] !== undefined).map((key) => [key, form[key]]),
   )
-  // Screen designs saved before a question moved are brought in line here
-  // too (saved with the next edit).
-  return syncInterview(draft)
+  // Designs are never changed here: screens out of step with the question
+  // list are flagged in the design editor (lib/interview.js → screenIssues).
+  return draft
 }
 
 export const initialEditorState = {
@@ -46,10 +45,8 @@ export function editorReducer(state, action) {
     }
 
     case 'edit': {
-      let draft = action.update(state.draft)
+      const draft = action.update(state.draft)
       if (draft === state.draft) return state
-      // Questions moved, added or removed: interview screens follow.
-      if (draft.questions !== state.draft?.questions) draft = syncInterview(draft)
       const merge = action.key === state.lastKey && action.at - state.lastAt < COALESCE_MS
       return {
         ...state,

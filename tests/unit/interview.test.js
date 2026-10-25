@@ -17,7 +17,11 @@ import {
   snapFrame,
   stageHeight,
   starterScreen,
-  syncInterview,
+  screenIssues,
+  placeQuestions,
+  moveStrayBlock,
+  fixButton,
+  withoutStrays,
   textHeight,
   visibleQuestionIds,
 } from '../../src/lib/interview.js'
@@ -229,15 +233,14 @@ describe('duplicating and moving blocks', () => {
   })
 })
 
-describe('keeping saved screens in step with the question list', () => {
+describe('screens out of step with the question list', () => {
   // Saved first-screen design while everything was on one page.
   const onePage = {
     ...form,
     questions: form.questions.filter((q) => q.type !== 'section'),
   }
-  const startScreen = screensOf(onePage)[0]
-  const saved = starterScreen(onePage, startScreen, true)
-  // Then a section is added before q3 (and q2 moved after it, like dragging).
+  const saved = starterScreen(onePage, screensOf(onePage)[0], true)
+  // Then a section is added before q2 (q2 and q3 now belong to it).
   const moved = {
     ...onePage,
     interview: { screens: { start: saved } },
@@ -248,61 +251,51 @@ describe('keeping saved screens in step with the question list', () => {
       { id: 'q3', type: 'paragraph', title: 'Anything else?' },
     ],
   }
+  const screens = screensOf(moved)
+  const start = screenDesign(moved, screens[0], screens)
 
-  it('takes moved questions off the old screen', () => {
-    const synced = syncInterview(moved)
-    expect([...placedQuestionIds(synced.interview.screens.start)]).toEqual(['q1'])
+  it('changes nothing by itself: the saved design is exactly as it was', () => {
+    expect(start).toBe(saved)
   })
 
-  it('turns the old screen’s Submit into Next once it is no longer last', () => {
-    const synced = syncInterview(moved)
-    const buttons = Object.values(synced.interview.screens.start.nodes).filter((n) => n.type === 'button')
-    expect(buttons.map((b) => [b.label, b.action.type])).toEqual([['Next', 'next']])
+  it('reports blocks whose question moved, and a Submit that no longer ends the form', () => {
+    const issues = screenIssues(moved, screens[0], start, screens)
+    expect(issues.filter((i) => i.kind === 'moved').map((i) => [i.questionId, i.to.key])).toEqual([
+      ['q2', 's2'],
+      ['q3', 's2'],
+    ])
+    expect(issues.filter((i) => i.kind === 'button').map((i) => i.want)).toEqual(['next'])
   })
 
-  it('gives the new screen its questions, with Back and Submit', () => {
-    const synced = syncInterview(moved)
-    const screens = screensOf(synced)
-    const design = screenDesign(synced, screens[1], screens)
-    expect([...placedQuestionIds(design)]).toEqual(['q2', 'q3'])
-    const buttons = Object.values(design.nodes).filter((n) => n.type === 'button')
-    expect(buttons.map((b) => b.action.type)).toEqual(['back', 'submit'])
-  })
-
-  it('carries a moved block (and its look) to a screen that has a saved design', () => {
-    const screens = screensOf(moved)
+  it('Move it there: the block goes to its screen; the question list stays as it is', () => {
+    const issue = screenIssues(moved, screens[0], start, screens).find((i) => i.questionId === 'q2')
     const target = starterScreen(moved, screens[1], true)
-    // That screen was saved before q1 moved there too.
-    const q1Block = Object.values(saved.nodes).find((n) => n.questionId === 'q1')
-    const styled = { ...saved, nodes: { ...saved.nodes, [q1Block.id]: { ...q1Block, style: { bg: 'accent-soft' } } } }
-    const later = {
-      ...moved,
-      interview: { screens: { start: styled, s2: target } },
-      questions: [
-        { id: 's0', type: 'shortAnswer', title: 'Intro' },
-        { id: 's2', type: 'section', title: 'Section 2' },
-        ...moved.questions.filter((q) => q.id !== 's2'),
-      ],
-    }
-    const synced = syncInterview(later)
-    const s2 = synced.interview.screens.s2
-    const carried = Object.values(s2.nodes).find((n) => n.questionId === 'q1')
-    expect(carried.style).toEqual({ bg: 'accent-soft' })
-    // It sits above the buttons, and the card grew to hold everything.
-    const [card] = childrenOf(s2.nodes, null, 'phone')
-    const kids = childrenOf(s2.nodes, card.id, 'phone')
-    const buttonY = Math.min(...kids.filter((k) => k.type === 'button').map((k) => frameOf(k, 'phone').y))
-    expect(frameOf(carried, 'phone').y + frameOf(carried, 'phone').h).toBeLessThanOrEqual(buttonY)
-    // The card keeps its size; "Fit to blocks" makes room when wanted.
+    const withTarget = { ...moved, interview: { screens: { start: saved, s2: { ...target, removed: ['q2'] } } } }
+    const next = moveStrayBlock(withTarget, 'start', issue.nodeId, 's2')
+    expect(next.questions).toBe(withTarget.questions)
+    expect(next.interview.screens.start.nodes[issue.nodeId]).toBeUndefined()
+    expect(next.interview.screens.s2.nodes[issue.nodeId].questionId).toBe('q2')
+    expect(next.interview.screens.s2.removed).toEqual([])
   })
 
-  it('leaves forms alone when nothing changed', () => {
-    const synced = syncInterview(moved)
-    expect(syncInterview(synced)).toBe(synced)
-    expect(syncInterview(form)).toBe(form)
+  it('Make it Next / Submit fixes the button, and then it’s settled', () => {
+    const issue = screenIssues(moved, screens[0], start, screens).find((i) => i.kind === 'button')
+    const fixed = fixButton(start, issue.nodeId, issue.want)
+    expect(fixed.nodes[issue.nodeId]).toMatchObject({ label: 'Next', action: { type: 'next', chosen: true } })
+    expect(screenIssues(moved, screens[0], fixed, screens).some((i) => i.kind === 'button')).toBe(false)
+  })
+
+  it('Place them adds this page’s questions that have no block', () => {
+    const bare = { ...saved, nodes: Object.fromEntries(Object.entries(saved.nodes).filter(([, n]) => n.questionId !== 'q1')) }
+    const issue = screenIssues(moved, screens[0], bare, screens).find((i) => i.kind === 'unplaced')
+    expect(issue.questions.map((q) => q.id)).toEqual(['q1'])
+    expect(placedQuestionIds(placeQuestions(bare, issue.questions)).has('q1')).toBe(true)
+  })
+
+  it('respondents only see this page’s questions meanwhile', () => {
+    expect([...placedQuestionIds(withoutStrays(start, screens[0].page))]).toEqual(['q1'])
   })
 })
-
 describe('snapping to other blocks', () => {
   const parent = { w: 400, h: 600 }
   const other = { x: 20, y: 100, w: 200, h: 40 }
@@ -495,44 +488,28 @@ describe('nextAsSubmit', () => {
   })
 })
 
-describe('button actions the creator chose', () => {
-  it('are kept: only starter Next/Submit buttons follow the screens', async () => {
-    const { syncInterview, screensOf, starterScreen } = await import('../../src/lib/interview.js')
+describe('choices the creator made are never flagged', () => {
+  it('a chosen Submit on an earlier screen, and a question taken off on purpose', async () => {
+    const { removeBlocks, screenIssues, screensOf, starterScreen } = await import('../../src/lib/interview.js')
     const f = {
       title: 'T',
       questions: [
         { id: 'q1', type: 'shortText', title: 'A' },
-        { id: 's1', type: 'section', title: 'B' },
-        { id: 'q2', type: 'shortText', title: 'C' },
+        { id: 'q2', type: 'shortText', title: 'B' },
+        { id: 's1', type: 'section', title: 'S' },
+        { id: 'q3', type: 'shortText', title: 'C' },
       ],
     }
     const screens = screensOf(f)
     const first = starterScreen(f, screens[0], false)
     const btn = Object.values(first.nodes).find((n) => n.type === 'button')
-    // A chosen Submit on the first (not last) screen stays Submit…
-    const chosen = { ...first, nodes: { ...first.nodes, [btn.id]: { ...btn, label: 'Submit', action: { type: 'submit', chosen: true } } } }
-    const kept = syncInterview({ ...f, interview: { screens: { start: chosen } } })
-    expect(kept.interview.screens.start.nodes[btn.id].action.type).toBe('submit')
-    // …while an unchosen one is put back to Next.
-    const auto = { ...first, nodes: { ...first.nodes, [btn.id]: { ...btn, label: 'Submit', action: { type: 'submit' } } } }
-    const fixed = syncInterview({ ...f, interview: { screens: { start: auto } } })
-    expect(fixed.interview.screens.start.nodes[btn.id].action.type).toBe('next')
-  })
-})
-
-describe('question blocks the creator removed', () => {
-  it('stay off the screen when the design is kept in step', async () => {
-    const { removeBlocks, unremove, syncInterview, screensOf, starterScreen, placedQuestionIds } = await import('../../src/lib/interview.js')
-    const f = { title: 'T', questions: [{ id: 'q1', type: 'shortText', title: 'A' }, { id: 'q2', type: 'shortText', title: 'B' }] }
-    const start = starterScreen(f, screensOf(f)[0], true)
-    const q2 = Object.values(start.nodes).find((n) => n.questionId === 'q2')
-    const removed = removeBlocks(start, [q2.id])
-    expect(removed.removed).toEqual(['q2'])
-    const synced = syncInterview({ ...f, interview: { screens: { start: removed } } })
-    expect(placedQuestionIds((synced.interview ?? {}).screens?.start ?? removed).has('q2')).toBe(false)
-    // Without the record, the old behaviour: it's put back.
-    const plain = syncInterview({ ...f, interview: { screens: { start: { ...removed, removed: undefined } } } })
-    expect(placedQuestionIds(plain.interview.screens.start).has('q2')).toBe(true)
-    expect(unremove(removed, 'q2').removed).toEqual([])
+    const q2 = Object.values(first.nodes).find((n) => n.questionId === 'q2')
+    let d = { ...first, nodes: { ...first.nodes, [btn.id]: { ...btn, action: { type: 'submit', chosen: true } } } }
+    d = removeBlocks(d, [q2.id])
+    expect(d.removed).toEqual(['q2'])
+    expect(screenIssues(f, screens[0], d, screens)).toEqual([])
+    // Not chosen: flagged (with a button), still not changed.
+    const auto = { ...first, nodes: { ...first.nodes, [btn.id]: { ...btn, action: { type: 'submit' } } } }
+    expect(screenIssues(f, screens[0], auto, screens).map((i) => i.kind)).toEqual(['button'])
   })
 })

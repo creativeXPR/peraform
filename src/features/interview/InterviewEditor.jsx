@@ -21,6 +21,10 @@ import {
   interviewOf,
   keepBlockData,
   pasteBlock,
+  fixButton,
+  moveStrayBlock,
+  placeQuestions,
+  screenIssues,
   removeBlocks,
   unremove,
   nodeLabel,
@@ -43,6 +47,7 @@ import { useFormEditor } from '../builder/editorContext.js'
 import { makeKeep } from '../../lib/keep.js'
 import { useKeep, useKeepTargets } from '../keep/keepContext.js'
 import Canvas from './Canvas.jsx'
+import ScreenIssues from './ScreenIssues.jsx'
 import Inspector from './Inspector.jsx'
 import LayersPanel from './LayersPanel.jsx'
 import MoveBlockDialog from './MoveBlockDialog.jsx'
@@ -81,6 +86,10 @@ export default function InterviewEditor({ viewSwitch }) {
   const pageQuestions = screen.page.items.filter(isQuestion)
   const placed = placedQuestionIds(design)
   const unplaced = pageQuestions.filter((q) => !placed.has(q.id))
+  // Out of step with the question list: flagged with buttons, never fixed
+  // by itself (lib/interview.js → screenIssues).
+  const issues = screenIssues(draft, screen, design, screens)
+  const issueKeys = new Set(screens.filter((s) => screenIssues(draft, s, screenDesign(draft, s, screens), screens).length).map((s) => s.key))
   const selectedIds = selection.filter((id) => design.nodes[id])
   const selectedId = selectedIds.at(-1) ?? null
   const selected = selectedId ? design.nodes[selectedId] : null
@@ -306,8 +315,24 @@ export default function InterviewEditor({ viewSwitch }) {
         </div>
       </div>
 
+      <ScreenIssues
+        issues={issues}
+        questions={questions}
+        design={design}
+        onPlace={(qs) => change(`place:${qs.map((q) => q.id).join()}`, (dsn) => placeQuestions(dsn, qs))}
+        onMoveThere={(issue) =>
+          edit(`interview:stray:${issue.nodeId}`, (d) => {
+            const next = moveStrayBlock(d, screen.key, issue.nodeId, issue.to.key)
+            return next === d ? d : { ...d, interview: next.interview }
+          })
+        }
+        onRemove={(id) => setPending({ kind: 'delete', ids: [id] })}
+        onFixButton={(issue) => change(`fix-button:${issue.nodeId}`, (dsn) => fixButton(dsn, issue.nodeId, issue.want))}
+      />
+
       <div className="ie-body">
         <LayersPanel
+          issueKeys={issueKeys}
           screens={screens}
           screenKey={screen.key}
           onScreen={(key) => {

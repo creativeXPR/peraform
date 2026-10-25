@@ -17,7 +17,7 @@ import {
 import { needsSignIn, quizSettings, settingsOf, topBarIcon, topBarTitle, fieldPaddingStyle } from '../../lib/formModel.js'
 import { usePageTitle } from '../../lib/usePageTitle.js'
 import { applyClick, isHiddenNow, resolveActions, shownByActions } from '../../lib/actions.js'
-import { frameOf, nextAsSubmit, screenDesign, screensOf, syncInterview, visibleQuestionIds } from '../../lib/interview.js'
+import { frameOf, nextAsSubmit, screenDesign, screensOf, visibleQuestionIds, withoutStrays } from '../../lib/interview.js'
 import { useViewportDevice } from '../../lib/useViewportDevice.js'
 import { parsePrefill } from '../../lib/prefill.js'
 import { shuffled } from '../../lib/shuffle.js'
@@ -456,10 +456,9 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
   // shown on it (on this device) are asked.
   const interview = form.mode === 'interview'
   const screens = interview ? screensOf(form) : null
-  // Synced first, so a screen saved before its questions moved shows
-  // what the question list says (lib/interview.js → syncInterview).
-  const synced = interview ? syncInterview(form) : form
-  const designs = interview ? screens.map((s) => screenDesign(synced, s, screens)) : []
+  // Each screen as designed; a block whose question has moved to another
+  // page isn't shown here (the creator fixes it in the design editor).
+  const designs = interview ? screens.map((s) => withoutStrays(screenDesign(form, s, screens), s.page)) : []
   const design = interview ? designs[pageIndex] : null
   // Blocks' state from actions: button clicks so far + answer conditions.
   const nodeHidden = (id) =>
@@ -475,7 +474,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
         .filter((q) => q.actions?.length)
         .map((q) => ({ actions: q.actions, questionId: q.id }))
     : []
-  const screenStartsHidden = (key) => Boolean(synced.interview?.screens?.[key]?.hidden) || startsHidden.has(key)
+  const screenStartsHidden = (key) => Boolean(form.interview?.screens?.[key]?.hidden) || startsHidden.has(key)
   const startHidden = (id) => (screenKeys.has(id) ? screenStartsHidden(id) : nodeHidden(id))
   const screenSources = interview
     ? [

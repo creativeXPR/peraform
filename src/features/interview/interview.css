@@ -960,3 +960,54 @@ textarea.insp-input {
   font-size: 12px;
   font-weight: 600;
 }
+
+/* Out of step with the question list (ScreenIssues.jsx): a notice per
+   issue, each with its fix button. */
+.ie-issues {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.ie-issue {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--warning, #d97706) 45%, var(--line));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--warning, #d97706) 9%, var(--surface));
+  font-size: 13px;
+}
+
+.ie-issue svg {
+  flex-shrink: 0;
+  color: var(--warning, #d97706);
+}
+
+.ie-issue p {
+  flex: 1;
+  min-width: 200px;
+  margin: 0;
+}
+
+.ie-issue .btn {
+  height: 32px;
+  font-size: 13px;
+}
+
+.screen-issue {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  border-radius: 50%;
+  background: var(--warning, #d97706);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}

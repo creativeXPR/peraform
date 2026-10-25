@@ -89,6 +89,7 @@ export default function LayersPanel({
   device,
   questions,
   unplaced, // this screen's questions not on the canvas yet
+  issueKeys, // screens with something out of step (ScreenIssues)
   targetCard, // the card new blocks go into, or null
   selectedIds, // [id] — several with Shift/Ctrl-click
   onSelect, // (id, add)
@@ -122,6 +123,11 @@ export default function LayersPanel({
               >
                 <span className="screen-num">{sc.index + 1}</span>
                 <span className="screen-title">{sc.title}</span>
+                {issueKeys?.has(sc.key) && (
+                  <span className="screen-issue" title="Needs your attention" aria-label="Needs your attention">
+                    !
+                  </span>
+                )}
               </button>
             </li>
           ))}

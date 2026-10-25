@@ -920,78 +920,85 @@ function cardName(design, card) {
   return text ? `Card · ${text.text.trim().split(/\s*\n/)[0].slice(0, 40)}` : 'Card'
 }
 
-// ── Keeping designs in step with the question list ─────────────
-// The question list (normal mode) is the source of truth for which screen
-// a question is on. After it changes (questions moved between sections,
-// added, deleted; sections added or removed), saved screen designs are
-// brought back in line:
-//   - a question block on a screen its question no longer belongs to comes
-//     off it, and goes to the new screen (keeping its look) if that screen
-//     has a saved design; a screen without one gets a fresh starter design
-//   - a question new to a screen is added to its main card, above the
-//     buttons (not one the creator removed from that screen)
-//   - a screen that's no longer last gets Next instead of Submit (and the
-//     last screen Submit instead of Next), so the flow always works —
-//     only buttons PeraForm made; never one whose action the creator chose
-//   - designs of sections that no longer exist are dropped
-// Returns the same form object when nothing needed changing.
-export function syncInterview(form) {
-  const saved = form.interview?.screens
-  if (!saved || !Object.keys(saved).length) return form
-  const screens = screensOf(form)
-  const home = new Map() // questionId -> screen key
-  for (const s of screens) for (const q of s.page.items) if (isQuestion(q)) home.set(q.id, s.key)
-
-  let changed = false
-  const carried = {} // screen key -> question nodes moving there
-  const next = {}
-  for (const [key, design] of Object.entries(saved)) {
-    if (!screens.some((s) => s.key === key)) {
-      changed = true
-      continue
-    }
-    let d = design
-    for (const n of Object.values(design.nodes)) {
-      if (n.type !== 'question' || home.get(n.questionId) === key) continue
-      d = deleteNode(d, n.id)
-      changed = true
-      const to = home.get(n.questionId)
-      if (to) (carried[to] ??= []).push(n)
-    }
-    next[key] = d
+// ── Screens out of step with the question list ──────────────────────
+// The question list (Edit questions) says which screen each question is
+// on. When it changes, nothing in a design changes by itself: the design
+// editor lists what's out of step on a screen, each with a button.
+//   unplaced — this page's questions with no block here (not ones the
+//              creator took off on purpose: design.removed) → placeQuestions
+//   moved    — a block showing a question that's now on another page
+//              → moveStrayBlock, or remove it
+//   button   — a Next/Submit button PeraForm made that no longer fits the
+//              screen's place (never one whose action the creator chose)
+// Respondents meanwhile only see this page's questions (withoutStrays).
+export function screenIssues(form, screen, design, screens = screensOf(form)) {
+  const issues = []
+  const onPage = new Set(screen.page.items.filter(isQuestion).map((q) => q.id))
+  const placed = placedQuestionIds(design)
+  const unplaced = screen.page.items.filter(isQuestion).filter((q) => !placed.has(q.id) && !design.removed?.includes(q.id))
+  if (unplaced.length) issues.push({ kind: 'unplaced', questions: unplaced })
+  const home = new Map()
+  for (const s of screens) for (const q of s.page.items) if (isQuestion(q)) home.set(q.id, s)
+  for (const n of Object.values(design.nodes)) {
+    if (n.type !== 'question' || onPage.has(n.questionId)) continue
+    const to = home.get(n.questionId)
+    if (to) issues.push({ kind: 'moved', nodeId: n.id, questionId: n.questionId, to })
   }
+  const isLast = screen.index === screens.length - 1
+  for (const n of Object.values(design.nodes)) {
+    if (n.type !== 'button' || n.action?.chosen) continue
+    const type = n.action?.type ?? 'next'
+    if (isLast && type === 'next') issues.push({ kind: 'button', nodeId: n.id, want: 'submit' })
+    else if (!isLast && type === 'submit') issues.push({ kind: 'button', nodeId: n.id, want: 'next' })
+  }
+  return issues
+}
 
-  screens.forEach((screen, index) => {
-    let d = next[screen.key]
-    if (!d) return
-    const isLast = index === screens.length - 1
-    // Questions on this page with no block yet — except ones the creator
-    // took off this screen (design.removed).
-    const placed = placedQuestionIds(d)
-    for (const q of screen.page.items.filter(isQuestion)) {
-      if (placed.has(q.id) || d.removed?.includes(q.id)) continue
-      const reuse = carried[screen.key]?.find((n) => n.questionId === q.id)
-      d = addQuestionBlock(d, q, reuse)
-      changed = true
-    }
-    // Keep the way forward working: starter Next/Submit buttons follow
-    // screens being added or removed. A button whose action the creator
-    // chose (action.chosen) is never changed.
-    for (const n of Object.values(d.nodes)) {
-      if (n.type !== 'button' || n.action?.chosen) continue
-      const action = n.action?.type
-      if (!isLast && action === 'submit') {
-        d = setContent(d, n.id, { action: { type: 'next' }, label: n.label === 'Submit' ? 'Next' : n.label })
-        changed = true
-      } else if (isLast && action === 'next') {
-        d = setContent(d, n.id, { action: { type: 'submit' }, label: n.label === 'Next' ? 'Submit' : n.label })
-        changed = true
-      }
-    }
-    next[screen.key] = d
-  })
+// "Place them": each question gets a block in the screen's main card,
+// above its buttons.
+export function placeQuestions(design, questions) {
+  return questions.reduce((d, q) => addQuestionBlock(unremove(d, q.id), q), design)
+}
 
-  return changed ? { ...form, interview: { ...form.interview, screens: next } } : form
+// "Fix" for a button: Next ↔ Submit (a default label follows; a custom one
+// stays). Marked chosen, so it's settled.
+export function fixButton(design, id, want) {
+  const n = design.nodes[id]
+  if (!n) return design
+  const relabel = (l) => (want === 'submit' ? (l === 'Next' ? 'Submit' : l) : l === 'Submit' ? 'Next' : l)
+  const fixed = { ...n, action: { type: want, chosen: true }, label: relabel(n.label) }
+  if (n.byDevice) {
+    fixed.byDevice = Object.fromEntries(
+      Object.entries(n.byDevice).map(([d, own]) => [d, own.label === undefined ? own : { ...own, label: relabel(own.label) }]),
+    )
+  }
+  return { ...design, nodes: { ...design.nodes, [id]: fixed } }
+}
+
+// "Move it there": the block goes to its question's screen (into its main
+// card); the question list is left exactly as it is.
+export function moveStrayBlock(form, fromKey, id, toKey) {
+  const from = designFor(form, fromKey)
+  const to = designFor(form, toKey)
+  if (!from?.nodes[id] || !to) return form
+  const card = Object.values(to.nodes)
+    .filter((n) => n.type === 'card' && !n.parentId)
+    .sort((a, b) => a.seq - b.seq)[0]
+  if (!card) return form
+  const ids = descendantIds(from.nodes, id)
+  const moving = Object.fromEntries(ids.map((nid) => [nid, from.nodes[nid]]))
+  const root = { ...moving[id], parentId: card.id }
+  root.frames = placeIn(to, card, root)
+  const target = unremove({ ...to, nodes: { ...to.nodes, ...moving, [id]: root } }, root.questionId)
+  return withDesign(withDesign(form, fromKey, deleteNode(from, id)), toKey, target)
+}
+
+// Respondents: a block whose question is now on another page isn't shown
+// here (the creator hasn't moved or removed it yet). Display only.
+export function withoutStrays(design, page) {
+  const onPage = new Set(page.items.filter(isQuestion).map((q) => q.id))
+  const strays = Object.values(design.nodes).filter((n) => n.type === 'question' && !onPage.has(n.questionId))
+  return strays.length ? strays.reduce((d, n) => (d.nodes[n.id] ? deleteNode(d, n.id) : d), design) : design
 }
 
 // Adds a question's block to a design's main card (the first card), just

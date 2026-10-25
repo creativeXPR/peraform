@@ -401,8 +401,8 @@ export default function Inspector({
                   <Select
                     value={node.action?.type ?? 'next'}
                     onChange={(e) =>
-                      // chosen: the creator's pick, kept as is (syncInterview
-                      // only adjusts starter buttons).
+                      // chosen: the creator's pick. It's never flagged as out of
+                      // step with the screen order (screenIssues).
                       onContent({ action: { type: e.target.value, screen: node.action?.screen ?? null, chosen: true } })
                     }
                   >
