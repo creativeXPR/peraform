@@ -60,8 +60,11 @@ function nodeStyle(node, frame, editing, override) {
     left: frame.x,
     top: frame.y,
     width: frame.w,
-    // Questions and text may need more room than planned; they grow.
-    [node.type === 'question' || node.type === 'text' ? 'minHeight' : 'height']: frame.h,
+    // Exactly the size the creator set: blocks never grow over the ones
+    // around them (that blocked taps on phones). Text or a question that
+    // needs more room scrolls inside its block; the Inspector says so.
+    height: frame.h,
+    overflowY: node.type === 'question' || node.type === 'text' ? 'auto' : undefined,
     transform: transform || undefined,
     zIndex: frame.z || undefined,
     background: backgroundCss(p.bg ?? s.bg, s.bgAlpha ?? 100),

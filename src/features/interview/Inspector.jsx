@@ -93,31 +93,35 @@ function StartHidden({ node, onStartHidden }) {
 const DEVICES_LIST = Object.keys(DEVICES)
 
 // Why a size won't go lower, so it never looks broken: the smallest size,
-// text or a question needing more room than the box (it shows taller
-// than set), contents wider than the box, or blocks reaching past a card.
-// Measured on the canvas after each change.
-function SizeLimits({ node, frame }) {
-  const [notes, setNotes] = useState([])
+// text or a question needing more room than its box (it scrolls inside
+// the box; "Fit height" makes room), contents wider than the box, or
+// blocks reaching past a card. Measured on the canvas after each change.
+// Blocks never resize themselves: every fix is a button.
+function SizeLimits({ node, frame, onFitHeight }) {
+  const [notes, setNotes] = useState([]) // [{ text, fitH? }]
   const measure = () => {
     const el = document.querySelector(`.canvas-stage [data-node-id="${node.id}"]`)
     const out = []
-    if (frame.w <= MIN_SIZE || frame.h <= MIN_SIZE) out.push(`${MIN_SIZE}px is the smallest a block can be.`)
-    if (el && (node.type === 'text' || node.type === 'question') && el.offsetHeight > frame.h + 1) {
-      out.push(
-        `This ${node.type === 'text' ? 'text' : 'question'} needs ${el.offsetHeight}px of height to show everything, so it shows taller than ${Math.round(frame.h)}px. ${node.type === 'text' ? 'A smaller font or a wider block' : 'A wider block'} lets it be shorter.`,
-      )
+    if (frame.w <= MIN_SIZE || frame.h <= MIN_SIZE) out.push({ text: `${MIN_SIZE}px is the smallest a block can be.` })
+    if (el && (node.type === 'text' || node.type === 'question') && el.scrollHeight > el.clientHeight + 1) {
+      const kind = node.type === 'text' ? 'text' : 'question'
+      out.push({
+        text: `This ${kind} needs ${el.scrollHeight}px of height to show everything; at ${Math.round(frame.h)}px it scrolls inside its box. ${kind === 'text' ? 'A smaller font, a wider block or' : 'A wider block or'} “Fit height” makes room (the blocks below move down).`,
+        fitH: el.scrollHeight,
+      })
     }
     if (el && node.type !== 'card' && el.scrollWidth > el.clientWidth + 1) {
-      out.push(`Its contents need about ${el.scrollWidth}px of width; narrower than that, they spill over.`)
+      out.push({ text: `Its contents need about ${el.scrollWidth}px of width; narrower than that, they spill over.` })
     }
     if (el && node.type === 'card') {
       const inner = el.querySelector(':scope > .stage-card-inner')
       const past = [...(inner?.children ?? [])].some(
         (k) => k.dataset.nodeId && (k.offsetTop + k.offsetHeight > el.clientHeight + 1 || k.offsetLeft + k.offsetWidth > el.clientWidth + 1),
       )
-      if (past) out.push('Some blocks reach past this card’s edge. “Fit to blocks” below makes room for them.')
+      if (past) out.push({ text: 'Some blocks reach past this card’s edge. “Fit to blocks” below makes room for them.' })
     }
-    setNotes((prev) => (prev.join('|') === out.join('|') ? prev : out))
+    const key = (list) => list.map((n) => n.text).join('|')
+    setNotes((prev) => (key(prev) === key(out) ? prev : out))
   }
   // After each render, once the canvas has drawn the change (a card's note
   // also depends on the blocks inside it, so no dependency list).
@@ -129,8 +133,18 @@ function SizeLimits({ node, frame }) {
   return (
     <div className="insp-limits" role="status">
       {notes.map((n) => (
-        <p key={n}>
-          <Info size={14} aria-hidden="true" /> {n}
+        <p key={n.text}>
+          <Info size={14} aria-hidden="true" /> {n.text}
+          {n.fitH && (
+            <button
+              type="button"
+              className="link-btn insp-fit-h"
+              onClick={() => onFitHeight(n.fitH)}
+              title="Make room for it: the blocks below move down, the card grows"
+            >
+              Fit height
+            </button>
+          )}
         </p>
       ))}
     </div>
@@ -179,6 +193,7 @@ export default function Inspector({
   onDelete,
   onLevel,
   onFit, // (pad) cards: hug the blocks inside, pad px from each edge
+  onFitHeight, // (h) text/questions: this tall, blocks below move down
   onPreview, // (animation) plays it on the canvas
 }) {
   const f = frameOf(node, device)
@@ -291,7 +306,7 @@ export default function Inspector({
             />
             <NumberField label="Level" value={f.z || 0} min={0} max={99} onChange={(z) => onFrame({ z })} />
           </div>
-          <SizeLimits node={node} frame={f} />
+          <SizeLimits node={node} frame={f} onFitHeight={onFitHeight} />
           <button
             type="button"
             className={`insp-toggle${f.hidden ? '' : ' is-on'}`}

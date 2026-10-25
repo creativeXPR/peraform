@@ -412,3 +412,24 @@ describe('fitCard', () => {
     expect(fitCard(empty, 'c', 'phone', 12)).toBe(empty)
   })
 })
+
+describe('fitBlockHeight (the Fit height button)', () => {
+  it('makes the block that tall and moves the blocks below down, card included', async () => {
+    const { fitBlockHeight, frameOf } = await import('../../src/lib/interview.js')
+    const at = (x, y, w, h) => ({ phone: { x, y, w, h, r: 0, z: 0 } })
+    const design = {
+      bg: null,
+      nodes: {
+        card: { id: 'card', type: 'card', parentId: null, seq: 1, frames: at(16, 40, 360, 200) },
+        text: { id: 'text', type: 'text', parentId: 'card', seq: 2, frames: at(20, 20, 320, 40) },
+        q: { id: 'q', type: 'question', parentId: 'card', seq: 3, frames: at(20, 76, 320, 100) },
+        side: { id: 'side', type: 'button', parentId: 'card', seq: 4, frames: at(345, 76, 10, 20) },
+      },
+    }
+    const out = fitBlockHeight(design, 'text', 'phone', 100)
+    expect(frameOf(out.nodes.text, 'phone').h).toBe(100)
+    expect(frameOf(out.nodes.q, 'phone').y).toBe(136) // moved down by 60
+    expect(frameOf(out.nodes.side, 'phone').y).toBe(76) // beside it: stays
+    expect(frameOf(out.nodes.card, 'phone').h).toBe(136 + 100 + 16)
+  })
+})

@@ -14,8 +14,8 @@ import {
   canHoldChildren,
   deleteNode,
   duplicateBlock,
+  fitBlockHeight,
   fitCard,
-  fitText,
   frameOf,
   moveBlock,
   moveTargets,
@@ -343,18 +343,21 @@ export default function InterviewEditor({ viewSwitch }) {
               onFrame={(patch) => changeFrames(Object.fromEntries(selectedIds.map((id) => [id, patch])))}
               onStyle={(patch) =>
                 change(`style:${selectedIds.join()}:${Object.keys(patch).join()}`, (dsn) =>
-                  fitText(selectedIds.reduce((d, id) => setStyle(d, id, patch), dsn)),
+                  selectedIds.reduce((d, id) => setStyle(d, id, patch), dsn),
                 )
               }
               onContent={(patch) =>
                 change(`content:${selected.id}:${Object.keys(patch).join()}`, (dsn) =>
-                  fitText(setContent(dsn, selected.id, patch)),
+                  setContent(dsn, selected.id, patch),
                 )
               }
               onPreview={(anim) => setPreview({ nodeId: selected.id, anim, nonce: Date.now() })}
               onDuplicate={() => duplicate(selectedIds)}
               onMove={() => setMoving(selected.id)}
               onDelete={() => setPending({ kind: 'delete', ids: selectedIds })}
+              onFitHeight={(h) =>
+                change(`fit-h:${selected.id}:${device}:${Date.now()}`, (dsn) => fitBlockHeight(dsn, selected.id, device, h))
+              }
               onFit={(pad) =>
                 change(`fit:${selected.id}:${device}:${Date.now()}`, (dsn) =>
                   setStyle(fitCard(dsn, selected.id, device, pad), selected.id, { fitPad: pad }),

@@ -576,6 +576,26 @@ export function growToFit(design, childId) {
   return d
 }
 
+// "Fit height" (only when clicked): a block becomes `h` px tall on one
+// device, and the blocks below it in the same column move by as much, so
+// nothing overlaps; the card around it makes room.
+export function fitBlockHeight(design, id, device, h) {
+  const node = design.nodes[id]
+  if (!node) return design
+  const f = frameOf(node, device)
+  const delta = Math.max(MIN_SIZE, Math.round(h)) - f.h
+  if (!delta) return design
+  let d = setFrame(design, id, device, { h: f.h + delta })
+  for (const sib of childrenOf(d.nodes, node.parentId ?? null, device)) {
+    if (sib.id === id) continue
+    const sf = frameOf(sib, device)
+    const sameColumn = sf.x < f.x + f.w && f.x < sf.x + sf.w
+    if (sameColumn && sf.y >= f.y + f.h - 1) d = setFrame(d, sib.id, device, { y: sf.y + delta })
+  }
+  for (const sib of childrenOf(d.nodes, node.parentId ?? null, device)) d = growToFit(d, sib.id)
+  return d
+}
+
 // "Fit to blocks": a card hugs what's inside it, with `pad` px between the
 // blocks and every edge, on one device. Extra space goes (or missing space
 // is added); the blocks stay where they are on the screen and the card
@@ -790,12 +810,6 @@ export function syncInterview(form) {
       if (placed.has(q.id)) continue
       const reuse = carried[screen.key]?.find((n) => n.questionId === q.id)
       d = addQuestionBlock(d, q, reuse)
-      changed = true
-    }
-    // Text that no longer fits (e.g. a longer section title) makes room.
-    const fitted = fitText(d)
-    if (fitted !== d) {
-      d = fitted
       changed = true
     }
     // Keep the way forward working.

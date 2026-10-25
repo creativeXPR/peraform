@@ -7,7 +7,6 @@ import {
   addNode,
   deleteNode,
   descendantIds,
-  fitText,
   frameOf,
   placeNew,
   setFrame,
@@ -167,5 +166,5 @@ export function applyScreenEdit(design, { changes = [], background } = {}, devic
     }
   }
 
-  return { design: fitText(d), applied }
+  return { design: d, applied }
 }

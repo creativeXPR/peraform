@@ -1,6 +1,6 @@
 import { newAnimation } from './animations.js'
 import { gradient } from './gradient.js'
-import { fitText, frameOf } from './interview.js'
+import { frameOf } from './interview.js'
 
 // Design styles for interview screens: a look applied in one go (by the
 // creator, or chosen by "Design with AI"). A style restyles what's there:
@@ -165,8 +165,8 @@ export function applyStyle(design, styleKey, palette) {
   // The look before any style, kept the first time one is applied, so
   // "Back to original look" can bring it back (restoreOriginal).
   const original = design.original ?? snapshot(design)
-  // A bigger heading font may need more lines: make room for it.
-  return fitText({ ...design, bg: s.bg, style: styleKey, original, nodes })
+  // Sizes stay as set (the Inspector says when text needs more room).
+  return { ...design, bg: s.bg, style: styleKey, original, nodes }
 }
 
 function snapshot(design) {
@@ -211,5 +211,5 @@ export function screenWords(design, { heading, subtitle }) {
       .sort((a, b) => frameOf(a, 'phone').y - frameOf(b, 'phone').y)[0]
     if (sub) nodes[sub.id] = { ...sub, text: subtitle.slice(0, 160) }
   }
-  return fitText({ ...design, nodes })
+  return { ...design, nodes }
 }

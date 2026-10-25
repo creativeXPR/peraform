@@ -948,3 +948,9 @@ textarea.insp-input {
   color: var(--accent);
   vertical-align: -2px;
 }
+
+.insp-limits .insp-fit-h {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
