@@ -258,6 +258,20 @@ export default function BuilderActions() {
         )}
 
         <MenuButton icon={<MoreVertical size={18} />} label="More" items={moreItems} />
+
+        {/* Phones: the top bar has no room for Undo/Redo, so they float at
+            the bottom-left (opposite the add toolbar), once there's
+            something to undo or redo. */}
+        {(canUndo || canRedo) && (
+          <div className="mobile-undo" role="group" aria-label="Undo and redo">
+            <button type="button" className="icon-btn" onClick={undo} disabled={!canUndo} aria-label="Undo">
+              <Undo2 size={20} />
+            </button>
+            <button type="button" className="icon-btn" onClick={redo} disabled={!canRedo} aria-label="Redo">
+              <Redo2 size={20} />
+            </button>
+          </div>
+        )}
       </div>
 
       <EmbedDialog open={embedOpen} link={link} onClose={() => setEmbedOpen(false)} showToast={showToast} />

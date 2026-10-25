@@ -2056,3 +2056,48 @@
   font-size: 12px;
   font-weight: 500;
 }
+
+/* Phones: floating Undo/Redo (BuilderActions.jsx), bottom-left, opposite
+   the floating add toolbar and clear of the footer. */
+.mobile-undo {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .mobile-undo {
+    position: fixed;
+    left: 16px;
+    bottom: 52px;
+    z-index: 5;
+    display: flex;
+    gap: 2px;
+    padding: 4px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+
+  .mobile-undo .icon-btn {
+    width: 44px;
+    height: 44px;
+    color: var(--accent);
+  }
+
+  .mobile-undo .icon-btn:disabled {
+    color: var(--text-muted);
+    opacity: 0.45;
+  }
+}
+
+@media (max-width: 767px) {
+  /* Above the add toolbar when it's on screen (Edit questions), so the two
+     never cover each other. */
+  .shell:has(.builder-toolbar) .mobile-undo {
+    bottom: 118px;
+  }
+
+  .shell:has(.mobile-undo) .builder {
+    padding-bottom: 170px;
+  }
+}
