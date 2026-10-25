@@ -34,6 +34,7 @@ import ContentBlock from './ContentBlock.jsx'
 import InterviewView from './InterviewView.jsx'
 import QuestionField from './QuestionField.jsx'
 import QuizSubmitted from './QuizSubmitted.jsx'
+import EmailConsent from './EmailConsent.jsx'
 import { formatClock, useCountdown } from './useCountdown.js'
 import { useSavedProgress } from './useSavedProgress.js'
 import './RespondPage.css'
@@ -243,6 +244,15 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
     confirmationMessage,
     showSubmitAnother,
   } = settingsOf(form)
+  // Whether the respondent's sign-in email goes with their response: only
+  // asked when the form would record it, and always their choice (on to
+  // start when the owner asked for emails or invited them).
+  const emailAsked = Boolean((collectEmails || form.settings?.restricted) && user?.email && !user.isAnonymous)
+  const emailWanted = Boolean(collectEmails || form.settings?.restricted)
+  const [shareEmail, setShareEmail] = useState(emailWanted)
+  const consent = emailAsked && (
+    <EmailConsent email={user.email} checked={shareEmail} onChange={setShareEmail} asked={emailWanted} />
+  )
   const doneMessage = confirmationMessage.trim() || 'Your response has been recorded.'
   const title = form.title || 'Untitled form'
   const quiz = quizSettings(form)
@@ -606,6 +616,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
       const { data } = await callSubmitResponse({
         formId: form.id,
         answers: clean,
+        shareEmail: emailAsked && shareEmail,
       })
       setSentId(data.responseId)
       setState('sent')
@@ -725,6 +736,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
         leaveRef={leaveRef}
         overlay={
           (prefillMode ||
+            (emailAsked && pageIndex === 0) ||
             saved.restored ||
             preview ||
             deadline ||
@@ -733,6 +745,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
             (showProgressBar && pages.length > 1)) && (
             <div className="interview-overlay">
               {prefillMode && <PrefillBar form={form} answers={answers} />}
+              {pageIndex === 0 && consent}
               {restoredNote}
               {preview && !prefillMode && (
                 <p className="respond-banner">
@@ -820,14 +833,10 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
                 </span>
               )}
               {limitOneResponse && <span>You can respond only once.</span>}
-              {(collectEmails || form.settings?.restricted) && user?.email && (
-                <span>
-                  Your email (<strong>{user.email}</strong>) will be recorded when you submit.
-                </span>
-              )}
             </p>
           </>
         )}
+        {consent}
       </header>
 
       {page.section && (

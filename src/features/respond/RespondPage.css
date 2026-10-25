@@ -1010,3 +1010,86 @@ textarea.respond-input {
   object-fit: contain;
   flex-shrink: 0;
 }
+
+/* The respondent's choice to include their email (EmailConsent.jsx). */
+.email-consent {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--fill);
+  cursor: pointer;
+}
+
+.email-consent-icon {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.email-consent-text {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+}
+
+.email-consent-text strong {
+  font-weight: 600;
+}
+
+.email-consent-text span {
+  color: var(--text-muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.email-consent input {
+  appearance: none;
+  position: relative;
+  flex-shrink: 0;
+  width: 40px;
+  height: 22px;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--fill-strong, rgb(0 0 0 / 0.15));
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.email-consent input::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+  transition: transform 0.2s ease;
+}
+
+.email-consent input:checked {
+  background: var(--accent);
+}
+
+.email-consent input:checked::after {
+  transform: translateX(18px);
+}
+
+.email-consent input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Interview screens: on the overlay above the designed screen. */
+.interview-overlay .email-consent {
+  margin-top: 0;
+  background: var(--surface);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.08);
+}

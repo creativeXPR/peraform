@@ -91,8 +91,11 @@ export const submitResponse = onCall({ region: REGION }, async (request) => {
       respondentId: uid,
       answers: clean,
       submittedAt: FieldValue.serverTimestamp(),
-      // From the sign-in token, so respondents can't type someone else's.
-      ...((form.settings?.collectEmails || restricted) && {
+      // From the sign-in token, so respondents can't type someone else's,
+      // and only when they agreed to share it (the switch at the top of
+      // the form): their consent, even when the form asks for emails.
+      ...((form.settings?.collectEmails || restricted) &&
+        request.data?.shareEmail === true && {
         respondentEmail: request.auth.token.email ?? '',
       }),
     })

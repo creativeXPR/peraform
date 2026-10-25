@@ -116,8 +116,8 @@ export default function SettingsPage() {
           title="Collect email addresses"
           text={
             restricted
-              ? 'Always on for invited-only forms, so you can see who has responded.'
-              : 'Records each respondent’s account email with their answers. Respondents sign in, so the address can’t be made up.'
+              ? 'Always asked on invited-only forms, so you can see who has responded. Respondents can still choose not to include it.'
+              : 'Asks each respondent to include their account email with their answers (they sign in, so it can’t be made up). It’s their choice: they can switch it off.'
           }
           checked={collectEmails || restricted}
           disabled={restricted}
