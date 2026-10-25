@@ -519,3 +519,20 @@ describe('button actions the creator chose', () => {
     expect(fixed.interview.screens.start.nodes[btn.id].action.type).toBe('next')
   })
 })
+
+describe('question blocks the creator removed', () => {
+  it('stay off the screen when the design is kept in step', async () => {
+    const { removeBlocks, unremove, syncInterview, screensOf, starterScreen, placedQuestionIds } = await import('../../src/lib/interview.js')
+    const f = { title: 'T', questions: [{ id: 'q1', type: 'shortText', title: 'A' }, { id: 'q2', type: 'shortText', title: 'B' }] }
+    const start = starterScreen(f, screensOf(f)[0], true)
+    const q2 = Object.values(start.nodes).find((n) => n.questionId === 'q2')
+    const removed = removeBlocks(start, [q2.id])
+    expect(removed.removed).toEqual(['q2'])
+    const synced = syncInterview({ ...f, interview: { screens: { start: removed } } })
+    expect(placedQuestionIds((synced.interview ?? {}).screens?.start ?? removed).has('q2')).toBe(false)
+    // Without the record, the old behaviour: it's put back.
+    const plain = syncInterview({ ...f, interview: { screens: { start: { ...removed, removed: undefined } } } })
+    expect(placedQuestionIds(plain.interview.screens.start).has('q2')).toBe(true)
+    expect(unremove(removed, 'q2').removed).toEqual([])
+  })
+})

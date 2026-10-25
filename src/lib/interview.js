@@ -768,6 +768,28 @@ export function deleteNode(design, id) {
   return { ...design, nodes: removeNode(design.nodes, id) }
 }
 
+// The creator took blocks off this screen: like deleteNode, and the
+// questions they showed are remembered as removed (design.removed), so
+// keeping in step with the question list never puts them back.
+export function removeBlocks(design, ids) {
+  const gone = new Set()
+  let d = design
+  for (const id of ids) {
+    if (!d.nodes[id]) continue
+    for (const x of descendantIds(d.nodes, id)) if (d.nodes[x]?.type === 'question') gone.add(d.nodes[x].questionId)
+    d = deleteNode(d, id)
+  }
+  // Still shown by another block on this screen: not removed.
+  for (const q of placedQuestionIds(d)) gone.delete(q)
+  return gone.size ? { ...d, removed: [...new Set([...(d.removed ?? []), ...gone])] } : d
+}
+
+// A question block put (back) on the screen: no longer "removed".
+export function unremove(design, questionId) {
+  if (!design.removed?.includes(questionId)) return design
+  return { ...design, removed: design.removed.filter((q) => q !== questionId) }
+}
+
 // Colours in a design are either fixed ('#rrggbb', 'transparent') or follow
 // the form's theme (these tokens), so a design keeps up with theme changes.
 export const COLOR_TOKENS = {
@@ -907,9 +929,10 @@ function cardName(design, card) {
 //     off it, and goes to the new screen (keeping its look) if that screen
 //     has a saved design; a screen without one gets a fresh starter design
 //   - a question new to a screen is added to its main card, above the
-//     buttons, and the card grows to fit
+//     buttons (not one the creator removed from that screen)
 //   - a screen that's no longer last gets Next instead of Submit (and the
-//     last screen Submit instead of Next), so the flow always works
+//     last screen Submit instead of Next), so the flow always works —
+//     only buttons PeraForm made; never one whose action the creator chose
 //   - designs of sections that no longer exist are dropped
 // Returns the same form object when nothing needed changing.
 export function syncInterview(form) {
@@ -942,10 +965,11 @@ export function syncInterview(form) {
     let d = next[screen.key]
     if (!d) return
     const isLast = index === screens.length - 1
-    // Questions on this page with no block yet.
+    // Questions on this page with no block yet — except ones the creator
+    // took off this screen (design.removed).
     const placed = placedQuestionIds(d)
     for (const q of screen.page.items.filter(isQuestion)) {
-      if (placed.has(q.id)) continue
+      if (placed.has(q.id) || d.removed?.includes(q.id)) continue
       const reuse = carried[screen.key]?.find((n) => n.questionId === q.id)
       d = addQuestionBlock(d, q, reuse)
       changed = true

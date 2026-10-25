@@ -12,7 +12,6 @@ import {
   addNode,
   alignFrames,
   canHoldChildren,
-  deleteNode,
   duplicateBlock,
   fitBlockHeight,
   fitCard,
@@ -22,6 +21,8 @@ import {
   interviewOf,
   keepBlockData,
   pasteBlock,
+  removeBlocks,
+  unremove,
   nodeLabel,
   placeNew,
   placedQuestionIds,
@@ -194,12 +195,12 @@ export default function InterviewEditor({ viewSwitch }) {
       node.label = 'Next'
       node.action = { type: 'next' }
     }
-    change(`add:${node.id}`, (dsn) => addNode(dsn, node))
+    change(`add:${node.id}`, (dsn) => addNode(q ? unremove(dsn, q.id) : dsn, node))
     setSelection([node.id])
   }
 
   function remove(ids) {
-    change(`delete:${ids.join()}`, (dsn) => ids.reduce((d, id) => (d.nodes[id] ? deleteNode(d, id) : d), dsn))
+    change(`delete:${ids.join()}`, (dsn) => removeBlocks(dsn, ids))
     setSelection([])
   }
 
@@ -234,6 +235,14 @@ export default function InterviewEditor({ viewSwitch }) {
     setMoving(null)
     if (toKey !== from) setScreenKey(toKey)
     setSelection([id])
+  }
+
+  // The old question is "removed" from this screen unless another block
+  // still shows it; the new one isn't.
+  const removedSwap = (dsn, from, to) => {
+    const d = unremove(dsn, to)
+    if (placedQuestionIds(d).has(from) || d.removed?.includes(from)) return d
+    return { ...d, removed: [...(d.removed ?? []), from] }
   }
 
   // Keep: the selected block (with what's inside it and its questions).
@@ -388,7 +397,11 @@ export default function InterviewEditor({ viewSwitch }) {
               }
               onContent={(patch) =>
                 change(`content:${selected.id}:${Object.keys(patch).join()}`, (dsn) =>
-                  setContentOn(dsn, selected.id, device, patch),
+                  // A block switched to another question: the old one counts as
+                  // taken off this screen, the new one as put on it.
+                  patch.questionId && selected.questionId && patch.questionId !== selected.questionId
+                    ? removedSwap(setContentOn(dsn, selected.id, device, patch), selected.questionId, patch.questionId)
+                    : setContentOn(dsn, selected.id, device, patch),
                 )
               }
               onPreview={(anim) => setPreview({ nodeId: selected.id, anim, nonce: Date.now() })}
