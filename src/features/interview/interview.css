@@ -925,3 +925,26 @@ textarea.insp-input {
   height: 34px;
   font-size: 13px;
 }
+
+/* Why a size won't go lower (Inspector → Position). */
+.insp-limits {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.insp-limits p {
+  margin: 0;
+}
+
+.insp-limits svg {
+  margin-right: 2px;
+  color: var(--accent);
+  vertical-align: -2px;
+}

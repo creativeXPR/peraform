@@ -11,15 +11,16 @@ import {
   Eye,
   EyeOff,
   FolderInput,
+  Info,
   Shrink,
   Sparkle,
   Trash2,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import ColorPicker from '../../lib/ColorPicker.jsx'
 import { GRADIENT_PRESETS } from '../../lib/gradient.js'
 import { youtubeId } from '../../lib/formModel.js'
-import { BUTTON_ACTIONS, COLOR_TOKENS, DEVICES, GLASS, NODE_TYPES, SHADOWS, frameOf } from '../../lib/interview.js'
+import { BUTTON_ACTIONS, COLOR_TOKENS, DEVICES, GLASS, MIN_SIZE, NODE_TYPES, SHADOWS, frameOf } from '../../lib/interview.js'
 import { THEME_FONTS } from '../../lib/theme.js'
 import ImagePicker from '../builder/ImagePicker.jsx'
 import { triggerKindFor } from '../../lib/actions.js'
@@ -90,6 +91,51 @@ function StartHidden({ node, onStartHidden }) {
   )
 }
 const DEVICES_LIST = Object.keys(DEVICES)
+
+// Why a size won't go lower, so it never looks broken: the smallest size,
+// text or a question needing more room than the box (it shows taller
+// than set), contents wider than the box, or blocks reaching past a card.
+// Measured on the canvas after each change.
+function SizeLimits({ node, frame }) {
+  const [notes, setNotes] = useState([])
+  const measure = () => {
+    const el = document.querySelector(`.canvas-stage [data-node-id="${node.id}"]`)
+    const out = []
+    if (frame.w <= MIN_SIZE || frame.h <= MIN_SIZE) out.push(`${MIN_SIZE}px is the smallest a block can be.`)
+    if (el && (node.type === 'text' || node.type === 'question') && el.offsetHeight > frame.h + 1) {
+      out.push(
+        `This ${node.type === 'text' ? 'text' : 'question'} needs ${el.offsetHeight}px of height to show everything, so it shows taller than ${Math.round(frame.h)}px. ${node.type === 'text' ? 'A smaller font or a wider block' : 'A wider block'} lets it be shorter.`,
+      )
+    }
+    if (el && node.type !== 'card' && el.scrollWidth > el.clientWidth + 1) {
+      out.push(`Its contents need about ${el.scrollWidth}px of width; narrower than that, they spill over.`)
+    }
+    if (el && node.type === 'card') {
+      const inner = el.querySelector(':scope > .stage-card-inner')
+      const past = [...(inner?.children ?? [])].some(
+        (k) => k.dataset.nodeId && (k.offsetTop + k.offsetHeight > el.clientHeight + 1 || k.offsetLeft + k.offsetWidth > el.clientWidth + 1),
+      )
+      if (past) out.push('Some blocks reach past this card’s edge. “Fit to blocks” below makes room for them.')
+    }
+    setNotes((prev) => (prev.join('|') === out.join('|') ? prev : out))
+  }
+  // After each render, once the canvas has drawn the change (a card's note
+  // also depends on the blocks inside it, so no dependency list).
+  useEffect(() => {
+    const raf = requestAnimationFrame(measure)
+    return () => cancelAnimationFrame(raf)
+  })
+  if (!notes.length) return null
+  return (
+    <div className="insp-limits" role="status">
+      {notes.map((n) => (
+        <p key={n}>
+          <Info size={14} aria-hidden="true" /> {n}
+        </p>
+      ))}
+    </div>
+  )
+}
 
 // Cards: "Fit to blocks" — removes the extra space around what's inside,
 // leaving `pad` px to each edge (remembered on the card), on this device.
@@ -233,8 +279,8 @@ export default function Inspector({
           <div className="insp-grid">
             <NumberField label="X" value={f.x} onChange={(x) => onFrame({ x })} />
             <NumberField label="Y" value={f.y} onChange={(y) => onFrame({ y })} />
-            <NumberField label="W" value={f.w} min={16} onChange={(w) => onFrame({ w })} />
-            <NumberField label="H" value={f.h} min={16} onChange={(h) => onFrame({ h })} />
+            <NumberField label="W" value={f.w} min={MIN_SIZE} onChange={(w) => onFrame({ w })} />
+            <NumberField label="H" value={f.h} min={MIN_SIZE} onChange={(h) => onFrame({ h })} />
             <NumberField
               label="Rotate"
               value={f.r || 0}
@@ -245,6 +291,7 @@ export default function Inspector({
             />
             <NumberField label="Level" value={f.z || 0} min={0} max={99} onChange={(z) => onFrame({ z })} />
           </div>
+          <SizeLimits node={node} frame={f} />
           <button
             type="button"
             className={`insp-toggle${f.hidden ? '' : ' is-on'}`}
