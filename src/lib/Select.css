@@ -1,0 +1,95 @@
+/* The app's dropdown (Select.jsx). Each place sizes it the way it sized its
+   old <select> (height, padding, border, background); these are the parts
+   every one shares, plus a default look for places with no styling of
+   their own. */
+.ui-select {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control, 8px);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ui-select:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+
+.ui-select:focus-visible,
+.ui-select[aria-expanded='true'] {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.ui-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.ui-select-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* "Choose…" placeholders read as hints. */
+.ui-select.is-placeholder .ui-select-label {
+  color: var(--text-muted);
+}
+
+.ui-select-chevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.ui-select[aria-expanded='true'] .ui-select-chevron {
+  transform: rotate(180deg);
+}
+
+/* The open list: the app's menu, one row per option. */
+.ui-select-list {
+  max-width: min(420px, calc(100vw - 16px));
+  outline: none;
+}
+
+.ui-select-option {
+  white-space: normal;
+}
+
+.ui-select-option span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ui-select-option.is-active {
+  background: var(--fill);
+}
+
+.ui-select-option[aria-selected='true'] {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.ui-select-option[aria-selected='true'] svg {
+  color: var(--accent);
+}
+
+.ui-select-option.is-disabled {
+  color: var(--text-muted);
+  cursor: default;
+  opacity: 0.6;
+}

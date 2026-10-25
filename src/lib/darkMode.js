@@ -81,11 +81,17 @@ export function darkDesign(design) {
   return { ...design, bg: flipColours(design.bg), nodes, dark: true }
 }
 
-// Colours an action sets (overrides[id].props.bg / .color), flipped to match.
+// Colours an action sets (overrides[id].props bg, color, borderColor),
+// flipped to match.
 export function darkOverrides(overrides) {
   const out = {}
   for (const [id, o] of Object.entries(overrides ?? {})) {
-    const props = o?.props && { ...o.props, bg: flipColours(o.props.bg), color: flipColours(o.props.color) }
+    const props = o?.props && {
+      ...o.props,
+      bg: flipColours(o.props.bg),
+      color: flipColours(o.props.color),
+      borderColor: flipColours(o.props.borderColor),
+    }
     out[id] = props ? { ...o, props } : o
   }
   return out

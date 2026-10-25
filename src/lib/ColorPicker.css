@@ -129,7 +129,8 @@
   cursor: pointer;
 }
 
-.color-gradient-dir select {
+.color-gradient-dir select,
+.color-gradient-dir .ui-select {
   height: 32px;
   padding: 0 8px;
   border: 1px solid var(--line);

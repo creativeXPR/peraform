@@ -6,6 +6,7 @@ import ImagePicker from './ImagePicker.jsx'
 import { quizSettings, settingsOf } from '../../lib/formModel.js'
 import { useFormEditor } from './editorContext.js'
 import SheetsSettings from './SheetsSettings.jsx'
+import Select from '../../lib/Select.jsx'
 
 // Settings tab: who can respond and how, presentation, and quiz options.
 // Saved through the same autosave/undo pipeline as the questions.
@@ -254,7 +255,7 @@ export default function SettingsPage() {
                 <strong>Release grades</strong>
                 <span>When respondents see their score.</span>
               </span>
-              <select
+              <Select
                 className="setting-select"
                 value={quiz.release}
                 aria-label="Release grades"
@@ -262,7 +263,7 @@ export default function SettingsPage() {
               >
                 <option value="immediate">Immediately after each submission</option>
                 <option value="manual">Later, after I review</option>
-              </select>
+              </Select>
             </div>
 
             <div className="setting setting-stack">

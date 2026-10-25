@@ -1,10 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Check } from 'lucide-react'
+import { placeMenu } from './placeMenu.js'
 import './MenuButton.css'
 
-const GAP = 6
-const EDGE = 8 // keep this far from the window's edges
 
 // Where the open list is drawn: outside any scrolling panel (so it's never
 // clipped), inside the app frame (so it keeps the form's theme colours), or
@@ -13,25 +12,6 @@ function portalTarget(button) {
   const full = document.fullscreenElement
   if (full?.contains(button)) return full
   return button.closest('.shell, .respond') ?? document.body
-}
-
-// Puts a fixed-position popover beside the box `b` (a button's rect),
-// inside the visible part of the window.
-function placeMenu(pop, b, align = 'right') {
-  const vh = window.visualViewport?.height ?? window.innerHeight
-  const vw = window.visualViewport?.width ?? window.innerWidth
-  pop.style.maxHeight = ''
-  const w = pop.offsetWidth
-  const h = pop.offsetHeight
-  const roomBelow = vh - EDGE - (b.bottom + GAP)
-  const roomAbove = b.top - GAP - EDGE
-  const below = h <= roomBelow || roomBelow >= roomAbove
-  const fit = Math.min(h, below ? roomBelow : roomAbove)
-  if (fit < h) pop.style.maxHeight = `${Math.max(120, Math.floor(fit))}px`
-  const top = below ? b.bottom + GAP : b.top - GAP - Math.max(120, fit)
-  const left = align === 'left' ? b.left : b.right - w
-  pop.style.top = `${Math.round(Math.max(EDGE, top))}px`
-  pop.style.left = `${Math.round(Math.min(Math.max(EDGE, left), vw - w - EDGE))}px`
 }
 
 // Icon button that opens a small popover list.

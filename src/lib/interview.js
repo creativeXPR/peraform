@@ -950,9 +950,11 @@ export function syncInterview(form) {
       d = addQuestionBlock(d, q, reuse)
       changed = true
     }
-    // Keep the way forward working.
+    // Keep the way forward working: starter Next/Submit buttons follow
+    // screens being added or removed. A button whose action the creator
+    // chose (action.chosen) is never changed.
     for (const n of Object.values(d.nodes)) {
-      if (n.type !== 'button') continue
+      if (n.type !== 'button' || n.action?.chosen) continue
       const action = n.action?.type
       if (!isLast && action === 'submit') {
         d = setContent(d, n.id, { action: { type: 'next' }, label: n.label === 'Submit' ? 'Next' : n.label })

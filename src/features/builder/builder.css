@@ -462,7 +462,8 @@
 }
 
 .target-select,
-.scale-range select {
+.scale-range select,
+.scale-range .ui-select {
   max-width: 100%;
   height: 34px;
   padding: 0 10px;
@@ -717,6 +718,7 @@
 }
 
 .validation select,
+.validation .ui-select,
 .validation input {
   height: 34px;
   padding: 0 10px;
@@ -1356,7 +1358,8 @@
   font-size: 14px;
 }
 
-.upload-limits select {
+.upload-limits select,
+.upload-limits .ui-select {
   height: 34px;
   padding: 0 8px;
   border: 1px solid var(--line);
@@ -2008,6 +2011,7 @@
 }
 
 .showif-row select,
+.showif-row .ui-select,
 .showif-row input {
   min-width: 0;
   max-width: 100%;

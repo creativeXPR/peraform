@@ -39,6 +39,7 @@ import ImagePicker from '../builder/ImagePicker.jsx'
 import { triggerKindFor } from '../../lib/actions.js'
 import ActionsEditor from './ActionsEditor.jsx'
 import AnimationsEditor from './AnimationsEditor.jsx'
+import Select from '../../lib/Select.jsx'
 
 // Colour choices on the canvas: transparent, the theme's own colours (so the
 // design follows theme changes), black and white — plus any custom colour.
@@ -397,10 +398,12 @@ export default function Inspector({
                 />
                 <label className="insp-field">
                   <span>When clicked</span>
-                  <select
+                  <Select
                     value={node.action?.type ?? 'next'}
                     onChange={(e) =>
-                      onContent({ action: { type: e.target.value, screen: node.action?.screen ?? null } })
+                      // chosen: the creator's pick, kept as is (syncInterview
+                      // only adjusts starter buttons).
+                      onContent({ action: { type: e.target.value, screen: node.action?.screen ?? null, chosen: true } })
                     }
                   >
                     {Object.entries(BUTTON_ACTIONS).map(([value, label]) => (
@@ -408,14 +411,14 @@ export default function Inspector({
                         {label}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
                 {node.action?.type === 'goto' && (
                   <label className="insp-field">
                     <span>Screen</span>
-                    <select
+                    <Select
                       value={node.action.screen ?? ''}
-                      onChange={(e) => onContent({ action: { type: 'goto', screen: e.target.value } })}
+                      onChange={(e) => onContent({ action: { type: 'goto', screen: e.target.value, chosen: true } })}
                     >
                       <option value="">Choose a screen</option>
                       {screens.map((sc) => (
@@ -423,7 +426,7 @@ export default function Inspector({
                           {sc.index + 1}. {sc.title}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </label>
                 )}
               </>
@@ -481,13 +484,13 @@ export default function Inspector({
             {node.type === 'question' && (
               <label className="insp-field">
                 <span>Question</span>
-                <select value={node.questionId ?? ''} onChange={(e) => onContent({ questionId: e.target.value })}>
+                <Select value={node.questionId ?? ''} onChange={(e) => onContent({ questionId: e.target.value })}>
                   {pageQuestions.map((q) => (
                     <option key={q.id} value={q.id}>
                       {q.title || 'Untitled question'}
                     </option>
                   ))}
-                </select>
+                </Select>
               </label>
             )}
             {node.type === 'card' && <FitCard key={node.id} pad={s.fitPad ?? 16} device={device} onFit={onFit} />}
@@ -571,17 +574,17 @@ export default function Inspector({
           />
           <label className="insp-field">
             <span>Shadow</span>
-            <select value={s.shadow ?? 'none'} onChange={(e) => onStyle({ shadow: e.target.value })}>
+            <Select value={s.shadow ?? 'none'} onChange={(e) => onStyle({ shadow: e.target.value })}>
               {Object.entries(SHADOWS).map(([key, sh]) => (
                 <option key={key} value={key}>
                   {sh.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           <label className="insp-field" title={OVERFLOW_HELP[overflowOf(node)]}>
             <span>Overflow</span>
-            <select
+            <Select
               value={overflowOf(node)}
               // Cards also keep the older "clip" flag in step.
               onChange={(e) =>
@@ -593,7 +596,7 @@ export default function Inspector({
                   {label}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           <NumberField
             label="Border"
@@ -634,32 +637,32 @@ export default function Inspector({
           <div className="insp-grid">
             <label className="insp-field">
               <span>Font</span>
-              <select value={s.font ?? ''} onChange={(e) => onStyle({ font: e.target.value || null })}>
+              <Select value={s.font ?? ''} onChange={(e) => onStyle({ font: e.target.value || null })}>
                 <option value="">Theme font</option>
                 {Object.entries(THEME_FONTS).map(([key, font]) => (
                   <option key={key} value={key}>
                     {font.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <NumberField label="Size" value={s.size ?? 16} min={8} max={200} onChange={(size) => onStyle({ size })} />
             <label className="insp-field">
               <span>Weight</span>
-              <select value={s.weight ?? 400} onChange={(e) => onStyle({ weight: Number(e.target.value) })}>
+              <Select value={s.weight ?? 400} onChange={(e) => onStyle({ weight: Number(e.target.value) })}>
                 <option value={400}>Regular</option>
                 <option value={500}>Medium</option>
                 <option value={600}>Semibold</option>
                 <option value={700}>Bold</option>
-              </select>
+              </Select>
             </label>
             <label className="insp-field">
               <span>Align</span>
-              <select value={s.align ?? 'left'} onChange={(e) => onStyle({ align: e.target.value })}>
+              <Select value={s.align ?? 'left'} onChange={(e) => onStyle({ align: e.target.value })}>
                 <option value="left">Left</option>
                 <option value="center">Centre</option>
                 <option value="right">Right</option>
-              </select>
+              </Select>
             </label>
           </div>
           <span className="insp-label">Text colour</span>

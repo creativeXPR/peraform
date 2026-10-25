@@ -101,3 +101,17 @@ describe('playing animations', () => {
     expect(resolveActions({ sources, answers: { q: 'B' }, baseHidden: notHidden }).logo).toBeUndefined()
   })
 })
+
+describe('renameTriggerOption', () => {
+  it('moves actions to the renamed option and leaves others alone', async () => {
+    const { renameTriggerOption } = await import('../../src/lib/actions.js')
+    const actions = [
+      { id: 'a', trigger: { type: 'select', option: 'Option 1' }, target: 't', effect: { type: 'show' } },
+      { id: 'b', trigger: { type: 'select', option: 'Option 2' }, target: 't', effect: { type: 'hide' } },
+      { id: 'c', trigger: { type: 'click' }, target: 't', effect: { type: 'show' } },
+    ]
+    const out = renameTriggerOption(actions, 'Option 1', 'Yes')
+    expect(out.map((a) => a.trigger.option)).toEqual(['Yes', 'Option 2', undefined])
+    expect(renameTriggerOption(actions, 'Nope', 'X')).toBe(actions)
+  })
+})

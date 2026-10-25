@@ -7,8 +7,9 @@
 //          | { type: 'match', pattern }            — the typed answer matches
 //   target:  id of the block to change (interview: a node; normal: an item)
 //   effect:  { type: 'show' | 'hide' | 'toggle' | 'set' | 'play', props?, animation? }
-//            props (interview 'set'): opacity, bg, color, size, radius,
-//            rotate, scale, moveX, moveY
+//            props (interview 'set'): see SET_PROPS — looks (colours,
+//            font, border, blur, shadow), size (width, height, padding)
+//            and placement (rotate, scale, moveX, moveY)
 //   transition: { duration (ms), easing, display (fade show/hide) }
 // }
 //
@@ -49,8 +50,16 @@ export const SET_PROPS = {
   scale: { label: 'Scale', unit: '%', min: 10, max: 400 },
   moveX: { label: 'Move right', unit: 'px', min: -2000, max: 2000 },
   moveY: { label: 'Move down', unit: 'px', min: -2000, max: 2000 },
+  width: { label: 'Width', unit: 'px', min: 16, max: 2000, start: 240 },
+  height: { label: 'Height', unit: 'px', min: 16, max: 4000, start: 120 },
+  padding: { label: 'Padding', unit: 'px', min: 0, max: 200, start: 16 },
+  weight: { label: 'Font weight', unit: '', min: 100, max: 900, step: 100, start: 700 },
+  borderWidth: { label: 'Border', unit: 'px', min: 0, max: 40, start: 2 },
+  blur: { label: 'Blur behind', unit: 'px', min: 0, max: 60, start: 12 },
   bg: { label: 'Background', color: true },
   color: { label: 'Text colour', color: true },
+  borderColor: { label: 'Border colour', color: true },
+  shadow: { label: 'Shadow', start: 'medium', choices: { none: 'None', soft: 'Soft', medium: 'Medium', strong: 'Strong', glow: 'Glow' } },
 }
 
 export function triggerKindFor(question) {
@@ -133,6 +142,15 @@ export function shownByActions(items) {
     }
   }
   return ids
+}
+
+// An option renamed from `from` to `to`: actions that react to choosing it
+// follow the new text (else they'd wait for an answer that no longer exists).
+export function renameTriggerOption(actions, from, to) {
+  if (!actions?.some((a) => a.trigger?.type === 'select' && a.trigger.option === from)) return actions
+  return actions.map((a) =>
+    a.trigger?.type === 'select' && a.trigger.option === from ? { ...a, trigger: { ...a.trigger, option: to } } : a,
+  )
 }
 
 export function isHiddenNow(id, resolved, baseHidden) {

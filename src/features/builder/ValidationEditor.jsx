@@ -5,6 +5,7 @@ import {
   compilePattern,
   opValueCount,
 } from '../../lib/validation.js'
+import Select from '../../lib/Select.jsx'
 
 // One row of "Response validation" under a question: kind, rule, value(s)
 // and an optional custom error message.
@@ -20,7 +21,7 @@ export default function ValidationEditor({ question, change, onRemove }) {
     <div className="validation">
       <div className="validation-row">
         {kinds.length > 1 && (
-          <select
+          <Select
             value={rule.kind}
             aria-label="Validation type"
             onChange={(e) => {
@@ -33,15 +34,15 @@ export default function ValidationEditor({ question, change, onRemove }) {
                 {VALIDATION[k].label}
               </option>
             ))}
-          </select>
+          </Select>
         )}
-        <select value={rule.op} aria-label="Rule" onChange={(e) => set({ op: e.target.value })}>
+        <Select value={rule.op} aria-label="Rule" onChange={(e) => set({ op: e.target.value })}>
           {Object.entries(VALIDATION[rule.kind].ops).map(([op, label]) => (
             <option key={op} value={op}>
               {label}
             </option>
           ))}
-        </select>
+        </Select>
         {values >= 1 && (
           <input
             value={rule.value}

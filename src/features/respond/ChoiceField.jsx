@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { shuffled } from '../../lib/shuffle.js'
+import Select from '../../lib/Select.jsx'
 
 // Multiple choice, checkboxes and dropdown on the public form, with the
 // question's shuffleOptions and "Other" (typed answer) settings.
@@ -21,7 +22,7 @@ export default function ChoiceField({ q, name, labelId, value, onChange }) {
 
   if (q.type === 'dropdown') {
     return (
-      <select
+      <Select
         className="respond-input respond-select"
         aria-labelledby={labelId}
         value={value ?? ''}
@@ -33,7 +34,7 @@ export default function ChoiceField({ q, name, labelId, value, onChange }) {
             {o}
           </option>
         ))}
-      </select>
+      </Select>
     )
   }
 

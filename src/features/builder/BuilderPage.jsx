@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { newAction, triggerKindFor } from '../../lib/actions.js'
+import { newAction, renameTriggerOption, triggerKindFor } from '../../lib/actions.js'
 import {
   DndContext,
   KeyboardSensor,
@@ -68,13 +68,36 @@ export default function BuilderPage() {
   const renameOption = (id) => (i, value) =>
     edit(`q:${id}:option-${i}`, (d) => {
       const old = d.questions.find((q) => q.id === id).options[i]
+      // The option's actions (on the question, and on the design blocks
+      // showing it) follow the new text.
       const questions = d.questions.map((q) =>
-        q.id === id ? { ...q, options: q.options.map((o, j) => (j === i ? value : o)) } : q,
+        q.id === id
+          ? {
+              ...q,
+              options: q.options.map((o, j) => (j === i ? value : o)),
+              ...(q.actions && { actions: renameTriggerOption(q.actions, old, value) }),
+            }
+          : q,
       )
+      let next = { ...d, questions }
+      if (d.interview?.screens) {
+        const screens = Object.fromEntries(
+          Object.entries(d.interview.screens).map(([key, design]) => {
+            const nodes = Object.fromEntries(
+              Object.entries(design.nodes).map(([nid, n]) => [
+                nid,
+                n.questionId === id && n.actions ? { ...n, actions: renameTriggerOption(n.actions, old, value) } : n,
+              ]),
+            )
+            return [key, { ...design, nodes }]
+          }),
+        )
+        next = { ...next, interview: { ...d.interview, screens } }
+      }
       const entry = d.answerKey?.[id]
-      if (!entry?.correct?.includes(old)) return { ...d, questions }
+      if (!entry?.correct?.includes(old)) return next
       const correct = entry.correct.map((c) => (c === old ? value : c))
-      return { ...d, questions, answerKey: { ...d.answerKey, [id]: { ...entry, correct } } }
+      return { ...next, answerKey: { ...d.answerKey, [id]: { ...entry, correct } } }
     })
 
   const changeKey = (id) => (field, update) =>

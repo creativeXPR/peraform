@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Blend, Check } from 'lucide-react'
 import { contrast, normalizeHex } from './color.js'
 import { gradient, isGradient, parseGradient } from './gradient.js'
+import Select from './Select.jsx'
 import './ColorPicker.css'
 
 // Preset swatches plus "Custom colour": the system colour picker, or a hex
@@ -111,13 +112,13 @@ export default function ColorPicker({ value, presets, onChange, label = 'Colour'
           </label>
           <label className="color-gradient-dir">
             <span>Direction</span>
-            <select value={grad.angle} onChange={(e) => onChange(gradient(grad.from, grad.to, Number(e.target.value)))}>
+            <Select value={grad.angle} onChange={(e) => onChange(gradient(grad.from, grad.to, Number(e.target.value)))}>
               {DIRECTIONS.map(([deg, name]) => (
                 <option key={deg} value={deg}>
                   {name}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
         </div>
       )}

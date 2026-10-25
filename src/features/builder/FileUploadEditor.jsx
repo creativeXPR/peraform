@@ -1,4 +1,5 @@
 import { FILE_KINDS, MAX_FILES_CHOICES, MAX_SIZE_CHOICES } from '../../lib/formModel.js'
+import Select from '../../lib/Select.jsx'
 
 // Settings for a file-upload question: allowed kinds, how many files, max size.
 export default function FileUploadEditor({ question, change }) {
@@ -45,7 +46,7 @@ export default function FileUploadEditor({ question, change }) {
       <div className="upload-limits">
         <label>
           <span>Maximum number of files</span>
-          <select
+          <Select
             value={question.maxFiles ?? 1}
             onChange={(e) => set('maxFiles', Number(e.target.value))}
           >
@@ -54,11 +55,11 @@ export default function FileUploadEditor({ question, change }) {
                 {n}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         <label>
           <span>Maximum file size</span>
-          <select
+          <Select
             value={question.maxSizeMb ?? 10}
             onChange={(e) => set('maxSizeMb', Number(e.target.value))}
           >
@@ -67,7 +68,7 @@ export default function FileUploadEditor({ question, change }) {
                 {n} MB
               </option>
             ))}
-          </select>
+          </Select>
         </label>
       </div>
     </div>

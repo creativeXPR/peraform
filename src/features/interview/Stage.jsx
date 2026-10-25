@@ -42,7 +42,20 @@ const SCHEMES = {
 }
 
 // Properties an action changes, with how each animates.
-const ANIMATED = ['transform', 'background-color', 'color', 'font-size', 'border-radius']
+const ANIMATED = [
+  'transform',
+  'background-color',
+  'color',
+  'font-size',
+  'font-weight',
+  'border-radius',
+  'width',
+  'padding',
+  'border-width',
+  'border-color',
+  'box-shadow',
+  'backdrop-filter',
+]
 // Live: blocks glide to close (or reopen) the space of a hidden block.
 const REFLOW = ['top', 'height', 'min-height'].map((p) => `${p} 320ms cubic-bezier(0.4, 0, 0.2, 1)`)
 
@@ -62,27 +75,29 @@ function nodeStyle(node, frame, editing, override) {
   const style = {
     left: frame.x,
     top: frame.y,
-    width: frame.w,
+    width: p.width ?? frame.w,
     // Exactly the size the creator set: blocks never grow over the ones
     // around them (that blocked taps on phones). Text or a question that
     // needs more room scrolls inside its block (.stage-scroll); the
     // Inspector says so.
-    height: frame.h,
+    height: p.height ?? frame.h,
     transform: transform || undefined,
     zIndex: frame.z || undefined,
     background: backgroundCss(p.bg ?? s.bg, s.bgAlpha ?? 100),
-    boxShadow: s.shadow && s.shadow !== 'none' ? SHADOWS[s.shadow]?.css : undefined,
+    boxShadow: (p.shadow ?? s.shadow) && (p.shadow ?? s.shadow) !== 'none' ? SHADOWS[p.shadow ?? s.shadow]?.css : undefined,
     // Glass: blur whatever is behind the block.
-    backdropFilter: s.blur ? `blur(${s.blur}px)` : undefined,
-    WebkitBackdropFilter: s.blur ? `blur(${s.blur}px)` : undefined,
-    border: s.borderWidth ? `${s.borderWidth}px solid ${colorCss(s.borderColor ?? 'text')}` : undefined,
+    backdropFilter: (p.blur ?? s.blur) ? `blur(${p.blur ?? s.blur}px)` : undefined,
+    WebkitBackdropFilter: (p.blur ?? s.blur) ? `blur(${p.blur ?? s.blur}px)` : undefined,
+    border: (p.borderWidth ?? s.borderWidth)
+      ? `${p.borderWidth ?? s.borderWidth}px solid ${colorCss(p.borderColor ?? s.borderColor ?? 'text')}`
+      : undefined,
     color: colorCss(p.color ?? s.color),
     borderRadius: p.radius ?? s.radius ?? undefined,
-    padding: node.type === 'card' ? undefined : s.padding || undefined,
+    padding: node.type === 'card' ? undefined : (p.padding ?? s.padding) || undefined,
     opacity: p.opacity !== undefined ? p.opacity / 100 : (s.opacity ?? undefined),
     fontFamily: s.font ? THEME_FONTS[s.font]?.family : undefined,
     fontSize: p.size ?? (s.size || undefined),
-    fontWeight: s.weight || undefined,
+    fontWeight: p.weight ?? (s.weight || undefined),
     textAlign: s.align || undefined,
     ...SCHEMES[s.scheme],
   }

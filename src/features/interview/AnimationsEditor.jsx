@@ -4,6 +4,7 @@ import ColorPicker from '../../lib/ColorPicker.jsx'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { ANIM_PROPS, PRESETS, WHEN, newAnimation } from '../../lib/animations.js'
 import { EASINGS } from '../../lib/actions.js'
+import Select from '../../lib/Select.jsx'
 import './actions.css'
 
 // One side (From / To) of an animation: the properties it sets.
@@ -45,7 +46,7 @@ function PropList({ title, values, onChange, colorPresets }) {
         )
       })}
       {unused.length > 0 && (
-        <select
+        <Select
           value=""
           onChange={(e) => e.target.value && set(e.target.value, ANIM_PROPS[e.target.value].start)}
           aria-label={`Add to ${title}`}
@@ -56,7 +57,7 @@ function PropList({ title, values, onChange, colorPresets }) {
               {ANIM_PROPS[key].label}
             </option>
           ))}
-        </select>
+        </Select>
       )}
     </div>
   )
@@ -95,18 +96,18 @@ export default function AnimationsEditor({ animations = [], onChange, onPreview,
 
           <div className="action-row">
             <span className="action-word">When</span>
-            <select value={a.when} onChange={(e) => update(a.id, { when: e.target.value })} aria-label="When it plays">
+            <Select value={a.when} onChange={(e) => update(a.id, { when: e.target.value })} aria-label="When it plays">
               {Object.entries(WHEN).map(([key, label]) => (
                 <option key={key} value={key}>
                   {label}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div className="action-row">
             <span className="action-word">Preset</span>
-            <select
+            <Select
               value=""
               onChange={(e) => {
                 if (!e.target.value) return
@@ -122,7 +123,7 @@ export default function AnimationsEditor({ animations = [], onChange, onPreview,
                   {p.name} ({WHEN[p.when].toLowerCase()})
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <PropList title="From" values={a.from} onChange={(from) => update(a.id, { from })} colorPresets={colorPresets} />
@@ -155,13 +156,13 @@ export default function AnimationsEditor({ animations = [], onChange, onPreview,
               />
               <em>ms</em>
             </label>
-            <select value={a.easing} onChange={(e) => update(a.id, { easing: e.target.value })} aria-label="Easing">
+            <Select value={a.easing} onChange={(e) => update(a.id, { easing: e.target.value })} aria-label="Easing">
               {Object.entries({ ...EASINGS, 'ease-in-out': 'Smooth both ways' }).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
               ))}
-            </select>
+            </Select>
             {(a.when === 'loop' || a.when === 'action') && (
               <label className="action-check">
                 <input type="checkbox" checked={Boolean(a.alternate)} onChange={(e) => update(a.id, { alternate: e.target.checked })} />

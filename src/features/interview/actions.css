@@ -48,6 +48,7 @@
 }
 
 .action-card select,
+.action-card .ui-select,
 .action-card input:not([type='checkbox']) {
   min-width: 0;
   max-width: 100%;
@@ -65,7 +66,8 @@
   flex: 1 1 140px;
 }
 
-.action-card select.action-missing {
+.action-card select.action-missing,
+.action-card .ui-select.action-missing {
   border-color: var(--danger);
 }
 

@@ -4,6 +4,7 @@ import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { callManageCollaborators } from '../../lib/firebase.js'
 import AllowedResponders from './AllowedResponders.jsx'
 import { useFormEditor } from './editorContext.js'
+import Select from '../../lib/Select.jsx'
 
 // "Share" dialog, modelled on Google Forms': add people by email (owner),
 // who has access, general access (editors restricted; respondents anyone
@@ -231,7 +232,7 @@ export default function ShareDialog({ formId, open, onClose, showToast, onPublis
               }
             </span>
           </span>
-          <select
+          <Select
             className="share-select"
             value={responders}
             aria-label="Who can respond"
@@ -240,7 +241,7 @@ export default function ShareDialog({ formId, open, onClose, showToast, onPublis
             <option value="anyone">Anyone with the link</option>
             <option value="signedIn">Signed-in users only</option>
             <option value="restricted">Only people you choose</option>
-          </select>
+          </Select>
         </div>
         {responders === 'restricted' && open && <AllowedResponders formId={formId} />}
 

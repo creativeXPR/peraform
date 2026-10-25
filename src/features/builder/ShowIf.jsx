@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Eye, Plus, Trash2 } from 'lucide-react'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { triggerKindFor } from '../../lib/actions.js'
+import Select from '../../lib/Select.jsx'
 
 // "Show only if…" on the item that appears: it stays hidden until an
 // earlier question's answer matches, and hides again if it stops matching.
@@ -77,7 +78,7 @@ export default function ShowIf({ rules, sources, onAdd, onRemove, compact = fals
             <Eye size={15} aria-hidden="true" /> Show this {noun} only if
           </span>
           <div className="showif-row">
-            <select
+            <Select
               value={sourceId}
               onChange={(e) => {
                 setSourceId(e.target.value)
@@ -91,18 +92,18 @@ export default function ShowIf({ rules, sources, onAdd, onRemove, compact = fals
                   {s.title || 'Untitled question'}
                 </option>
               ))}
-            </select>
+            </Select>
             {source && kind === 'select' && (
               <>
                 <span>is</span>
-                <select value={value} onChange={(e) => setValue(e.target.value)} aria-label="Which answer">
+                <Select value={value} onChange={(e) => setValue(e.target.value)} aria-label="Which answer">
                   <option value="">Choose an answer…</option>
                   {(source.options ?? []).map((o) => (
                     <option key={o} value={o}>
                       {o}
                     </option>
                   ))}
-                </select>
+                </Select>
               </>
             )}
             {source && kind === 'match' && (

@@ -3,6 +3,7 @@ import { Plus, Trash2, X, Zap } from 'lucide-react'
 import ColorPicker from '../../lib/ColorPicker.jsx'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { EASINGS, EFFECTS, SET_PROPS, TRANSITION_DEFAULTS, newAction } from '../../lib/actions.js'
+import Select from '../../lib/Select.jsx'
 import './actions.css'
 
 // Edits a block's actions (lib/actions.js). Shared by the interview canvas
@@ -67,17 +68,26 @@ export default function ActionsEditor({
               {a.trigger.type === 'select' && (
                 <>
                   <span className="action-fixed">they choose</span>
-                  <select
-                    value={a.trigger.option}
+                  {/* An answer that's no longer an option (renamed or removed)
+                      shows as unset, so it's never mistaken for the first one. */}
+                  <Select
+                    value={options.includes(a.trigger.option) ? a.trigger.option : ''}
                     onChange={(e) => update(a.id, (x) => ({ ...x, trigger: { type: 'select', option: e.target.value } }))}
                     aria-label="Option"
+                    className={options.includes(a.trigger.option) ? '' : 'action-missing'}
+                    title={options.includes(a.trigger.option) ? undefined : 'Pick which answer sets this off'}
                   >
+                    {!options.includes(a.trigger.option) && (
+                      <option value="" disabled>
+                        Choose an answer…
+                      </option>
+                    )}
                     {options.map((o) => (
                       <option key={o} value={o}>
                         {o}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </>
               )}
               {a.trigger.type === 'match' && (
@@ -95,7 +105,7 @@ export default function ActionsEditor({
 
             <div className="action-row">
               <span className="action-word">Then</span>
-              <select
+              <Select
                 value={a.effect.type}
                 onChange={(e) =>
                   update(a.id, (x) => ({
@@ -115,8 +125,8 @@ export default function ActionsEditor({
                     {label}
                   </option>
                 ))}
-              </select>
-              <select
+              </Select>
+              <Select
                 value={a.target ?? ''}
                 onChange={(e) => update(a.id, (x) => ({ ...x, target: e.target.value || null }))}
                 aria-label="Which block"
@@ -128,7 +138,7 @@ export default function ActionsEditor({
                     {target.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
 
             {onTargetVisibility && a.target && (() => {
@@ -166,7 +176,7 @@ export default function ActionsEditor({
                 {(() => {
                   const anims = targets.find((x) => x.id === a.target)?.animations ?? []
                   return anims.length ? (
-                    <select
+                    <Select
                       value={a.effect.animation ?? ''}
                       onChange={(e) =>
                         update(a.id, (x) => ({ ...x, effect: { type: 'play', animation: e.target.value || null } }))
@@ -180,7 +190,7 @@ export default function ActionsEditor({
                           {anim.name}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   ) : (
                     <span className="action-fixed">
                       {a.target ? 'That block has no animations yet: add one to it first.' : 'Choose a block first.'}
@@ -207,6 +217,14 @@ export default function ActionsEditor({
                       <span>{def.label}</span>
                       {def.color ? (
                         <ColorPicker value={value} presets={colorPresets} onChange={setProp} label={def.label} />
+                      ) : def.choices ? (
+                        <Select value={value} onChange={(e) => setProp(e.target.value)} aria-label={def.label}>
+                          {Object.entries(def.choices).map(([k, label]) => (
+                            <option key={k} value={k}>
+                              {label}
+                            </option>
+                          ))}
+                        </Select>
                       ) : (
                         <label className="action-num">
                           <input
@@ -214,6 +232,7 @@ export default function ActionsEditor({
                             value={value}
                             min={def.min}
                             max={def.max}
+                            step={def.step}
                             onChange={(e) => e.target.value !== '' && setProp(Number(e.target.value))}
                           />
                           <em>{def.unit}</em>
@@ -226,13 +245,13 @@ export default function ActionsEditor({
                   )
                 })}
                 {unused.length > 0 && (
-                  <select
+                  <Select
                     value=""
                     onChange={(e) => {
                       const key = e.target.value
                       if (!key) return
                       const def = SET_PROPS[key]
-                      const start = def.color ? 'accent' : key === 'scale' || key === 'opacity' ? 100 : 0
+                      const start = def.start ?? (def.color ? 'accent' : key === 'scale' || key === 'opacity' ? 100 : 0)
                       update(a.id, (x) => ({ ...x, effect: { ...x.effect, props: { ...x.effect.props, [key]: start } } }))
                     }}
                     aria-label="Add a change"
@@ -243,7 +262,7 @@ export default function ActionsEditor({
                         {SET_PROPS[key].label}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 )}
               </div>
             )}
@@ -265,7 +284,7 @@ export default function ActionsEditor({
                 />
                 <em>ms</em>
               </label>
-              <select
+              <Select
                 value={t.easing}
                 onChange={(e) => update(a.id, (x) => ({ ...x, transition: { ...t, easing: e.target.value } }))}
                 aria-label="Transition style"
@@ -275,7 +294,7 @@ export default function ActionsEditor({
                     {label}
                   </option>
                 ))}
-              </select>
+              </Select>
               <label className="action-check">
                 <input
                   type="checkbox"

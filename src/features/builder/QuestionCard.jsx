@@ -27,6 +27,7 @@ import { OPTION_TYPES, TYPE_INFO, changeQuestionType } from './questionTypes.js'
 import { newAction, triggerKindFor } from '../../lib/actions.js'
 import ActionsEditor from '../interview/ActionsEditor.jsx'
 import ShowIf from './ShowIf.jsx'
+import Select from '../../lib/Select.jsx'
 
 // One question in the builder. Inactive: a read-only preview, click to edit.
 // Active: full editor. `change(field, updater)` edits this question with
@@ -507,7 +508,7 @@ function ScaleEditor({ question, change }) {
   return (
     <div className="scale-editor">
       <div className="scale-range">
-        <select
+        <Select
           value={min}
           aria-label="Scale start"
           onChange={(e) => set('min', Number(e.target.value))}
@@ -515,9 +516,9 @@ function ScaleEditor({ question, change }) {
           {[0, 1].map((n) => (
             <option key={n}>{n}</option>
           ))}
-        </select>
+        </Select>
         <span>to</span>
-        <select
+        <Select
           value={max}
           aria-label="Scale end"
           onChange={(e) => set('max', Number(e.target.value))}
@@ -525,7 +526,7 @@ function ScaleEditor({ question, change }) {
           {[2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
             <option key={n}>{n}</option>
           ))}
-        </select>
+        </Select>
       </div>
       {[
         ['minLabel', min, minLabel],
@@ -549,7 +550,7 @@ function ScaleEditor({ question, change }) {
 function RatingEditor({ question, change }) {
   return (
     <div className="scale-range">
-      <select
+      <Select
         value={question.max}
         aria-label="Number of stars"
         onChange={(e) => {
@@ -560,7 +561,7 @@ function RatingEditor({ question, change }) {
         {[3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
           <option key={n}>{n}</option>
         ))}
-      </select>
+      </Select>
       <span className="stars" aria-hidden="true">
         {Array.from({ length: question.max }, (_, i) => (
           <Star key={i} size={18} />

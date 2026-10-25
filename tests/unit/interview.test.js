@@ -494,3 +494,28 @@ describe('nextAsSubmit', () => {
     expect(nextAsSubmit({ nodes: { b: d.nodes.b } }).nodes).toEqual({ b: d.nodes.b })
   })
 })
+
+describe('button actions the creator chose', () => {
+  it('are kept: only starter Next/Submit buttons follow the screens', async () => {
+    const { syncInterview, screensOf, starterScreen } = await import('../../src/lib/interview.js')
+    const f = {
+      title: 'T',
+      questions: [
+        { id: 'q1', type: 'shortText', title: 'A' },
+        { id: 's1', type: 'section', title: 'B' },
+        { id: 'q2', type: 'shortText', title: 'C' },
+      ],
+    }
+    const screens = screensOf(f)
+    const first = starterScreen(f, screens[0], false)
+    const btn = Object.values(first.nodes).find((n) => n.type === 'button')
+    // A chosen Submit on the first (not last) screen stays Submit…
+    const chosen = { ...first, nodes: { ...first.nodes, [btn.id]: { ...btn, label: 'Submit', action: { type: 'submit', chosen: true } } } }
+    const kept = syncInterview({ ...f, interview: { screens: { start: chosen } } })
+    expect(kept.interview.screens.start.nodes[btn.id].action.type).toBe('submit')
+    // …while an unchosen one is put back to Next.
+    const auto = { ...first, nodes: { ...first.nodes, [btn.id]: { ...btn, label: 'Submit', action: { type: 'submit' } } } }
+    const fixed = syncInterview({ ...f, interview: { screens: { start: auto } } })
+    expect(fixed.interview.screens.start.nodes[btn.id].action.type).toBe('next')
+  })
+})
