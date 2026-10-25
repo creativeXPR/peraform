@@ -993,6 +993,7 @@ textarea.respond-input {
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  object-fit: cover;
+  /* The whole image, never cropped (logos are often not square). */
+  object-fit: contain;
   flex-shrink: 0;
 }

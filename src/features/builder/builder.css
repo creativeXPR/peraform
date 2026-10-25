@@ -1937,7 +1937,8 @@
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  object-fit: cover;
+  /* The whole image, never cropped (logos are often not square). */
+  object-fit: contain;
   border: 1px solid var(--line);
 }
 
