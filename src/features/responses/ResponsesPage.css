@@ -522,6 +522,44 @@
   overflow-wrap: anywhere;
 }
 
+/* Reminder form */
+.invite-reminder {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--line);
+}
+.invite-reminder-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.875rem;
+}
+.invite-reminder-field span {
+  color: var(--text-sub);
+}
+.invite-reminder-field textarea {
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: inherit;
+  font: inherit;
+  resize: vertical;
+}
+.invite-reminder-field textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+.invite-reminder-actions {
+  display: flex;
+  gap: 8px;
+}
+.invite-reminder-on {
+  background: var(--accent-soft);
+}
+
 .sheets-open {
   height: 34px;
   font-size: 13px;

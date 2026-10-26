@@ -171,7 +171,7 @@ export default function ResponsesPage() {
       </header>
 
       {draft.settings?.restricted && !loading && !error && (
-        <InviteTracker formId={form.id} responses={responses} showToast={showToast} />
+        <InviteTracker form={form} formId={form.id} responses={responses} showToast={showToast} />
       )}
 
       {loading ? (

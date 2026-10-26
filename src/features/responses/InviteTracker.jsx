@@ -1,14 +1,19 @@
 import { useState } from 'react'
-import { ChevronDown, Copy } from 'lucide-react'
+import { ChevronDown, Copy, Mail } from 'lucide-react'
 import { useAccessList } from '../../lib/access.js'
+import { callEmailForm } from '../../lib/firebase.js'
 
 // Invited-only forms: who on the list has responded and who hasn't yet.
 // Responses carry the respondent's verified email (submitResponse records it
 // for these forms). "Copy emails" puts the waiting addresses on the
-// clipboard, ready to paste into a reminder email.
-export default function InviteTracker({ formId, responses, showToast }) {
+// clipboard, ready to paste into a reminder email. "Send reminder" calls
+// emailForm pre-filled with waiting addresses (up to 25 at a time).
+export default function InviteTracker({ form, formId, responses, showToast }) {
   const { access } = useAccessList(formId)
   const [open, setOpen] = useState(false)
+  const [reminderOpen, setReminderOpen] = useState(false)
+  const [reminderMessage, setReminderMessage] = useState('')
+  const [sending, setSending] = useState(false)
   if (!access) return null
 
   const responded = new Set(
@@ -28,9 +33,38 @@ export default function InviteTracker({ formId, responses, showToast }) {
       await navigator.clipboard.writeText(waiting.join(', '))
       showToast(`Copied ${waiting.length} ${waiting.length === 1 ? 'address' : 'addresses'}`)
     } catch {
-      showToast('Couldn’t copy. Select the addresses and copy them instead.')
+      showToast("Couldn't copy. Select the addresses and copy them instead.")
     }
   }
+
+  async function sendReminder(e) {
+    e.preventDefault()
+    // emailForm caps at 25 recipients per send; send the first batch.
+    const batch = waiting.slice(0, 25)
+    const title = form?.title || 'Untitled form'
+    setSending(true)
+    try {
+      const { data } = await callEmailForm({
+        formId,
+        to: batch.join(', '),
+        subject: `Reminder: fill in "${title}"`,
+        message: reminderMessage,
+      })
+      const sent = data.sent ?? batch.length
+      const extra =
+        waiting.length > 25 ? ` (${waiting.length - 25} more — send again to reach them)` : ''
+      showToast(`Reminder sent to ${sent} ${sent === 1 ? 'person' : 'people'}${extra}`)
+      setReminderOpen(false)
+      setReminderMessage('')
+    } catch (err) {
+      showToast(err.message || "Couldn't send the reminder. Please try again.")
+    } finally {
+      setSending(false)
+    }
+  }
+
+  // Can only send when the form is published (emailForm requires it).
+  const canSendReminder = form?.status === 'published'
 
   return (
     <section className="summary-card invite-tracker">
@@ -84,6 +118,16 @@ export default function InviteTracker({ formId, responses, showToast }) {
               <Copy size={15} />
               Copy emails
             </button>
+            {canSendReminder && (
+              <button
+                type="button"
+                className={`btn btn-outline invite-copy${reminderOpen ? ' invite-reminder-on' : ''}`}
+                onClick={() => setReminderOpen((o) => !o)}
+              >
+                <Mail size={15} />
+                Send reminder
+              </button>
+            )}
           </div>
           {open && (
             <ul className="invite-list">
@@ -91,6 +135,36 @@ export default function InviteTracker({ formId, responses, showToast }) {
                 <li key={e}>{e}</li>
               ))}
             </ul>
+          )}
+          {reminderOpen && (
+            <form className="invite-reminder" onSubmit={sendReminder}>
+              <p className="invite-note">
+                Sending to {Math.min(waiting.length, 25)} of {waiting.length} waiting{' '}
+                {waiting.length === 1 ? 'person' : 'people'}.
+                {waiting.length > 25 && ' Send again to reach the rest.'}
+              </p>
+              <label className="invite-reminder-field">
+                <span>Message (optional)</span>
+                <textarea
+                  value={reminderMessage}
+                  onChange={(e) => setReminderMessage(e.target.value)}
+                  placeholder="Add a personal note..."
+                  rows={2}
+                />
+              </label>
+              <div className="invite-reminder-actions">
+                <button type="submit" className="btn btn-primary" disabled={sending}>
+                  {sending ? 'Sending…' : 'Send'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setReminderOpen(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           )}
         </>
       )}
