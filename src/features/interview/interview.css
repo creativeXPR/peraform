@@ -118,6 +118,16 @@
   font-weight: 500;
 }
 
+.stage-text-link {
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.stage-text-link:hover {
+  opacity: 0.85;
+}
+
 /* ── Canvas (edit mode) ─────────────────────────────────────── */
 .canvas-stage .stage-node {
   cursor: move;

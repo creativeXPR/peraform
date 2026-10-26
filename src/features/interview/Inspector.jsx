@@ -385,14 +385,39 @@ export default function Inspector({
         <>
           <Group title="Content">
             {node.type === 'text' && (
-              <textarea
-                className="insp-input"
-                rows={3}
-                value={node.text ?? ''}
-                onChange={(e) => onContent({ text: e.target.value })}
-                placeholder="Write something"
-                aria-label="Text"
-              />
+              <>
+                <textarea
+                  className="insp-input"
+                  rows={3}
+                  value={node.text ?? ''}
+                  onChange={(e) => onContent({ text: e.target.value })}
+                  placeholder="Write something"
+                  aria-label="Text"
+                />
+                <label className="insp-field">
+                  <span>Link web address (optional)</span>
+                  <input
+                    className="insp-input"
+                    type="url"
+                    value={node.url ?? ''}
+                    onChange={(e) => onContent({ url: e.target.value })}
+                    placeholder="https://example.com"
+                    aria-label="Link URL"
+                  />
+                </label>
+                {Boolean(node.url?.trim()) && (
+                  <label className="insp-field">
+                    <span>Open in</span>
+                    <Select
+                      value={node.target ?? '_blank'}
+                      onChange={(e) => onContent({ target: e.target.value })}
+                    >
+                      <option value="_blank">New tab</option>
+                      <option value="_self">Same window</option>
+                    </Select>
+                  </label>
+                )}
+              </>
             )}
             {node.type === 'button' && (
               <>
@@ -410,7 +435,16 @@ export default function Inspector({
                     onChange={(e) =>
                       // chosen: the creator's pick. It's never flagged as out of
                       // step with the screen order (screenIssues).
-                      onContent({ action: { type: e.target.value, screen: node.action?.screen ?? null, chosen: true } })
+                      onContent({
+                        action: {
+                          ...node.action,
+                          type: e.target.value,
+                          screen: node.action?.screen ?? null,
+                          url: node.action?.url ?? '',
+                          target: node.action?.target ?? '_blank',
+                          chosen: true,
+                        },
+                      })
                     }
                   >
                     {Object.entries(BUTTON_ACTIONS).map(([value, label]) => (
@@ -435,6 +469,50 @@ export default function Inspector({
                       ))}
                     </Select>
                   </label>
+                )}
+                {node.action?.type === 'url' && (
+                  <>
+                    <label className="insp-field">
+                      <span>Web address (URL)</span>
+                      <input
+                        className="insp-input"
+                        type="url"
+                        value={node.action?.url ?? ''}
+                        onChange={(e) =>
+                          onContent({
+                            action: {
+                              ...node.action,
+                              type: 'url',
+                              url: e.target.value,
+                              target: node.action?.target ?? '_blank',
+                              chosen: true,
+                            },
+                          })
+                        }
+                        placeholder="https://example.com"
+                        aria-label="Web address"
+                      />
+                    </label>
+                    <label className="insp-field">
+                      <span>Open in</span>
+                      <Select
+                        value={node.action?.target ?? '_blank'}
+                        onChange={(e) =>
+                          onContent({
+                            action: {
+                              ...node.action,
+                              type: 'url',
+                              target: e.target.value,
+                              chosen: true,
+                            },
+                          })
+                        }
+                      >
+                        <option value="_blank">New tab</option>
+                        <option value="_self">Same window</option>
+                      </Select>
+                    </label>
+                  </>
                 )}
               </>
             )}

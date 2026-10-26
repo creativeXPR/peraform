@@ -197,6 +197,22 @@
   font-size: 14px;
 }
 
+.respond-redirect-wrap {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.respond-redirect-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 10px 24px;
+  border-radius: var(--radius-sm, 8px);
+}
+
 /* ── Questions ───────────────────────────────────────────── */
 .respond-q {
   display: flex;

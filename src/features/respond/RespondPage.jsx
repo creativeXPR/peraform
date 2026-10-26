@@ -250,6 +250,8 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
     shuffleQuestions,
     confirmationMessage,
     showSubmitAnother,
+    redirectUrl,
+    redirectLabel,
   } = settingsOf(form)
   // Whether the respondent's sign-in email goes with their response: only
   // asked when the form would record it, and always their choice (on to
@@ -396,6 +398,18 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
     return (
       <Notice title={title} icon={<CheckCircle2 size={36} className="respond-done-icon" />}>
         {state === 'sent' ? doneMessage : 'You’ve already responded to this form.'}
+        {state === 'sent' && Boolean(redirectUrl?.trim()) && (
+          <div className="respond-redirect-wrap">
+            <a
+              href={/^https?:\/\//i.test(redirectUrl.trim()) ? redirectUrl.trim() : `https://${redirectUrl.trim()}`}
+              className="btn btn-primary respond-redirect-btn"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {redirectLabel?.trim() || 'Continue'}
+            </a>
+          </div>
+        )}
         {state === 'sent' && !limitOneResponse && showSubmitAnother && (
           <>
             <br />
@@ -750,6 +764,18 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
       }
       const after = nextFor(clicks)
       if (action.type === 'none') return
+      if (action.type === 'url') {
+        if (!action.url) return
+        const raw = action.url.trim()
+        if (!raw) return
+        const href = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
+        if (action.target === '_self') {
+          window.location.assign(href)
+        } else {
+          window.open(href, '_blank', 'noopener,noreferrer')
+        }
+        return
+      }
       if (action.type === 'back') {
         if (history.length) leave(goBack)
       } else if (action.type === 'submit') {

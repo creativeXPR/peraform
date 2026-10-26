@@ -112,6 +112,8 @@ export const PRESENTATION_DEFAULTS = {
   shuffleQuestions: false,
   confirmationMessage: '',
   showSubmitAnother: true,
+  redirectUrl: '',
+  redirectLabel: '',
   // The respondent page's top bar: the PeraForm logo, or (when on) a title
   // of the creator's own, which starts as the form's name.
   topTitleOn: false,

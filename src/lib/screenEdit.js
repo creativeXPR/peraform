@@ -30,7 +30,7 @@ import { THEME_FONTS } from './theme.js'
 
 const STYLE_FIELDS = ['bg', 'color', 'size', 'weight', 'align', 'valign', 'radius', 'font', 'shadow', 'opacity', 'padding', 'borderWidth', 'borderColor']
 const ADDABLE = ['card', 'text', 'button', 'image']
-const BUTTON_TYPES = ['next', 'back', 'submit', 'none']
+const BUTTON_TYPES = ['next', 'back', 'submit', 'none', 'url']
 
 // The screen as compact JSON for the prompt.
 export function screenForAi(design, device, questions = []) {
@@ -98,11 +98,21 @@ function framePatch(c) {
 // Text, button label/action and style changes shared by update and add.
 function contentPatch(node, c) {
   const patch = {}
-  if (node.type === 'text' && typeof c.text === 'string' && c.text.trim()) patch.text = c.text.slice(0, 2000)
+  if (node.type === 'text') {
+    if (typeof c.text === 'string' && c.text.trim()) patch.text = c.text.slice(0, 2000)
+    if (typeof c.url === 'string') patch.url = c.url.slice(0, 500)
+    if (typeof c.target === 'string') patch.target = c.target
+  }
   if (node.type === 'button') {
     if (typeof c.label === 'string' && c.label.trim()) patch.label = c.label.slice(0, 60)
     // "Go to screen…" buttons keep their target; the AI only switches between the simple kinds.
-    if (BUTTON_TYPES.includes(c.action)) patch.action = { type: c.action }
+    if (BUTTON_TYPES.includes(c.action)) {
+      patch.action = { type: c.action }
+      if (c.action === 'url' && typeof c.url === 'string') {
+        patch.action.url = c.url.slice(0, 500)
+        patch.action.target = c.target || '_blank'
+      }
+    }
   }
   const style = cleanStyle(c.style)
   if (Object.keys(style).length) patch.style = { ...node.style, ...style }

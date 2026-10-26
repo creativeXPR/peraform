@@ -24,6 +24,8 @@ export default function SettingsPage() {
     shuffleQuestions,
     confirmationMessage,
     showSubmitAnother,
+    redirectUrl,
+    redirectLabel,
     topTitleOn,
     topTitle,
     topIcon,
@@ -253,6 +255,39 @@ export default function SettingsPage() {
             aria-label="Confirmation message"
             onChange={(e) => set('confirmationMessage', e.target.value)}
           />
+        </div>
+        <div className="setting setting-stack">
+          <span className="setting-text">
+            <strong>Redirect link or button (optional)</strong>
+            <span>Add a link or button on the confirmation page after someone submits, to send respondents to your website or app.</span>
+          </span>
+          <div className="setting-subfields">
+            <label className="setting-field">
+              <span>Web address (URL)</span>
+              <input
+                className="setting-input"
+                type="url"
+                value={redirectUrl || ''}
+                placeholder="https://example.com"
+                maxLength={500}
+                aria-label="Redirect URL"
+                onChange={(e) => set('redirectUrl', e.target.value)}
+              />
+            </label>
+            {Boolean(redirectUrl?.trim()) && (
+              <label className="setting-field">
+                <span>Button text</span>
+                <input
+                  className="setting-input"
+                  value={redirectLabel || ''}
+                  placeholder="Visit our website"
+                  maxLength={60}
+                  aria-label="Redirect button text"
+                  onChange={(e) => set('redirectLabel', e.target.value)}
+                />
+              </label>
+            )}
+          </div>
         </div>
       </section>
 

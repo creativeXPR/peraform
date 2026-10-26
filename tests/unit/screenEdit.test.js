@@ -92,6 +92,22 @@ describe('applyScreenEdit', () => {
     expect(applyScreenEdit(start, { background: { color: 'url(evil)' } }, 'phone').design.bg).toBe(start.bg)
   })
 
+  it('applies url actions to buttons and url links to text', () => {
+    const { design } = applyScreenEdit(
+      start,
+      {
+        changes: [
+          { op: 'update', id: button.id, action: 'url', url: 'https://peraform.com', target: '_blank' },
+          { op: 'update', id: title.id, url: 'https://example.com', target: '_self' },
+        ],
+      },
+      'desktop',
+    )
+    expect(design.nodes[button.id].action).toMatchObject({ type: 'url', url: 'https://peraform.com', target: '_blank' })
+    expect(design.nodes[title.id].url).toBe('https://example.com')
+    expect(design.nodes[title.id].target).toBe('_self')
+  })
+
   it('applies the emulator stand-in answer', () => {
     const { applied } = applyScreenEdit(start, FAKE_OUTPUT['edit-screen'], 'phone')
     expect(applied).toBe(2)

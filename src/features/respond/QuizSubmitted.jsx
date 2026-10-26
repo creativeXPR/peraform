@@ -50,6 +50,22 @@ export default function QuizSubmitted({ form, quiz, responseId, message }) {
       <CheckCircle2 size={36} className="respond-done-icon" />
       <h1>{title}</h1>
       <p>{message}</p>
+      {Boolean(form?.settings?.redirectUrl?.trim()) && (
+        <div className="respond-redirect-wrap">
+          <a
+            href={
+              /^https?:\/\//i.test(form.settings.redirectUrl.trim())
+                ? form.settings.redirectUrl.trim()
+                : `https://${form.settings.redirectUrl.trim()}`
+            }
+            className="btn btn-primary respond-redirect-btn"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {form.settings.redirectLabel?.trim() || 'Continue'}
+          </a>
+        </div>
+      )}
       {quiz.release === 'manual' || gaveUp ? (
         <>
           <p>

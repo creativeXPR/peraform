@@ -234,7 +234,24 @@ export function StageNode({ node: raw, ctx }) {
       </div>
     )
   } else if (node.type === 'text') {
-    content = node.text || (editing ? <span className="stage-placeholder">Text</span> : null)
+    const textNode = node.text || (editing ? <span className="stage-placeholder">Text</span> : null)
+    if (!editing && node.url && node.url.trim()) {
+      const raw = node.url.trim()
+      const href = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
+      content = (
+        <a
+          href={href}
+          target={node.target === '_self' ? '_self' : '_blank'}
+          rel="noopener noreferrer"
+          className="stage-text-link"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {textNode}
+        </a>
+      )
+    } else {
+      content = textNode
+    }
   } else if (node.type === 'image') {
     content = node.image ? (
       <img src={node.image.url} alt={node.alt || ''} draggable={false} />

@@ -46,6 +46,7 @@ export const BUTTON_ACTIONS = {
   back: 'Previous screen',
   submit: 'Submit',
   goto: 'Go to screen…',
+  url: 'Open link or redirect…',
 }
 
 export const SNAP_DISTANCE = 10
