@@ -158,3 +158,88 @@ temporary regional CPU limit during big rollouts).
 
 Report back to the user in plain language: what changed, that it was tested
 (say exactly what was and wasn't run), and the commands above.
+
+---
+
+# Part 2 — Emails: match Google Forms
+
+Do this **after** link previews (or independently). Same ground rules as
+section 0. Sending an email is not an "automatic change to content", but
+**anything a respondent receives must be their choice or clearly stated
+before they submit** (the user's consent rule).
+
+## E1. Current state (already built — don't rebuild)
+
+Mail goes out over SMTP from `functions/mail.js` (`sendMail`, `emailHtml`),
+sender **"PeraForm by Quality Tools" <qualitytoolsx@gmail.com>**
+(`functions/.env`: `SMTP_USER`, `MAIL_FROM`; secret `SMTP_PASS`).
+
+| # | Email | Where | Status |
+|---|---|---|---|
+| 1 | New response → owners/editors who turned notifications on | `onResponseCreated` in `functions/index.js` | ✅ built |
+| 2 | "X shared ‘form’ with you" → added editor / invitee | `manageCollaborators` (`add`) in `functions/index.js` | ✅ built |
+
+Respondent email: the response stores `respondentEmail` **only if** the
+respondent left the "Include my email with my response" switch on
+(`shareEmail` sent to `submitResponse`; `src/features/respond/EmailConsent.jsx`).
+
+## E2. What Google Forms also sends — build these
+
+| # | Google Forms feature | PeraForm version to build |
+|---|---|---|
+| 3 | **Send responders a copy of their response** (setting: Off / When requested / Always) | Setting in Settings → Responses: **Off** (default) / **When requested** / **Always offered**. Respondent side: a checkbox **"Email me a copy of my answers"** near Submit (only shown when signed in with an email). *When requested* = unticked; *Always offered* = ticked by default but still un-tickable (consent rule — never force it). Email goes to the respondent's **own sign-in email from the auth token**, independent of the "share my email with the owner" switch (a copy to yourself doesn't share anything). |
+| 4 | **Release scores by email** (quizzes, manual release) | When the owner releases scores (Responses → "Release all", `releaseAll` in `src/features/responses/ResponsesPage.jsx`, currently a client-side Firestore update), email each released respondent **who shared their email** their score and a link to view it. Must run server-side: add a callable `releaseScores({ formId, responseIds })` (editors only, `requireApp`), which sets `released: true` and sends the emails; switch `releaseAll` to call it. Respondents who didn't share an email still see their score on the results page as today. |
+| 5 | **Send the form by email** (Send → envelope: recipients, subject, message) | In the Share/Send dialog: "Email the form link" with To (comma-separated), Subject (default "Please fill in: <title>"), Message. Callable `emailForm`. **Abuse limits** (our Gmail can be blocked for spam): verified-email accounts only, ≤ 25 recipients per send, ≤ 100 recipients per account per day via `functions/rateLimit.js` (`allow(db, key, limit, windowMs)`), published forms only, plain text message (escape HTML), each recipient sent separately (no exposed recipient list). |
+| 6 | **Edit response link in the receipt** (when "Allow response editing" is on) | PeraForm has **no response editing** yet. Don't build editing as part of this; if it's added later, put an "Edit your response" link in email 3. Note this in your report. |
+| 7 | **Ownership transfer** (Drive asks the new owner to accept) | Only if PeraForm supports transferring ownership (check `manageCollaborators`); if not, skip and mention it. |
+
+Not sent by Google Forms (don't add): emails when a form closes, reminders,
+marketing.
+
+## E3. Email 3 content (respondent copy)
+
+- Subject: `Your response to “<form title>”`
+- Body: form title, submitted date/time (Africa/Lagos), then each **asked**
+  question with the answer (skip unanswered/hidden ones; checkboxes joined
+  with ", "; grids as "row: answer" lines; file uploads as file names, no
+  links). Use `functions/responseTable.js` helpers where they fit.
+- Footer: "You asked for a copy of your answers when you submitted this form.
+  The form's owner can't see this email." No tracking pixels.
+- Send from the `onResponseCreated` trigger (after grading), only when the
+  response doc has `sendCopy: true`. `submitResponse` sets `sendCopy` from
+  `request.data.sendCopy === true` **and** the form setting isn't Off. Store
+  nothing else new.
+
+## E4. Shared rules for all emails
+
+- Use `emailHtml` for the layout; keep the plain-text version too.
+- Never fail the main action because email failed: `try/catch` + `logger.error`
+  (as emails 1–2 do).
+- Gmail allows ~500 recipients/day. Count sends in a daily counter (e.g.
+  `activity/{day}.emails` in the billing DB, like `countResponse`) and log a
+  warning above 400; if it becomes a problem, switch SMTP to a provider such
+  as Brevo — no code change, only `functions/.env` + `SMTP_PASS`.
+- Firestore rules: if you add fields respondents write (`sendCopy`), it's set
+  server-side in `submitResponse` — no client write rule needed. Check
+  `firestore.rules` still passes (`npm run test:rules`, uses the default
+  emulator port 8080 — only run if the user's other emulators aren't on it).
+- Privacy page (`C:\Users\IAR\Documents\code\quality-tools\src\pages\Privacy.jsx`):
+  add one line for each new email type (copy of answers, score release,
+  form invitations), then rebuild that site.
+
+## E5. Tests
+
+- Unit: the respondent-copy formatter (all question types, hidden/unanswered
+  skipped, HTML escaped).
+- Emulator (alt ports, section 3): with `SMTP_PASS` unset, `sendMail` logs
+  "Email not configured, skipping" — assert that log line / return value
+  rather than sending real mail. Never send test emails to real people.
+
+## E6. Deploy (user runs)
+
+Same as section 6, plus the Quality Tools site if the Privacy page changed:
+```
+cd C:\Users\IAR\Documents\code\quality-tools
+npm run build
+firebase deploy --only hosting --project quality-toolsx
+```
