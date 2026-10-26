@@ -14,7 +14,7 @@ is clean (build passes, all 243 unit tests pass).
 | 1 | Link previews (banner + per-form OG cards) | ✅ Done |
 | 2 | Emails (respondent copy, score release, send by email) | ✅ Done |
 | 3 | Vertical alignment of blocks in Design screens | ✅ Done |
-| 4 | Template gallery (17 templates, Personal / Work / Education) | ✅ Done |
+| 4 | Template gallery (17 templates, Personal / Work / Education + Firestore cross-device sync) | ✅ Done |
 
 Extra work also done:
 - Daily email count tracked in `billingDb/activity/{day}.emails` and shown on the admin credits page
@@ -366,9 +366,9 @@ is stored (`theme.headerImage` = `{ url, … }`) and use a public path URL.
 
 - Dashboard: keep the current start row, add **"Template gallery"** (button or
   "See all") opening a gallery page or full-width panel: **Recently used**
-  (last 6 templates this user started from — store keys in `localStorage`,
-  wrapped in try/catch; nothing server-side), then **Personal / Work /
-  Education** sections, each a responsive grid (phones: 2 columns).
+  (last 6 templates this user started from — synced to user's Firestore account
+  under `users/{uid}/settings/templates` across devices, with instant `localStorage` caching),
+  then **Personal / Work / Education** sections, each a responsive grid (phones: 2 columns).
 - Card = thumbnail (header image + a mini preview: title, a couple of
   question lines — reuse whatever the start-cards render) + name. Keyboard
   accessible, visible focus, alt text.
