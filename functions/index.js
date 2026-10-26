@@ -4,12 +4,13 @@ import { getStorage } from 'firebase-admin/storage'
 import { logger } from 'firebase-functions'
 import { defineSecret, defineString } from 'firebase-functions/params'
 import { onDocumentCreated } from 'firebase-functions/v2/firestore'
-import { HttpsError, onCall } from 'firebase-functions/v2/https'
+import { HttpsError, onCall, onRequest } from 'firebase-functions/v2/https'
 import { onObjectFinalized } from 'firebase-functions/v2/storage'
 import { isAllowedResponder } from './access.js'
 import { REGION, billingDb, db, lagosDay, requireApp } from './app.js'
 import { MARK, compressBuffer, compressionFor } from './compress.js'
 import { gradeResponse } from './grade.js'
+import { formMeta, injectOg } from './ogTags.js'
 import { responseTable } from './responseTable.js'
 import { accessToken, appendRow, createSpreadsheet, exchangeCode, revoke, writeAll } from './sheets.js'
 import { APP_URL, SMTP_PASS, emailHtml, sendMail } from './mail.js'
@@ -477,3 +478,103 @@ export const acceptInvites = onCall({ region: REGION }, async (request) => {
   )
   return { joined: snap.size }
 })
+
+// ── Link previews (/f/:id) ──────────────────────────────────
+// Link previewers (WhatsApp, Twitter/X, Slack, iMessage) don't run JS, so the
+// HTML must carry the form's tags. Serves the app's index.html shell with the
+// form's title, description, and header image swapped in.
+let cachedShell = null
+let cachedShellAt = 0
+const SHELL_TTL_MS = 5 * 60_000
+
+async function fetchAppShell() {
+  const now = Date.now()
+  if (cachedShell && now - cachedShellAt < SHELL_TTL_MS) {
+    return cachedShell
+  }
+  const base = APP_URL.value().replace(/\/+$/, '')
+  const res = await fetch(`${base}/index.html`)
+  if (!res.ok) {
+    throw new Error(`Failed to fetch shell: ${res.status} ${res.statusText}`)
+  }
+  const html = await res.text()
+  cachedShell = html
+  cachedShellAt = now
+  return html
+}
+
+const formMetaCache = new Map()
+const FORM_META_TTL_MS = 60_000
+
+async function fetchFormMeta(formId) {
+  const now = Date.now()
+  const cached = formMetaCache.get(formId)
+  if (cached && now - cached.at < FORM_META_TTL_MS) {
+    return cached.meta
+  }
+
+  if (formMetaCache.size > 500) {
+    for (const [id, entry] of formMetaCache.entries()) {
+      if (now - entry.at >= FORM_META_TTL_MS) formMetaCache.delete(id)
+    }
+  }
+
+  const doc = await db.doc(`forms/${formId}`).get()
+  if (!doc.exists) {
+    formMetaCache.set(formId, { meta: null, at: now })
+    return null
+  }
+  const data = doc.data()
+  // Select only title, description, status, theme. Never read questions/responses.
+  const form = {
+    id: formId,
+    title: data?.title,
+    description: data?.description,
+    status: data?.status,
+    theme: data?.theme,
+  }
+  const meta = formMeta(form, APP_URL.value())
+  formMetaCache.set(formId, { meta, at: now })
+  return meta
+}
+
+export const ogForm = onRequest(
+  { region: REGION, memory: '256MiB', maxInstances: 10, invoker: 'public' },
+  async (req, res) => {
+    let shell = ''
+    try {
+      shell = await fetchAppShell()
+    } catch (err) {
+      logger.error('Failed to load app shell', { err: err?.message || err })
+      if (cachedShell) shell = cachedShell
+    }
+
+    try {
+      // Parse form id: match /f/:id (ignore query; reject non-matching ids)
+      const match = req.path.match(/^\/(?:f\/)?([A-Za-z0-9_-]{1,64})(?:\/.*)?$/)
+      const formId = match ? match[1] : null
+
+      let html = shell
+      if (formId) {
+        const meta = await fetchFormMeta(formId)
+        if (meta && shell) {
+          html = injectOg(shell, meta)
+        }
+      }
+
+      res.set('Content-Type', 'text/html; charset=utf-8')
+      res.set('Cache-Control', 'public, max-age=60, s-maxage=300')
+      res.status(200).send(html || shell)
+    } catch (err) {
+      logger.error('ogForm error', { path: req.path, err: err?.message || err })
+      // On any error: still serve the plain shell (never break the form link)
+      res.set('Content-Type', 'text/html; charset=utf-8')
+      res.set('Cache-Control', 'public, max-age=60, s-maxage=300')
+      res.status(200).send(
+        shell ||
+          '<!doctype html><html><head><meta charset="UTF-8"><title>PeraForm</title></head><body><div id="root"></div></body></html>',
+      )
+    }
+  },
+)
+
