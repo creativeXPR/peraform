@@ -243,3 +243,51 @@ cd C:\Users\IAR\Documents\code\quality-tools
 npm run build
 firebase deploy --only hosting --project quality-toolsx
 ```
+
+---
+
+# Part 3 — Design screens: align and snap vertically as well as horizontally
+
+User report: in **Design screens**, blocks line up **horizontally only**;
+they must line up **vertically too** — every alignment feature works on both
+axes, consistently.
+
+What the code already has (so this is a bug or gap in practice, not a missing
+idea — find where vertical breaks):
+- `snapFrame(frame, parent, distance, others)` in `src/lib/interview.js`
+  computes both `x` and `y` (`pick(..., 'x', ...)` / `pick(..., 'y', ...)`),
+  snapping to the parent's start/centre/end and to sibling blocks' edges and
+  centres, and returns guide lines `{ axis, at }`.
+- `Canvas.jsx` calls it while dragging (`snapFrame({ ...lead.f, x: lx, y: ly },
+  parent, SNAP_PX / zoom, others)`) and draws guides (`renderGuides`).
+- Inspector "Align" buttons (`ALIGN` in `Inspector.jsx`, `alignFrames` in
+  `interview.js`): left / centre / right **and** top / middle / bottom.
+
+Do:
+1. **Reproduce** on the canvas (drag a block near another block's top, middle
+   and bottom; near the card's top/middle/bottom). Check each piece:
+   - y snapping actually applied to the dropped frame (not overwritten by x
+     logic or by the group-drag path for multi-select);
+   - **horizontal guide lines** (`axis: 'y'`) are drawn and visible (CSS for
+     both orientations; correct position/scale with zoom; inside rotated or
+     nested cards);
+   - snapping while **resizing** (top/bottom handles) as well as moving — if
+     resize doesn't snap at all, add it for all four edges;
+   - the parent box passed for root-level cards has a real height (screen
+     height via `stageHeight`, not `undefined`/0).
+2. **Fix** whatever is horizontal-only so moving and resizing snap on both
+   axes with equal priority (closest edge/centre wins per axis, independently).
+3. **Add "Distribute"** to the Inspector's multi-select align row: *Distribute
+   horizontally* and *Distribute vertically* (equal gaps between 3+ selected
+   blocks in the same card), with a pure helper beside `alignFrames` and unit
+   tests. One undo step, like Align.
+4. Unit tests in `tests/unit/interview.test.js`: `snapFrame` snaps y to a
+   sibling's top, middle and bottom and to the parent's middle, and returns a
+   `y` guide; `alignFrames(…, 'top'|'middle'|'bottom')`; the new distribute
+   helper.
+5. Browser check (alt-port emulators, section 3): drag a block near another's
+   middle → it snaps and a horizontal guide shows. Report exactly what you ran.
+
+No automatic behaviour beyond snapping while the user drags (snapping is
+already accepted). Commit; give the user the hosting deploy command
+(section 6).
