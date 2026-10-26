@@ -15,7 +15,7 @@ export const APP_URL = defineString('APP_URL', { default: 'https://peraform.web.
 
 let transport
 
-export async function sendMail({ to, subject, text, html }) {
+export async function sendMail({ to, subject, text, html, replyTo }) {
   const user = SMTP_USER.value()
   const pass = SMTP_PASS.value()
   if (!user || !pass || pass === 'none') {
@@ -30,7 +30,14 @@ export async function sendMail({ to, subject, text, html }) {
     secure: true,
     auth: { user, pass },
   })
-  await transport.sendMail({ from: MAIL_FROM.value() || `PeraForm <${user}>`, to, subject, text, html })
+  await transport.sendMail({
+    from: MAIL_FROM.value() || `PeraForm (No-Reply) <${user}>`,
+    replyTo: replyTo || 'PeraForm (No-Reply) <noreply@peraform-qt.web.app>',
+    to,
+    subject,
+    text,
+    html,
+  })
 
   const count = (to || '').split(',').map((s) => s.trim()).filter(Boolean).length
   if (count > 0) {
@@ -73,7 +80,7 @@ export function emailHtml({ heading, body, bodyHtml, cta, href, footer }) {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:32px 16px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#fff;border:1px solid #eceef3;border-radius:12px;border-top:6px solid #4f46e5">
 <tr><td style="padding:28px">
-<p style="margin:0 0 16px;font-size:13px;font-weight:600;color:#6b6f7b">PeraForm</p>
+<p style="margin:0 0 16px;font-size:13px;font-weight:600;color:#6b6f7b">PeraForm (No-Reply)</p>
 <h1 style="margin:0 0 12px;font-size:20px">${escapeHtml(heading)}</h1>
 ${mainContent}
 ${ctaButton}
