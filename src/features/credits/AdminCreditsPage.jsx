@@ -105,11 +105,19 @@ export default function AdminCreditsPage() {
             <strong>{formatNaira(report.totals.topupKobo)}</strong>
             <span className="credits-sub">{report.totals.topups} payments</span>
           </div>
+          <div>
+            <span className="credits-sub">Emails sent today</span>
+            <strong>{report.daily?.at(-1)?.emails ?? 0}</strong>
+            <span className="credits-sub">of 500 Gmail limit</span>
+          </div>
         </section>
       )}
       {report?.daily && <DailyChart daily={report.daily} field="users" title="Daily users" noun="users" />}
       {report?.daily && (
         <DailyChart daily={report.daily} field="responses" title="Daily responses" noun="responses" />
+      )}
+      {report?.daily && (
+        <DailyChart daily={report.daily} field="emails" title="Daily emails sent" noun="emails" />
       )}
       {report?.owners && <ResponsesByCreator owners={report.owners} />}
       {report?.failed.length > 0 && (

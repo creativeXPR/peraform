@@ -476,6 +476,7 @@ export const billingAdmin = onCall({ region: REGION, secrets: [PAYSTACK_SECRET_K
         day,
         users: activity[i].data()?.users ?? 0,
         responses: activity[i].data()?.responses ?? 0,
+        emails: activity[i].data()?.emails ?? 0,
       })),
       owners: top,
       totals,
