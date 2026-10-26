@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Globe, Info, Link2, Lock, MailPlus, UserCheck, X } from 'lucide-react'
+import { Globe, Info, Link2, Lock, Mail, MailPlus, UserCheck, X } from 'lucide-react'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
-import { callManageCollaborators } from '../../lib/firebase.js'
+import { callEmailForm, callManageCollaborators } from '../../lib/firebase.js'
 import AllowedResponders from './AllowedResponders.jsx'
 import { useFormEditor } from './editorContext.js'
 import Select from '../../lib/Select.jsx'
@@ -9,7 +9,7 @@ import Select from '../../lib/Select.jsx'
 // "Share" dialog, modelled on Google Forms': add people by email (owner),
 // who has access, general access (editors restricted; respondents anyone
 // with the link, signed-in users only, or only people you choose), publish
-// status and Copy link.
+// status, Email the form link, and Copy link.
 // Membership changes go through the manageCollaborators function, which can
 // look people up by email.
 export default function ShareDialog({ formId, open, onClose, showToast, onPublish, onCopyLink }) {
@@ -38,6 +38,13 @@ export default function ShareDialog({ formId, open, onClose, showToast, onPublis
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState(null) // { kind: 'error' | 'notice', text }
   const [pending, setPending] = useState(null) // { kind: 'remove' | 'cancelInvite', … }
+
+  const [showEmailSection, setShowEmailSection] = useState(false)
+  const [emailTo, setEmailTo] = useState('')
+  const [emailSubject, setEmailSubject] = useState('')
+  const [emailMessage, setEmailMessage] = useState('')
+  const [emailSending, setEmailSending] = useState(false)
+  const [emailStatus, setEmailStatus] = useState(null)
 
   useEffect(() => {
     const dialog = ref.current
@@ -103,6 +110,33 @@ export default function ShareDialog({ formId, open, onClose, showToast, onPublis
       setPending(null)
     } finally {
       setBusy(false)
+    }
+  }
+
+  async function sendEmailForm(e) {
+    e.preventDefault()
+    if (!emailTo.trim()) return
+    setEmailSending(true)
+    setEmailStatus(null)
+    try {
+      const title = draft?.title || 'Untitled form'
+      const { data: res } = await callEmailForm({
+        formId,
+        to: emailTo,
+        subject: emailSubject.trim() || `Please fill in: ${title}`,
+        message: emailMessage,
+      })
+      showToast(`Sent to ${res.sent} ${res.sent === 1 ? 'recipient' : 'recipients'}`)
+      setEmailTo('')
+      setEmailMessage('')
+      setShowEmailSection(false)
+    } catch (err) {
+      setEmailStatus({
+        kind: 'error',
+        text: err.message || 'Couldn’t send email. Please try again.',
+      })
+    } finally {
+      setEmailSending(false)
     }
   }
 
@@ -204,6 +238,70 @@ export default function ShareDialog({ formId, open, onClose, showToast, onPublis
               </li>
             ))}
           </ul>
+        )}
+
+        <div className="share-email-toggle">
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={() => setShowEmailSection((s) => !s)}
+          >
+            <Mail size={16} />
+            {showEmailSection ? 'Hide email form link' : 'Email the form link'}
+          </button>
+        </div>
+
+        {showEmailSection && (
+          <form className="share-email-form" onSubmit={sendEmailForm}>
+            <label className="share-field">
+              <span>To (comma-separated, up to 25)</span>
+              <input
+                type="text"
+                value={emailTo}
+                onChange={(e) => setEmailTo(e.target.value)}
+                placeholder="colleague@example.com, friend@example.com"
+                aria-label="Recipient email addresses"
+                required
+              />
+            </label>
+            <label className="share-field">
+              <span>Subject</span>
+              <input
+                type="text"
+                value={emailSubject || `Please fill in: ${draft?.title || 'Untitled form'}`}
+                onChange={(e) => setEmailSubject(e.target.value)}
+                placeholder={`Please fill in: ${draft?.title || 'Untitled form'}`}
+                aria-label="Email subject"
+              />
+            </label>
+            <label className="share-field">
+              <span>Message (optional)</span>
+              <textarea
+                value={emailMessage}
+                onChange={(e) => setEmailMessage(e.target.value)}
+                placeholder="Add a message..."
+                rows={3}
+                aria-label="Email message"
+              />
+            </label>
+            {emailStatus && (
+              <p className={emailStatus.kind === 'error' ? 'form-error' : 'form-notice'} role="status">
+                {emailStatus.text}
+              </p>
+            )}
+            <div className="share-email-actions">
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={emailSending || !emailTo.trim() || form?.status !== 'published'}
+              >
+                {emailSending ? 'Sending…' : 'Send email'}
+              </button>
+            </div>
+            {form?.status !== 'published' && (
+              <p className="share-field-hint">Publish the form before emailing it to respondents.</p>
+            )}
+          </form>
         )}
 
         <h3 className="share-heading">General access</h3>

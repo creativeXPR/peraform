@@ -1131,6 +1131,68 @@
   height: 38px;
 }
 
+.share-email-toggle {
+  margin: 12px 0 6px;
+}
+
+.share-email-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--bg);
+  margin-bottom: 12px;
+}
+
+.share-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.share-field span {
+  font-weight: 500;
+  color: var(--text);
+}
+
+.share-field input,
+.share-field textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.share-field textarea {
+  resize: vertical;
+}
+
+.share-field input:focus,
+.share-field textarea:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.share-email-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.share-field-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
 /* "Only people you choose" list (AllowedResponders) */
 .allowed {
   display: flex;

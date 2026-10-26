@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto'
 // addresses are never stored. Returns false once `limit` hits land inside
 // `windowMs`. Clients can't read or write rateLimits (no rule matches it).
 // expireAt lets a Firestore TTL policy clean old windows up.
-export async function allow(db, key, limit, windowMs) {
+export async function allow(db, key, limit, windowMs, cost = 1) {
   const id = createHash('sha256').update(key).digest('hex').slice(0, 40)
   const ref = db.doc(`rateLimits/${id}`)
   return db.runTransaction(async (tx) => {
@@ -14,8 +14,8 @@ export async function allow(db, key, limit, windowMs) {
       start = now
       count = 0
     }
-    if (count >= limit) return false
-    tx.set(ref, { start, count: count + 1, expireAt: new Date(start + windowMs * 2) })
+    if (count + cost > limit) return false
+    tx.set(ref, { start, count: count + cost, expireAt: new Date(start + windowMs * 2) })
     return true
   })
 }

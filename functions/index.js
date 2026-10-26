@@ -10,6 +10,7 @@ import { isAllowedResponder } from './access.js'
 import { REGION, billingDb, db, lagosDay, requireApp } from './app.js'
 import { MARK, compressBuffer, compressionFor } from './compress.js'
 import { gradeResponse } from './grade.js'
+import { formatRespondentCopy, formatScoreRelease, formatEmailFormInvitation } from './emailFormat.js'
 import { formMeta, injectOg } from './ogTags.js'
 import { responseTable } from './responseTable.js'
 import { accessToken, appendRow, createSpreadsheet, exchangeCode, revoke, writeAll } from './sheets.js'
@@ -87,11 +88,15 @@ export const submitResponse = onCall({ region: REGION }, async (request) => {
   // One-per-person: the response id is the respondent's uid, so create()
   // fails if they've already answered.
   const ref = form.settings?.limitOneResponse ? responses.doc(uid) : responses.doc()
+  const formSendCopy = form?.settings?.sendCopy ?? 'off'
+  const wantsCopy =
+    formSendCopy !== 'off' && request.data?.sendCopy === true && Boolean(request.auth.token.email)
   try {
     await ref.create({
       respondentId: uid,
       answers: clean,
       submittedAt: FieldValue.serverTimestamp(),
+      ...(wantsCopy && { sendCopy: true }),
       // From the sign-in token, so respondents can't type someone else's,
       // and only when they agreed to share it (the switch at the top of
       // the form): their consent, even when the form asks for emails.
@@ -296,6 +301,27 @@ export const onResponseCreated = onDocumentCreated(
       })
     }
 
+    const responseData = event.data.data()
+    if (responseData?.sendCopy === true) {
+      try {
+        let copyTo = responseData.respondentEmail
+        if (!copyTo && responseData.respondentId) {
+          const u = await getAuth().getUser(responseData.respondentId).catch(() => null)
+          copyTo = u?.email
+        }
+        if (copyTo) {
+          const { subject, text, html } = formatRespondentCopy({
+            form,
+            answers: responseData.answers ?? {},
+            submittedAt: responseData.submittedAt?.toDate?.() || new Date(),
+          })
+          await sendMail({ to: copyTo, subject, text, html })
+        }
+      } catch (err) {
+        logger.error('Respondent copy email failed', { formId, err: err.message })
+      }
+    }
+
     // Only members still on the form get emails.
     const uids = (form.notify ?? []).filter((uid) => form.memberIds.includes(uid))
     if (!uids.length) return
@@ -478,6 +504,114 @@ export const acceptInvites = onCall({ region: REGION }, async (request) => {
   )
   return { joined: snap.size }
 })
+
+// ── Release quiz scores by email ────────────────────────────
+export const releaseScores = onCall(
+  { region: REGION, secrets: [SMTP_PASS] },
+  async (request) => {
+    requireApp(request)
+    if (!request.auth || request.auth.token.firebase?.sign_in_provider === 'anonymous') {
+      throw new HttpsError('unauthenticated', 'Sign in first.')
+    }
+    const { formId, responseIds } = request.data ?? {}
+    if (typeof formId !== 'string' || !formId) {
+      throw new HttpsError('invalid-argument', 'No form.')
+    }
+    const { form } = await memberForm(formId, request.auth.uid)
+    const ids = Array.isArray(responseIds) ? responseIds.filter((id) => typeof id === 'string' && id) : []
+    if (!ids.length) return { released: 0 }
+
+    let releasedCount = 0
+    for (const resId of ids) {
+      const resRef = db.doc(`forms/${formId}/responses/${resId}`)
+      const snap = await resRef.get()
+      if (!snap.exists) continue
+      const resData = snap.data()
+      await resRef.update({ released: true })
+      releasedCount++
+
+      // Only respondents who shared their email receive the notification
+      const email = resData.respondentEmail
+      if (email) {
+        const resultUrl = `${APP_URL.value()}/f/${formId}/r/${resId}`
+        const { subject, text, html } = formatScoreRelease({
+          form,
+          response: resData,
+          resultUrl,
+        })
+        try {
+          await sendMail({ to: email, subject, text, html })
+        } catch (err) {
+          logger.error('Score release email failed', { formId, resId, email, err: err.message })
+        }
+      }
+    }
+    return { released: releasedCount }
+  },
+)
+
+// ── Send form by email ──────────────────────────────────────
+export const emailForm = onCall(
+  { region: REGION, secrets: [SMTP_PASS] },
+  async (request) => {
+    requireApp(request)
+    if (!request.auth || request.auth.token.firebase?.sign_in_provider === 'anonymous') {
+      throw new HttpsError('unauthenticated', 'Sign in first.')
+    }
+    if (request.auth.token.email_verified !== true) {
+      throw new HttpsError('failed-precondition', 'Please verify your email address before emailing the form.')
+    }
+    const { formId, to, subject: customSubject, message } = request.data ?? {}
+    if (typeof formId !== 'string' || !formId) {
+      throw new HttpsError('invalid-argument', 'No form.')
+    }
+    const { form } = await memberForm(formId, request.auth.uid)
+    if (form.status !== 'published') {
+      throw new HttpsError('failed-precondition', 'Publish the form before emailing it to respondents.')
+    }
+
+    const rawRecipients = typeof to === 'string' ? to.split(/[,;\n]+/) : Array.isArray(to) ? to : []
+    const emails = Array.from(new Set(rawRecipients.map(normalizeEmail).filter(Boolean)))
+    const validEmails = emails.filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))
+    if (!validEmails.length) {
+      throw new HttpsError('invalid-argument', 'Please provide at least one valid recipient email address.')
+    }
+    if (validEmails.length > 25) {
+      throw new HttpsError('invalid-argument', 'You can send to at most 25 recipients at a time.')
+    }
+
+    const allowed = await allow(db, `emailForm:${request.auth.uid}`, 100, 86_400_000, validEmails.length)
+    if (!allowed) {
+      throw new HttpsError('resource-exhausted', 'Daily email limit reached (100 per day). Try again tomorrow.')
+    }
+
+    const inviter = request.auth.token.name || request.auth.token.email || 'Someone'
+    const formUrl = `${APP_URL.value()}/f/${formId}`
+    const formatted = formatEmailFormInvitation({
+      form,
+      inviter,
+      message: typeof message === 'string' ? message.slice(0, 2000) : '',
+      formUrl,
+      customSubject,
+    })
+
+    let sent = 0
+    for (const recipient of validEmails) {
+      try {
+        const ok = await sendMail({
+          to: recipient,
+          subject: formatted.subject,
+          text: formatted.text,
+          html: formatted.html,
+        })
+        if (ok) sent++
+      } catch (err) {
+        logger.error('emailForm recipient send failed', { formId, recipient, err: err.message })
+      }
+    }
+    return { sent, total: validEmails.length }
+  },
+)
 
 // ── Link previews (/f/:id) ──────────────────────────────────
 // Link previewers (WhatsApp, Twitter/X, Slack, iMessage) don't run JS, so the

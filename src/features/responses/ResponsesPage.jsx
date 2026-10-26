@@ -5,7 +5,6 @@ import {
   deleteDoc,
   doc,
   updateDoc,
-  writeBatch,
 } from 'firebase/firestore'
 import {
   BadgeCheck,
@@ -22,7 +21,7 @@ import {
 } from 'lucide-react'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { useSheetsStatus } from '../../lib/googleSheets.js'
-import { db } from '../../lib/firebase.js'
+import { callReleaseScores, db } from '../../lib/firebase.js'
 import { formatAnswer } from '../../lib/formatAnswer.js'
 import { hasAnswer, isQuestion, isSection, questionsOnly } from '../../lib/formLogic.js'
 import { formatBytes } from '../../lib/upload.js'
@@ -80,13 +79,8 @@ export default function ResponsesPage() {
   async function releaseAll() {
     if (!unreleased.length) return showToast('Every graded score is already released')
     try {
-      for (let i = 0; i < unreleased.length; i += 500) {
-        const batch = writeBatch(db)
-        for (const r of unreleased.slice(i, i + 500)) {
-          batch.update(doc(db, 'forms', form.id, 'responses', r.id), { released: true })
-        }
-        await batch.commit()
-      }
+      const ids = unreleased.map((r) => r.id)
+      await callReleaseScores({ formId: form.id, responseIds: ids })
       showToast(`Released ${unreleased.length} ${unreleased.length === 1 ? 'score' : 'scores'}`)
     } catch {
       showToast('Couldn’t release scores. Please try again.')

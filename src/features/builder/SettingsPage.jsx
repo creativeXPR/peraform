@@ -19,6 +19,7 @@ export default function SettingsPage() {
     requireSignIn,
     limitOneResponse,
     collectEmails,
+    sendCopy,
     showProgressBar,
     shuffleQuestions,
     confirmationMessage,
@@ -124,6 +125,22 @@ export default function SettingsPage() {
           disabled={restricted}
           onChange={(v) => set('collectEmails', v)}
         />
+        <div className="setting">
+          <span className="setting-text">
+            <strong>Send responders a copy of their response</strong>
+            <span>Respondents who sign in with an email can choose to receive a copy of their answers.</span>
+          </span>
+          <Select
+            className="setting-select"
+            value={sendCopy || 'off'}
+            aria-label="Send responders a copy of their response"
+            onChange={(e) => set('sendCopy', e.target.value)}
+          >
+            <option value="off">Off</option>
+            <option value="requested">When requested</option>
+            <option value="always">Always offered</option>
+          </Select>
+        </div>
       </section>
 
       <section className="settings-group">

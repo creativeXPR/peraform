@@ -239,6 +239,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
   const {
     limitOneResponse,
     collectEmails,
+    sendCopy: sendCopySetting,
     showProgressBar,
     shuffleQuestions,
     confirmationMessage,
@@ -253,6 +254,9 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
   const consent = emailAsked && (
     <EmailConsent email={user.email} checked={shareEmail} onChange={setShareEmail} asked={emailWanted} />
   )
+  const hasUserEmail = Boolean(user?.email && !user.isAnonymous)
+  const canSendCopy = Boolean(sendCopySetting && sendCopySetting !== 'off' && hasUserEmail)
+  const [sendCopyRequested, setSendCopyRequested] = useState(sendCopySetting === 'always')
   const doneMessage = confirmationMessage.trim() || 'Your response has been recorded.'
   const title = form.title || 'Untitled form'
   const quiz = quizSettings(form)
@@ -627,6 +631,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
         formId: form.id,
         answers: clean,
         shareEmail: emailAsked && shareEmail,
+        sendCopy: Boolean(canSendCopy && sendCopyRequested),
       })
       setSentId(data.responseId)
       setState('sent')
@@ -747,6 +752,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
         overlay={
           (prefillMode ||
             (emailAsked && pageIndex === 0) ||
+            (next === 'submit' && canSendCopy) ||
             saved.restored ||
             preview ||
             deadline ||
@@ -756,6 +762,16 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
             <div className="interview-overlay">
               {prefillMode && <PrefillBar form={form} answers={answers} />}
               {pageIndex === 0 && consent}
+              {next === 'submit' && canSendCopy && (
+                <label className="respond-copy-check respond-copy-overlay">
+                  <input
+                    type="checkbox"
+                    checked={sendCopyRequested}
+                    onChange={(e) => setSendCopyRequested(e.target.checked)}
+                  />
+                  <span>Email me a copy of my answers</span>
+                </label>
+              )}
               {restoredNote}
               {preview && !prefillMode && (
                 <p className="respond-banner">
@@ -892,6 +908,17 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
         <p className="form-error" role="alert">
           {error}
         </p>
+      )}
+
+      {next === 'submit' && !prefillMode && canSendCopy && (
+        <label className="respond-copy-check">
+          <input
+            type="checkbox"
+            checked={sendCopyRequested}
+            onChange={(e) => setSendCopyRequested(e.target.checked)}
+          />
+          <span>Email me a copy of my answers</span>
+        </label>
       )}
 
       <div className="respond-actions">

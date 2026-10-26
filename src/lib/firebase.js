@@ -78,6 +78,8 @@ export const callEnsureWallet = httpsCallable(functions, 'ensureWallet')
 export const callCreateTopup = httpsCallable(functions, 'createTopup')
 export const callVerifyTopup = httpsCallable(functions, 'verifyTopup')
 export const callBillingAdmin = httpsCallable(functions, 'billingAdmin')
+export const callReleaseScores = httpsCallable(functions, 'releaseScores')
+export const callEmailForm = httpsCallable(functions, 'emailForm')
 // AI runs stream their progress (callAiRun.stream) and can take a while
 // (the function allows 300 s).
 export const callAiRun = httpsCallable(functions, 'aiRun', { timeout: 305_000 })

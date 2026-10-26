@@ -107,6 +107,7 @@ export function needsSignIn(form) {
 // Presentation and response settings beyond sign-in/one-response.
 export const PRESENTATION_DEFAULTS = {
   collectEmails: false,
+  sendCopy: 'off',
   showProgressBar: false,
   shuffleQuestions: false,
   confirmationMessage: '',
