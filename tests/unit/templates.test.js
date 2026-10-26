@@ -78,7 +78,7 @@ describe('templates', () => {
     }
 
     const { getRecentTemplateKeys, saveRecentTemplateKey } = await import(
-      '../../src/features/dashboard/TemplateGallery.jsx'
+      '../../src/features/dashboard/templates.js'
     )
     expect(getRecentTemplateKeys()).toEqual([])
 

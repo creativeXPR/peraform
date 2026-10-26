@@ -17,6 +17,28 @@ function quizConfig(overrides = {}) {
   }
 }
 
+const RECENT_KEY = 'peraform-recent-templates'
+
+export function getRecentTemplateKeys() {
+  try {
+    const raw = localStorage.getItem(RECENT_KEY)
+    const list = JSON.parse(raw)
+    return Array.isArray(list) ? list.slice(0, 6) : []
+  } catch {
+    return []
+  }
+}
+
+export function saveRecentTemplateKey(key) {
+  try {
+    const existing = getRecentTemplateKeys().filter((k) => k !== key)
+    const next = [key, ...existing].slice(0, 6)
+    localStorage.setItem(RECENT_KEY, JSON.stringify(next))
+  } catch {
+    // Storage blocked or unavailable
+  }
+}
+
 // Starter templates on the dashboard and in the Template Gallery.
 // Every build() returns fresh question IDs so two forms never share IDs.
 export const TEMPLATES = [

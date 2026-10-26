@@ -1,30 +1,8 @@
 import { useMemo, useState } from 'react'
-import { ArrowLeft, ChevronRight, Sparkles, X } from 'lucide-react'
+import { ArrowLeft, X } from 'lucide-react'
 import FormThumbnail from './FormThumbnail.jsx'
-import { TEMPLATES } from './templates.js'
+import { getRecentTemplateKeys, saveRecentTemplateKey, TEMPLATES } from './templates.js'
 import './TemplateGallery.css'
-
-const RECENT_KEY = 'peraform-recent-templates'
-
-export function getRecentTemplateKeys() {
-  try {
-    const raw = localStorage.getItem(RECENT_KEY)
-    const list = JSON.parse(raw)
-    return Array.isArray(list) ? list.slice(0, 6) : []
-  } catch {
-    return []
-  }
-}
-
-export function saveRecentTemplateKey(key) {
-  try {
-    const existing = getRecentTemplateKeys().filter((k) => k !== key)
-    const next = [key, ...existing].slice(0, 6)
-    localStorage.setItem(RECENT_KEY, JSON.stringify(next))
-  } catch {
-    // Storage blocked or unavailable
-  }
-}
 
 const CATEGORIES = [
   { id: 'personal', title: 'Personal' },
