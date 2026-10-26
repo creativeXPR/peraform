@@ -149,7 +149,7 @@ export default function DashboardPage() {
   }
 
   async function startForm(getContent, templateKey) {
-    if (templateKey) saveRecentTemplateKey(templateKey)
+    if (templateKey) saveRecentTemplateKey(templateKey, user?.uid)
     setCreating(true)
     setActionError('')
     try {
@@ -281,10 +281,11 @@ export default function DashboardPage() {
       <GenerateFormDialog open={aiOpen} onClose={() => setAiOpen(false)} />
       <TemplateGallery
         open={galleryOpen}
+        uid={user?.uid}
         onClose={() => setGalleryOpen(false)}
-        onSelect={(getContent) => {
+        onSelect={(getContent, key) => {
           setGalleryOpen(false)
-          startForm(getContent)
+          startForm(getContent, key)
         }}
         creating={creating}
       />

@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { ArrowLeft, X } from 'lucide-react'
 import FormThumbnail from './FormThumbnail.jsx'
-import { getRecentTemplateKeys, saveRecentTemplateKey, TEMPLATES } from './templates.js'
+import { saveRecentTemplateKey, TEMPLATES, useRecentTemplateKeys } from './templates.js'
 import './TemplateGallery.css'
 
 const CATEGORIES = [
@@ -10,8 +10,8 @@ const CATEGORIES = [
   { id: 'education', title: 'Education' },
 ]
 
-export default function TemplateGallery({ open, onClose, onSelect, creating }) {
-  const [recentKeys, setRecentKeys] = useState(getRecentTemplateKeys)
+export default function TemplateGallery({ open, onClose, onSelect, creating, uid }) {
+  const recentKeys = useRecentTemplateKeys(uid)
 
   // Stable previews for thumbnails
   const previewsByKey = useMemo(() => {
@@ -31,9 +31,8 @@ export default function TemplateGallery({ open, onClose, onSelect, creating }) {
   if (!open) return null
 
   function handlePick(template) {
-    saveRecentTemplateKey(template.key)
-    setRecentKeys(getRecentTemplateKeys())
-    onSelect(template.build)
+    saveRecentTemplateKey(template.key, uid)
+    onSelect(template.build, template.key)
   }
 
   return (

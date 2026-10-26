@@ -1,6 +1,14 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { TEMPLATES } from '../../src/features/dashboard/templates.js'
 import { QUESTION_TYPES } from '../../src/lib/formModel.js'
+
+vi.mock('../../src/lib/firebase.js', () => ({ db: {} }))
+const mockSetDoc = vi.fn(() => Promise.resolve())
+vi.mock('firebase/firestore', () => ({
+  doc: vi.fn((_db, ...args) => args.join('/')),
+  setDoc: (...args) => mockSetDoc(...args),
+  onSnapshot: vi.fn(),
+}))
 
 describe('templates', () => {
   it('has templates defined with required metadata', () => {
@@ -68,7 +76,7 @@ describe('templates', () => {
     }
   })
 
-  it('manages recently used template keys in localStorage', async () => {
+  it('manages recently used template keys in localStorage and syncs with user account', async () => {
     const store = new Map()
     globalThis.localStorage = {
       getItem: (k) => store.get(k) ?? null,
@@ -84,13 +92,23 @@ describe('templates', () => {
 
     saveRecentTemplateKey('contact')
     saveRecentTemplateKey('rsvp')
-    saveRecentTemplateKey('assessment')
+    saveRecentTemplateKey('assessment', 'user-123')
 
     expect(getRecentTemplateKeys()).toEqual(['assessment', 'rsvp', 'contact'])
+    expect(mockSetDoc).toHaveBeenCalledWith(
+      'users/user-123/settings/templates',
+      { recentKeys: ['assessment', 'rsvp', 'contact'] },
+      { merge: true },
+    )
 
     // Deduplication and moving to front
-    saveRecentTemplateKey('rsvp')
+    saveRecentTemplateKey('rsvp', 'user-123')
     expect(getRecentTemplateKeys()).toEqual(['rsvp', 'assessment', 'contact'])
+    expect(mockSetDoc).toHaveBeenCalledWith(
+      'users/user-123/settings/templates',
+      { recentKeys: ['rsvp', 'assessment', 'contact'] },
+      { merge: true },
+    )
 
     // Caps at 6 items
     saveRecentTemplateKey('k1')
