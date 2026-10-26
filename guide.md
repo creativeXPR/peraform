@@ -387,3 +387,92 @@ is stored (`theme.headerImage` = `{ url, … }`) and use a public path URL.
   template from each category, editor opens with the questions. Report what
   you ran.
 - Commit; give the user the hosting deploy command (section 6).
+
+---
+
+# Part 5 — Fix: functions deploy failed ("container failed to start")
+
+User ran:
+```
+firebase deploy --only hosting:peraform-qt,functions:peraform,firestore:rules --project quality-toolsx
+```
+Result: `ogForm` deployed fine, but these failed to update (europe-west1):
+billingAdmin, createTopup, emailForm, expireCredits, manageCollaborators,
+onResponseCreated, paystackWebhook, releaseScores, releaseStaleHolds,
+verifyTopup. The visible error text ends with a Cloud Run revision
+`…-00023-…` and "For more troubleshooting guidance, see
+…/troubleshooting#container-failed-to-start". **Hosting was skipped** (the
+deploy aborts before hosting when functions fail), so the site is not
+updated either.
+
+You can't run `firebase deploy` (the user does), and reading production
+logs may be blocked for you — ask the user to paste what you need.
+
+## 1. Find the cause (don't guess)
+
+Ask the user to scroll up in that same terminal and paste the **first full
+error** for one failed function, or to run:
+```
+firebase functions:log --only billingAdmin --project quality-toolsx
+```
+Then match:
+
+**A. "Quota exceeded for total allowable CPU per project per region"**
+(most likely — it happened before on this project; `ogForm` succeeding means
+the code itself loads). Many functions updating at once exceed the regional
+CPU quota while old and new revisions run side by side. It's temporary.
+Fix: deploy in small batches (section 3). Optional, to prevent repeats:
+- lower each function's CPU: in the `onCall`/`onRequest`/`onSchedule`/
+  `onDocumentCreated` options add `cpu: 'gcf_gen1'` (fractional CPU, fine for
+  these light functions) — or `memory: '256MiB'` where it's higher and not
+  needed (AI `aiRun` needs more; leave it);
+- keep `maxInstances` modest (e.g. 10–20) on functions that don't set it;
+- or the user can request a higher "Total CPU allocation, per project per
+  region" quota for Cloud Run in europe-west1 (Google Cloud console → IAM &
+  Admin → Quotas). Mention this; don't make them do it.
+
+**B. A real start-up crash** (the log shows a JavaScript error, "Cannot find
+module", "is not defined", a missing secret/param, or "failed to listen on
+PORT"). Note: `emailForm` and `releaseScores` are **new** (added by the
+previous agent for Part 2 of this guide). Check:
+- `cd functions && node -e "import('./index.js').then(()=>console.log('ok'))"`
+  loads without errors (set dummy env if needed);
+- every `defineSecret(...)` used by the new functions exists in Secret
+  Manager (`firebase functions:secrets:get NAME --project quality-toolsx` —
+  ask the user; never print secret values) and is listed in that function's
+  `secrets: [...]` option (e.g. email-sending functions need `SMTP_PASS`);
+- new imports are in `functions/package.json` dependencies;
+- `npx eslint functions` and `npx vitest run tests/unit` pass.
+Fix the code, commit, then deploy as in section 3.
+
+## 2. Don't
+
+- Don't delete functions or change regions/names (the Paystack webhook URL
+  `https://europe-west1-quality-toolsx.cloudfunctions.net/paystackWebhook`
+  must keep working).
+- Don't redeploy everything at once again until the cause is known.
+
+## 3. Deploy in batches (give the user these, one at a time)
+
+```
+cd C:\Users\IAR\Documents\code\peraform
+$env:FUNCTIONS_DISCOVERY_TIMEOUT=120
+firebase deploy --only functions:peraform:billingAdmin,functions:peraform:createTopup,functions:peraform:verifyTopup --project quality-toolsx
+firebase deploy --only functions:peraform:paystackWebhook,functions:peraform:expireCredits,functions:peraform:releaseStaleHolds --project quality-toolsx
+firebase deploy --only functions:peraform:manageCollaborators,functions:peraform:onResponseCreated --project quality-toolsx
+firebase deploy --only functions:peraform:emailForm,functions:peraform:releaseScores --project quality-toolsx
+firebase deploy --only hosting:peraform-qt,firestore:rules --project quality-toolsx
+```
+If a batch still fails with the quota error, wait 2–3 minutes and rerun that
+batch (old revisions release their CPU). The last line publishes the site,
+which the failed run skipped.
+
+## 4. Verify
+
+- `firebase functions:list --project quality-toolsx` shows all functions
+  (ask the user to paste it).
+- Paystack webhook still answers: a plain GET to its URL returns **405**, not
+  404/5xx.
+- Site loads and a test response triggers the owner notification email.
+Report to the user which cause it was (A or B), what you changed, and that
+everything is deployed (or what's left).
