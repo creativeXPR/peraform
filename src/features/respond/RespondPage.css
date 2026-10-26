@@ -119,6 +119,49 @@
   margin-top: 8px;
 }
 
+.respond-signin-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 300px;
+  margin-top: 12px;
+}
+
+.respond-signin-actions .btn {
+  margin-top: 0;
+  width: 100%;
+}
+
+.respond-google-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 500;
+}
+
+.respond-signin-divider {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.respond-signin-divider::before,
+.respond-signin-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.respond-signin-divider span {
+  padding: 0 10px;
+}
+
 .respond-done-icon {
   color: var(--accent);
 }

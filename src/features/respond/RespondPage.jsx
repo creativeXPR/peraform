@@ -25,8 +25,10 @@ import { loadThemeFont, themeOf, themeStyle } from '../../lib/theme.js'
 import { validateAnswer } from '../../lib/validation.js'
 import { useTheme } from '../../lib/useTheme.js'
 import { darkDesign, darkOverrides } from '../../lib/darkMode.js'
-import { ensureSignedIn } from '../auth/authActions.js'
+import { ensureSignedIn, signInWithGoogle } from '../auth/authActions.js'
 import { isCreator, useAuth } from '../auth/useAuth.js'
+import GoogleMark from '../../lib/GoogleMark.jsx'
+import { useGoogleOneTap } from '../auth/oneTap.js'
 import AccessGate from './AccessGate.jsx'
 import PrefillBar from './PrefillBar.jsx'
 import PrintView from './PrintView.jsx'
@@ -222,6 +224,10 @@ function cleanAnswer(question, value) {
 function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark = false }) {
   const formTheme = themeOf(form)
   const [answers, setAnswers] = useState(initialAnswers)
+  const [signingIn, setSigningIn] = useState(false)
+  const [signInError, setSignInError] = useState('')
+  const requiresSignIn = Boolean(form && needsSignIn(form) && !isCreator(user))
+  useGoogleOneTap({ enabled: requiresSignIn })
   // Interview mode: what button clicks have changed so far (lib/actions.js).
   const [clickState, setClickState] = useState({})
   const [errors, setErrors] = useState({}) // questionId → message
@@ -331,17 +337,48 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
       <Notice title="Form not found">The link may be wrong, or the form isn’t published.</Notice>
     )
   }
-  if (needsSignIn(form) && !isCreator(user)) {
+  if (requiresSignIn) {
     return (
       <section className="respond-card respond-notice">
         <h1>{title}</h1>
         <p>Sign in to fill out this form.</p>
-        <Link
-          to={`/signin?next=${encodeURIComponent(`/f/${form.id}`)}`}
-          className="btn btn-primary"
-        >
-          Sign in
-        </Link>
+        {signInError && (
+          <p className="form-error" role="alert">
+            {signInError}
+          </p>
+        )}
+        <div className="respond-signin-actions">
+          <button
+            type="button"
+            className="btn btn-outline respond-google-btn"
+            disabled={signingIn}
+            onClick={async () => {
+              setSigningIn(true)
+              setSignInError('')
+              try {
+                await signInWithGoogle()
+              } catch (err) {
+                if (err.code !== 'auth/popup-closed-by-user') {
+                  setSignInError('Couldn’t sign in with Google. Please try again.')
+                }
+              } finally {
+                setSigningIn(false)
+              }
+            }}
+          >
+            <GoogleMark />
+            <span>Continue with Google</span>
+          </button>
+          <div className="respond-signin-divider">
+            <span>or</span>
+          </div>
+          <Link
+            to={`/signin?next=${encodeURIComponent(`/f/${form.id}`)}`}
+            className="btn btn-primary"
+          >
+            Sign in with email
+          </Link>
+        </div>
       </section>
     )
   }

@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Lock, MailCheck } from 'lucide-react'
 import { getFirebaseAuth } from '../../lib/firebase.js'
-import { resendVerification, signOut } from '../auth/authActions.js'
+import { resendVerification, signInWithGoogle, signOut } from '../auth/authActions.js'
+import GoogleMark from '../../lib/GoogleMark.jsx'
+import { useGoogleOneTap } from '../auth/oneTap.js'
 
 // Shown instead of an invited-only form when the respondent can't open it
 // (the reason comes from the formGate function):
@@ -13,7 +15,11 @@ import { resendVerification, signOut } from '../auth/authActions.js'
 export default function AccessGate({ gate, formId }) {
   const navigate = useNavigate()
   const [status, setStatus] = useState('')
+  const [signingIn, setSigningIn] = useState(false)
+  const [signInError, setSignInError] = useState('')
   const signInPath = `/signin?next=${encodeURIComponent(`/f/${formId}`)}`
+
+  useGoogleOneTap({ enabled: gate.state === 'signin' })
 
   async function switchAccount() {
     await signOut()
@@ -59,9 +65,40 @@ export default function AccessGate({ gate, formId }) {
             Only people invited by the form’s owner can fill this out. Sign in with the email
             address you were invited with.
           </p>
-          <Link to={signInPath} className="btn btn-primary">
-            Sign in
-          </Link>
+          {signInError && (
+            <p className="form-error" role="alert">
+              {signInError}
+            </p>
+          )}
+          <div className="respond-signin-actions">
+            <button
+              type="button"
+              className="btn btn-outline respond-google-btn"
+              disabled={signingIn}
+              onClick={async () => {
+                setSigningIn(true)
+                setSignInError('')
+                try {
+                  await signInWithGoogle()
+                } catch (err) {
+                  if (err.code !== 'auth/popup-closed-by-user') {
+                    setSignInError('Couldn’t sign in with Google. Please try again.')
+                  }
+                } finally {
+                  setSigningIn(false)
+                }
+              }}
+            >
+              <GoogleMark />
+              <span>Continue with Google</span>
+            </button>
+            <div className="respond-signin-divider">
+              <span>or</span>
+            </div>
+            <Link to={signInPath} className="btn btn-primary">
+              Sign in with email
+            </Link>
+          </div>
         </>
       )}
 
