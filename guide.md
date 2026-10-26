@@ -4,6 +4,22 @@ Hand-off for an AI agent. Goal, constraints, exact steps, and how to verify.
 The owner (the user) chose **option 2**: every shared link shows a preview card,
 and form links (`/f/:id`) show **that form's** title, description and header image.
 
+## Status (as of 2026-10-26)
+
+All four parts of this guide are **fully implemented and committed**. The project
+is clean (build passes, all 243 unit tests pass).
+
+| Part | Feature | Status |
+|---|---|---|
+| 1 | Link previews (banner + per-form OG cards) | ✅ Done |
+| 2 | Emails (respondent copy, score release, send by email) | ✅ Done |
+| 3 | Vertical alignment of blocks in Design screens | ✅ Done |
+| 4 | Template gallery (17 templates, Personal / Work / Education) | ✅ Done |
+
+Extra work also done:
+- Daily email count tracked in `billingDb/activity/{day}.emails` and shown on the admin credits page
+- **Send reminder** button in the InviteTracker (Responses tab, invited-only forms) — calls `emailForm` pre-filled with waiting respondents
+
 ---
 
 ## 0. Ground rules (read first — these come from the user)
@@ -12,8 +28,7 @@ and form links (`/f/:id`) show **that form's** title, description and header ima
   data or overrides a choice on its own. Offer a button instead. Any new
   "auto" behaviour needs a planning session with the user *before* building it.
 - **Commit, never push.** Commit each change on the current branch with a
-  clear message ending in:
-  `Co-Authored-By: <your model name> <noreply@anthropic.com>`
+  clear, plain commit message (the main subject line only — no `Co-Authored-By` trailers).
 - **You can't deploy.** The user runs `firebase deploy` themselves. At the end,
   give them the exact commands (section 6). Never paste or ask for secrets.
 - **Every delete/remove button** needs an "are you sure?" `ConfirmModal`
