@@ -295,3 +295,80 @@ Build:
 Not automatic — it's a setting the user picks. Commit; give the user the
 hosting **and** functions deploy command (section 6), since the AI prompt
 changes.
+
+---
+
+# Part 4 — Template gallery (like Google Forms)
+
+User wants a full template gallery like Google Forms': **Recently used**,
+then categories **Personal**, **Work**, **Education**, each a grid of cards
+with a thumbnail (header image + preview of the form) and a name.
+
+## What exists (extend it, don't replace it)
+
+- `src/features/dashboard/templates.js` → `TEMPLATES = [{ key, name, build }]`;
+  `build()` returns `{ title, description, questions }` with **fresh ids**
+  every call (helper `q(type, title, extra)` uses `newQuestion` from
+  `src/lib/formModel.js`). Keep that rule: never hard-code ids.
+- `src/features/dashboard/DashboardPage.jsx` shows a row of `.start-card`s
+  (blank, AI, templates) using `TEMPLATE_PREVIEWS`, and creates a form from a
+  template when clicked. Read that flow and reuse it.
+- Question types available: `src/features/builder/questionTypes.js`
+  (`TYPE_INFO`) — shortText, longText, multipleChoice, checkboxes, dropdown,
+  linearScale, rating, mcGrid, checkboxGrid, date, time, fileUpload, plus
+  sections and content items (text/image/video) and quiz settings
+  (`quizSettings` in `formModel.js`). Check the exact field names (options,
+  min/max/labels, rows/columns, `required`, quiz points/answer keys) before
+  writing templates.
+
+## Templates to create (original wording — don't copy Google's text)
+
+| Category | Templates |
+|---|---|
+| Personal | Contact information *(exists)*, Find a time, Event RSVP *(exists)*, Party invite, T-shirt sign-up, Event registration |
+| Work | Event feedback, Order form, Job application, Time-off request, Work request, Customer feedback |
+| Education | Blank quiz, Exit ticket, Assessment, Worksheet, Course evaluation |
+
+For each: a sensible title, one-line description, 4–12 well-chosen questions
+with the right types (dates as `date`, satisfaction as `linearScale`/`rating`,
+grids where several items share a scale, sections for longer forms), required
+only where it matters. Education ones are **quizzes** (quiz on, points, answer
+keys where there's a right answer; "Blank quiz" = quiz settings on, one
+sample question). Put templates in `templates.js` (or split per category if
+it gets long), each with `category: 'personal' | 'work' | 'education'`.
+
+Each template also gets a **theme**: a theme colour from `THEME_COLORS` and,
+for the gallery's look, a **header image**. Header images must be **our own**
+— not copied from Google. Options, in order of preference: (1) generated
+abstract/illustrative banners (SVG or PNG, 1600×400, made by script and
+committed to `public/templates/`), (2) free-licence images (Unsplash/Pexels
+licence) downloaded and committed with the source noted in a comment. If you
+can't produce decent images, use the theme colour as a plain band and tell
+the user (Claude can make the images later). Check how a form's header image
+is stored (`theme.headerImage` = `{ url, … }`) and use a public path URL.
+
+## Gallery UI
+
+- Dashboard: keep the current start row, add **"Template gallery"** (button or
+  "See all") opening a gallery page or full-width panel: **Recently used**
+  (last 6 templates this user started from — store keys in `localStorage`,
+  wrapped in try/catch; nothing server-side), then **Personal / Work /
+  Education** sections, each a responsive grid (phones: 2 columns).
+- Card = thumbnail (header image + a mini preview: title, a couple of
+  question lines — reuse whatever the start-cards render) + name. Keyboard
+  accessible, visible focus, alt text.
+- Clicking creates the form exactly like today's template cards, then opens
+  the editor. Also offer interview mode? **No** — that's a later decision;
+  templates create normal forms.
+- Match the app's design (`start-card` look, theme tokens, dark mode,
+  VS Code–size scrollbars — never thin custom scrollbars).
+
+## Tests & finish
+
+- Unit test: every template's `build()` returns fresh unique ids each call,
+  valid types (in `TYPE_INFO` or section/content), options where required,
+  quiz templates have quiz settings; `category` set.
+- Browser check (alt-port emulators, section 3): open the gallery, start one
+  template from each category, editor opens with the questions. Report what
+  you ran.
+- Commit; give the user the hosting deploy command (section 6).
