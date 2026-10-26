@@ -244,50 +244,54 @@ npm run build
 firebase deploy --only hosting --project quality-toolsx
 ```
 
+
 ---
 
-# Part 3 — Design screens: align and snap vertically as well as horizontally
+# Part 3 — Vertical alignment of a block's content (top / middle / bottom)
 
-User report: in **Design screens**, blocks line up **horizontally only**;
-they must line up **vertically too** — every alignment feature works on both
-axes, consistently.
+User clarified: in **Design screens**, the block settings have **Align**
+(Left / Centre / Right — horizontal text alignment, `style.align`). There is
+no **vertical** alignment: content always sits at the top of its block. Add
+it, so content can sit at the **top, middle or bottom** of the block's height.
 
-What the code already has (so this is a bug or gap in practice, not a missing
-idea — find where vertical breaks):
-- `snapFrame(frame, parent, distance, others)` in `src/lib/interview.js`
-  computes both `x` and `y` (`pick(..., 'x', ...)` / `pick(..., 'y', ...)`),
-  snapping to the parent's start/centre/end and to sibling blocks' edges and
-  centres, and returns guide lines `{ axis, at }`.
-- `Canvas.jsx` calls it while dragging (`snapFrame({ ...lead.f, x: lx, y: ly },
-  parent, SNAP_PX / zoom, others)`) and draws guides (`renderGuides`).
-- Inspector "Align" buttons (`ALIGN` in `Inspector.jsx`, `alignFrames` in
-  `interview.js`): left / centre / right **and** top / middle / bottom.
+Where things are:
+- Horizontal align: the `Align` select in the Text group of
+  `src/features/interview/Inspector.jsx` (`onStyle({ align })`), drawn by
+  `textAlign: s.align` in `nodeStyle` (`src/features/interview/Stage.jsx`).
+- Text and question content sit in an inner `.stage-scroll` box (height 100%)
+  with an Overflow class (`ov-scroll` / `ov-hidden` / `ov-visible`,
+  `interview.css`); other blocks put content straight in the node, or in
+  `.stage-scroll` when their Overflow isn't Visible.
 
-Do:
-1. **Reproduce** on the canvas (drag a block near another block's top, middle
-   and bottom; near the card's top/middle/bottom). Check each piece:
-   - y snapping actually applied to the dropped frame (not overwritten by x
-     logic or by the group-drag path for multi-select);
-   - **horizontal guide lines** (`axis: 'y'`) are drawn and visible (CSS for
-     both orientations; correct position/scale with zoom; inside rotated or
-     nested cards);
-   - snapping while **resizing** (top/bottom handles) as well as moving — if
-     resize doesn't snap at all, add it for all four edges;
-   - the parent box passed for root-level cards has a real height (screen
-     height via `stageHeight`, not `undefined`/0).
-2. **Fix** whatever is horizontal-only so moving and resizing snap on both
-   axes with equal priority (closest edge/centre wins per axis, independently).
-3. **Add "Distribute"** to the Inspector's multi-select align row: *Distribute
-   horizontally* and *Distribute vertically* (equal gaps between 3+ selected
-   blocks in the same card), with a pure helper beside `alignFrames` and unit
-   tests. One undo step, like Align.
-4. Unit tests in `tests/unit/interview.test.js`: `snapFrame` snaps y to a
-   sibling's top, middle and bottom and to the parent's middle, and returns a
-   `y` guide; `alignFrames(…, 'top'|'middle'|'bottom')`; the new distribute
-   helper.
-5. Browser check (alt-port emulators, section 3): drag a block near another's
-   middle → it snaps and a horizontal guide shows. Report exactly what you ran.
+Build:
+1. **Setting:** `style.valign` = `'top'` (default when missing) | `'middle'` |
+   `'bottom'`. In the Inspector, next to **Align**, add a **Vertical** select
+   (Top / Middle / Bottom) using the app's `Select` (`src/lib/Select.jsx`) —
+   never a native `<select>`. Show it for text, question and button blocks.
+   Cards: skip (their children are placed absolutely).
+2. **Drawing (Stage.jsx):** wrap the content of text/question blocks in an
+   inner element and position it with **auto margins**, not
+   `justify-content: center`. In a flex column box: `margin-top: auto`
+   (bottom), `margin-block: auto` (middle), none (top). Auto margins collapse
+   to 0 when the content is taller than the block, so with Overflow **Scroll**
+   the top of long content is never cut off or unreachable (a known problem
+   with `justify-content: center` + overflow). Buttons: the label is centred
+   by `.stage-button-el`; apply valign to its inner layout.
+3. **Per-device looks:** `valign` is a style field, so it follows the "Same
+   look and words on phone and desktop" switch automatically (`resolveNode`,
+   `setStyleOn` in `src/lib/interview.js`) — just use `onStyle` like Align.
+   Add it to `STYLE_FIELDS` / `cleanStyle` in `src/lib/screenEdit.js` (values
+   top|middle|bottom) and to the AI prompt's style list in
+   `functions/ai/features.js` (`SCREEN_SYSTEM` text and the `SCREEN_STYLE`
+   schema), so "Change this screen with AI" can set it.
+4. **Respondent view** uses the same Stage — nothing extra; check dark mode
+   and phone width.
+5. **Tests:** unit-test that `cleanStyle` keeps top/middle/bottom and drops
+   anything else. Browser check (alt-port emulators, section 3): a tall text
+   block set to Middle shows its text centred vertically; with long text and
+   Overflow Scroll, the first line is still reachable. Report exactly what you
+   ran.
 
-No automatic behaviour beyond snapping while the user drags (snapping is
-already accepted). Commit; give the user the hosting deploy command
-(section 6).
+Not automatic — it's a setting the user picks. Commit; give the user the
+hosting **and** functions deploy command (section 6), since the AI prompt
+changes.
