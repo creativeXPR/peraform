@@ -1,0 +1,106 @@
+/* ── Template Gallery Overlay / Panel ─────────────────────── */
+.gallery-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow-y: auto;
+  background: var(--bg);
+  scrollbar-width: auto;
+}
+
+.gallery-sheet {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 24px 20px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.gallery-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.gallery-head-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gallery-head h1 {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.gallery-body {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+
+.gallery-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.gallery-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.gallery-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.gallery-visual {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  transition: border-color 0.2s var(--ease), transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.gallery-card:hover:not(:disabled) .gallery-visual {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.08);
+}
+
+.gallery-card:focus-visible {
+  outline: none;
+}
+
+.gallery-card:focus-visible .gallery-visual {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+@media (max-width: 639px) {
+  .gallery-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .gallery-sheet {
+    padding: 16px 14px 60px;
+    gap: 24px;
+  }
+}

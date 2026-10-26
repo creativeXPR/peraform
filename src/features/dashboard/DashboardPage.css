@@ -7,6 +7,28 @@
 }
 
 /* ── Start row ───────────────────────────────────────────── */
+.dash-start-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: -14px;
+}
+
+.dash-start-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dash-gallery-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--accent);
+}
+
 .dash-start {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));

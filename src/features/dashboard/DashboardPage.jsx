@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useOutletContext } from 'react-router-dom'
 import {
   ArrowDownAZ,
+  ChevronRight,
   Filter,
   Folder,
   FolderPlus,
@@ -34,6 +35,7 @@ import FormCard from './FormCard.jsx'
 import FormThumbnail from './FormThumbnail.jsx'
 import { createForm, deleteForm, parseImportFile } from './formActions.js'
 import { TEMPLATES } from './templates.js'
+import TemplateGallery, { saveRecentTemplateKey } from './TemplateGallery.jsx'
 import { useMyForms } from './useMyForms.js'
 import './DashboardPage.css'
 
@@ -56,8 +58,11 @@ const SORTS = {
   },
 }
 
-// Template previews are rendered from one build so they stay stable.
-const TEMPLATE_PREVIEWS = TEMPLATES.map((t) => ({ ...t, preview: t.build() }))
+// Starter templates shown in the 5-card row on the dashboard.
+const STARTER_TEMPLATES = TEMPLATES.filter((t) => ['contact', 'rsvp'].includes(t.key)).map((t) => ({
+  ...t,
+  preview: t.build(),
+}))
 
 function readSavedView() {
   try {
@@ -79,6 +84,7 @@ export default function DashboardPage() {
   const [view, setView] = useState(readSavedView)
   const [creating, setCreating] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
+  const [galleryOpen, setGalleryOpen] = useState(false)
   const [actionError, setActionError] = useState('')
   const [toast, showToast] = useToast()
   const [pendingDelete, setPendingDelete] = useState(null)
@@ -142,7 +148,8 @@ export default function DashboardPage() {
     }
   }
 
-  async function startForm(getContent) {
+  async function startForm(getContent, templateKey) {
+    if (templateKey) saveRecentTemplateKey(templateKey)
     setCreating(true)
     setActionError('')
     try {
@@ -201,6 +208,17 @@ export default function DashboardPage() {
           )}
         </p>
       )}
+      <div className="dash-start-header">
+        <span className="dash-start-title">Start a new form</span>
+        <button
+          type="button"
+          className="link-btn dash-gallery-btn"
+          onClick={() => setGalleryOpen(true)}
+        >
+          <span>Template gallery</span>
+          <ChevronRight size={16} />
+        </button>
+      </div>
       <section className="dash-start" aria-label="Start a new form">
         <button
           type="button"
@@ -225,16 +243,16 @@ export default function DashboardPage() {
           <span className="start-label">Blank form</span>
         </button>
 
-        {TEMPLATE_PREVIEWS.map((t) => (
+        {STARTER_TEMPLATES.map((t) => (
           <button
             key={t.key}
             type="button"
             className="start-card"
-            onClick={() => startForm(t.build)}
+            onClick={() => startForm(t.build, t.key)}
             disabled={creating}
           >
             <span className="start-visual">
-              <FormThumbnail title={t.preview.title} questions={t.preview.questions} />
+              <FormThumbnail title={t.preview.title} questions={t.preview.questions} theme={t.theme} />
             </span>
             <span className="start-label">{t.name}</span>
           </button>
@@ -261,6 +279,15 @@ export default function DashboardPage() {
       </section>
 
       <GenerateFormDialog open={aiOpen} onClose={() => setAiOpen(false)} />
+      <TemplateGallery
+        open={galleryOpen}
+        onClose={() => setGalleryOpen(false)}
+        onSelect={(getContent) => {
+          setGalleryOpen(false)
+          startForm(getContent)
+        }}
+        creating={creating}
+      />
 
       {actionError && (
         <p className="form-error" role="alert">
