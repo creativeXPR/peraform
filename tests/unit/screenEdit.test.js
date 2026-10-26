@@ -106,4 +106,12 @@ describe('cleanStyle', () => {
       opacity: 1,
     })
   })
+
+  it('keeps valid valign (top, middle, bottom) and drops invalid values', () => {
+    expect(cleanStyle({ valign: 'top' })).toEqual({ valign: 'top' })
+    expect(cleanStyle({ valign: 'middle' })).toEqual({ valign: 'middle' })
+    expect(cleanStyle({ valign: 'bottom' })).toEqual({ valign: 'bottom' })
+    expect(cleanStyle({ valign: 'center' })).toEqual({})
+    expect(cleanStyle({ valign: 'invalid' })).toEqual({})
+  })
 })

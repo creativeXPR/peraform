@@ -28,7 +28,7 @@ import { THEME_FONTS } from './theme.js'
 // Frames (x, y, w, h) are for the device being edited; the other device's
 // layout is left alone (new blocks get a sensible place there).
 
-const STYLE_FIELDS = ['bg', 'color', 'size', 'weight', 'align', 'radius', 'font', 'shadow', 'opacity', 'padding', 'borderWidth', 'borderColor']
+const STYLE_FIELDS = ['bg', 'color', 'size', 'weight', 'align', 'valign', 'radius', 'font', 'shadow', 'opacity', 'padding', 'borderWidth', 'borderColor']
 const ADDABLE = ['card', 'text', 'button', 'image']
 const BUTTON_TYPES = ['next', 'back', 'submit', 'none']
 
@@ -76,6 +76,7 @@ export function cleanStyle(style) {
   if (num(style.size)) out.size = clamp(style.size, 8, 120)
   if (num(style.weight)) out.weight = clamp(style.weight / 100, 3, 9) * 100
   if (['left', 'center', 'right'].includes(style.align)) out.align = style.align
+  if (['top', 'middle', 'bottom'].includes(style.valign)) out.valign = style.valign
   if (num(style.radius)) out.radius = clamp(style.radius, 0, 999)
   if (num(style.padding)) out.padding = clamp(style.padding, 0, 64)
   if (num(style.borderWidth)) out.borderWidth = clamp(style.borderWidth, 0, 12)

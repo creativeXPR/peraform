@@ -266,7 +266,7 @@ Changes:
 - {"op":"add","id":"new-1","type":"card"|"text"|"button"|"image","parent":<card id or "new-…" of a card you added>,"x","y","w","h", plus text, label, action or style}. Number new blocks new-1, new-2… An added image is an empty placeholder the creator fills in.
 - {"op":"remove","id":…}. Never remove question blocks, or cards holding them.
 - To change the screen background, set "background": {"color":"#rrggbb"} or a gradient {"color","to","angle"}.
-Style fields: bg, color, borderColor (6-digit hex, "transparent", or theme tokens: surface, bg, accent, accent-soft, on-accent, text, muted); size (font px), weight (300–900), align (left, center, right), radius, padding, borderWidth (px), opacity (0–1), font (inter, serif, rounded, mono), shadow (none, soft, medium, strong, glow).
+Style fields: bg, color, borderColor (6-digit hex, "transparent", or theme tokens: surface, bg, accent, accent-soft, on-accent, text, muted); size (font px), weight (300–900), align (left, center, right), valign (top, middle, bottom), radius, padding, borderWidth (px), opacity (0–1), font (inter, serif, rounded, mono), shadow (none, soft, medium, strong, glow).
 
 Layout rules: keep blocks inside their card (x ≥ 0, x + w ≤ the card's w) and inside the screen width; don't let blocks overlap unless asked; when you move or add something, move the blocks below it so nothing collides, and make the card taller if needed. Don't change question wording (that's done in the form editor). Change only what the instruction asks.
 Put one or two plain sentences saying what you changed in "summary" (for the creator). Write in the language of the instruction.`
@@ -282,6 +282,7 @@ const SCREEN_STYLE = {
       ['size', 'number'],
       ['weight', 'number'],
       ['align', 'string'],
+      ['valign', 'string'],
       ['radius', 'number'],
       ['padding', 'number'],
       ['borderWidth', 'number'],

@@ -124,6 +124,21 @@ function nodeStyle(node, frame, editing, override) {
   return style
 }
 
+// Vertical alignment within a flex column container: auto margins collapse
+// to 0 when content is taller than the block, keeping the top reachable when
+// scrolled.
+function valignStyle(valign) {
+  if (valign === 'bottom') return { marginTop: 'auto' }
+  if (valign === 'middle') return { marginBlock: 'auto' }
+  return undefined
+}
+
+function buttonValignStyle(valign) {
+  if (valign === 'bottom') return { marginTop: 'auto' }
+  if (valign === 'top') return { marginBottom: 'auto' }
+  return { marginBlock: 'auto' }
+}
+
 // One node and, for cards, everything inside it.
 //   mode: 'edit' (canvas — nothing interactive) | 'live' (respondent)
 //   renderQuestion(question) → the answer field (live) or a preview (edit)
@@ -265,7 +280,9 @@ export function StageNode({ node: raw, ctx }) {
         tabIndex={editing ? -1 : undefined}
         onClick={editing ? undefined : () => onButton?.(node.action ?? { type: 'next' }, node)}
       >
-        {node.label || 'Button'}
+        <span className="stage-button-label" style={buttonValignStyle(node.style?.valign)}>
+          {node.label || 'Button'}
+        </span>
       </button>
     )
   }
@@ -283,7 +300,9 @@ export function StageNode({ node: raw, ctx }) {
           scroll or get clipped. */}
       {node.type === 'text' || node.type === 'question' ? (
         <div className={`stage-scroll ov-${overflow}`}>
-          {content}
+          <div className="stage-valign" style={valignStyle(node.style?.valign)}>
+            {content}
+          </div>
         </div>
       ) : node.type !== 'card' && overflow !== 'visible' ? (
         <div className={`stage-scroll ov-${overflow}`}>

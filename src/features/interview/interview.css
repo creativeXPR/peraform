@@ -15,10 +15,19 @@
 }
 
 /* Text and questions: the inner box that scrolls when they need more room
-   than the block was given. */
+   than the block was given. Flex column allows auto margins to position
+   content vertically (top / middle / bottom) without cutting off top content
+   when scrolled. */
 .stage-scroll {
+  display: flex;
+  flex-direction: column;
   height: 100%;
   overscroll-behavior: contain;
+}
+
+.stage-valign {
+  display: block;
+  width: 100%;
 }
 
 /* A block's or card's Overflow setting (Inspector), on its inner box.
@@ -62,6 +71,8 @@
 }
 
 .stage-button-el {
+  display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100%;
   padding: 0 16px;
@@ -72,6 +83,11 @@
   font: inherit;
   cursor: pointer;
   transition: filter 0.2s var(--ease), transform 0.1s var(--ease);
+}
+
+.stage-button-label {
+  display: block;
+  width: 100%;
 }
 
 .stage-button-el:hover {

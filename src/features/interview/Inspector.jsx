@@ -671,6 +671,19 @@ export default function Inspector({
                 <option value="right">Right</option>
               </Select>
             </label>
+            {node.type !== 'card' && (
+              <label className="insp-field">
+                <span>Vertical</span>
+                <Select
+                  value={s.valign ?? (node.type === 'button' ? 'middle' : 'top')}
+                  onChange={(e) => onStyle({ valign: e.target.value })}
+                >
+                  <option value="top">Top</option>
+                  <option value="middle">Middle</option>
+                  <option value="bottom">Bottom</option>
+                </Select>
+              </label>
+            )}
           </div>
           <span className="insp-label">Text colour</span>
           <ColorPicker
