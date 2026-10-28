@@ -120,9 +120,11 @@ export default function SignInPage() {
             />
           </label>
           {mode !== 'reset' && (
-            <label className="field">
+            // Not a wrapping <label>: it would name the "Forgot?" button (the
+            // first control inside it) instead of the password box.
+            <div className="field">
               <span className="field-row">
-                Password
+                <label htmlFor="signin-password">Password</label>
                 {mode === 'signin' && (
                   <button type="button" className="link-btn" onClick={() => switchMode('reset')}>
                     Forgot?
@@ -130,6 +132,7 @@ export default function SignInPage() {
                 )}
               </span>
               <input
+                id="signin-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -137,7 +140,7 @@ export default function SignInPage() {
                 minLength={6}
                 required
               />
-            </label>
+            </div>
           )}
 
           {error && (
