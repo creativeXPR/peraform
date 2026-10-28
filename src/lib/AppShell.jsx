@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { Bookmark, LayoutGrid, Menu, Moon, PanelLeft, Search, Sun, X } from 'lucide-react'
 import AccountMenu from '../features/auth/AccountMenu.jsx'
+import AppSwitcher from './AppSwitcher.jsx'
 import BalanceChip from '../features/credits/BalanceChip.jsx'
 import { useKeep } from '../features/keep/keepContext.js'
 import { useTheme } from './useTheme.js'
@@ -84,6 +85,10 @@ export default function AppShell({
           >
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </button>
+          {/* Quality Tools apps (on narrow phones it's in the menu instead). */}
+          <div className="topbar-apps">
+            <AppSwitcher />
+          </div>
           <AccountMenu />
         </div>
       </header>
@@ -93,7 +98,10 @@ export default function AppShell({
           <aside className="sidebar" aria-label="Main navigation">
             <div className="drawer-head">
               <span className="logo"><LogoMark />PeraForm</span>
-              {/* Narrow phones: the top bar's Keep and theme switch live here. */}
+              {/* Narrow phones: the top bar's apps, Keep and theme switch live here. */}
+              <div className="drawer-theme drawer-apps">
+                <AppSwitcher />
+              </div>
               {keep && (
                 <button
                   type="button"

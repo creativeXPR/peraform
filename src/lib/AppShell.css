@@ -426,7 +426,8 @@
   }
 
   .shell:not([data-sidebar='none']) .topbar-theme,
-  .shell:not([data-sidebar='none']) .topbar-keep {
+  .shell:not([data-sidebar='none']) .topbar-keep,
+  .shell:not([data-sidebar='none']) .topbar-apps {
     display: none;
   }
 
@@ -449,4 +450,13 @@
   .drawer-theme + .drawer-theme {
     margin-left: 0;
   }
+}
+
+/* The app switcher inside the phone menu: its panel opens under the menu
+   header, inside the screen (not off its left edge). */
+.drawer-apps .apps-pop {
+  position: fixed;
+  top: 72px;
+  right: auto;
+  left: 12px;
 }

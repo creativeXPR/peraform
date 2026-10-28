@@ -1,0 +1,74 @@
+.apps {
+  position: relative;
+}
+
+.apps-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  width: min(300px, calc(100vw - 24px));
+  padding: 14px 10px 10px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.08);
+  animation: apps-in 0.18s var(--ease);
+}
+
+@keyframes apps-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.apps-title {
+  margin: 0 0 8px;
+  padding: 0 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.apps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.apps-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 6px 12px;
+  border-radius: 14px;
+  color: var(--text);
+  font-size: 13px;
+  text-align: center;
+  transition: background 0.2s var(--ease);
+}
+
+.apps-item:hover {
+  background: var(--fill);
+}
+
+.apps-item.current {
+  background: var(--accent-soft);
+}
+
+.apps-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--bg);
+}
+
+.apps-name {
+  line-height: 1.25;
+}
