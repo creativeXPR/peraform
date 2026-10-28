@@ -72,3 +72,20 @@
 .apps-name {
   line-height: 1.25;
 }
+
+/* Square tiles like Google's apps menu: icon and a one-line name, centred. */
+.apps-item {
+  aspect-ratio: 1;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 4px;
+  min-width: 0;
+}
+
+.apps-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
