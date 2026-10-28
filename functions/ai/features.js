@@ -1,4 +1,5 @@
 import { AI_FEATURES, STYLE_KEYS, compactForm } from './catalog.js'
+import { resultStats } from '../resultStats.js'
 
 // The server half of each AI feature: input checks, the prompt and the
 // output schema. The app sends only { feature, tier, input }: never a
@@ -368,8 +369,85 @@ FEATURES['edit-screen'] = {
   },
 }
 
+const ANALYSE_SYSTEM = `You analyse the results of a form or quiz made in PeraForm, for its owner — who is not a statistician.
+You get statistics as JSON: totals only, never individual answers. Per question: "answered", "noAnswer" (didn't answer: skipped, or not shown to them), "options" with counts (choices and scales), "average" (scales), and for quiz questions "points", "correctRate" (share who got full points, 0–1) and, with enough responses, "strongRate" / "weakRate" (correct rate among the top and bottom scorers).
+
+Write a short, plain-language report:
+- "summary": two to four sentences on the overall picture (how many responded, how it went).
+- "findings": the notable points, most useful first, each about one question (its "questionId"), with a "kind":
+  too-easy (quiz: almost everyone right, correctRate above about 0.9), too-hard (quiz: few right, below about 0.3), unused-option (a choice nobody or almost nobody picked), possible-problem (quiz: strongRate is not clearly above weakRate, or below it — the question or its answer key may be wrong or unclear; or many people didn't answer), strong-result (a clear, useful pattern worth knowing), other.
+  "detail": one or two sentences with the numbers, as percentages or counts people understand ("8 of 10 picked Yes"), and why it matters.
+- "nextSteps": up to four practical suggestions (e.g. check the answer key of a question, reword a question, drop an unused option).
+Rules: use only the numbers given — never invent any. With few responses (under about 10), say the picture may change. Refer to questions by their titles in the text. No jargon (don't say "discrimination index" or "p-value"). Write in the language of the question titles.`
+
+const ANALYSE_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['summary', 'findings', 'nextSteps'],
+  properties: {
+    summary: { type: 'string' },
+    findings: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['kind', 'questionId', 'detail'],
+        properties: {
+          kind: { type: 'string', enum: ['too-easy', 'too-hard', 'unused-option', 'possible-problem', 'strong-result', 'other'] },
+          questionId: { type: 'string' },
+          detail: { type: 'string' },
+        },
+      },
+    },
+    nextSteps: { type: 'array', items: { type: 'string' } },
+  },
+}
+
+FEATURES['analyse-results'] = {
+  ...AI_FEATURES['analyse-results'],
+  system: ANALYSE_SYSTEM,
+  schema: ANALYSE_SCHEMA,
+  effort: 'low',
+  // input: { formId, focus? }. The responses are read and summarised here,
+  // on the server (editors of the form only); only the totals reach the AI.
+  async prepare(input, ctx) {
+    const formId = typeof input?.formId === 'string' ? input.formId : ''
+    const form = formId && ctx?.db ? (await ctx.db.doc(`forms/${formId}`).get()).data() : null
+    if (!form || !form.memberIds?.includes(ctx.uid)) throw new InputError('Form not found.')
+    const focus = typeof input?.focus === 'string' ? input.focus.trim().slice(0, this.maxChars.analyse) : ''
+    const snap = await ctx.db
+      .collection(`forms/${formId}/responses`)
+      .orderBy('submittedAt', 'desc')
+      .limit(this.maxResponses)
+      .get()
+    const responses = snap.docs.map((d) => d.data())
+    if (responses.length < 3) throw new InputError('Analysis needs at least 3 responses. Try again when more have come in.')
+    const stats = resultStats(form.questions ?? [], responses)
+    const json = JSON.stringify({ form: form.title || 'Untitled form', ...stats })
+    if (json.length > this.maxStatsChars) {
+      throw new InputError('This form has too many questions to analyse in one go.')
+    }
+    const prompt = `Statistics:\n${json}${focus ? `\n\nThe owner wants to know especially:\n${focus}` : ''}`
+    return { prompt, mode: 'analyse', chars: json.length + focus.length }
+  },
+  result(json) {
+    if (!json || typeof json.summary !== 'string' || !Array.isArray(json.findings)) return null
+    return { report: { summary: json.summary, findings: json.findings, nextSteps: json.nextSteps ?? [] } }
+  },
+  // Progress: findings written so far.
+  progress(text) {
+    const kinds = (text.match(/"kind"\s*:/g) ?? []).length
+    return { title: null, questions: kinds, written: [] }
+  },
+}
+
 // Canned output for the emulators (AI_FAKE=1), so tests never call the AI.
 export const FAKE_OUTPUT = {
+  'analyse-results': {
+    summary: 'Ten people responded and most did well: the average was 7 of 10.',
+    findings: [{ kind: 'too-easy', questionId: 'q1', detail: 'All 10 got this right, so it doesn’t tell people apart.' }],
+    nextSteps: ['Make the first question a little harder.'],
+  },
   'edit-screen': {
     changes: [
       { op: 'add', id: 'new-1', type: 'text', parent: 'start-1', x: 20, y: 0, w: 300, h: 24, text: '✨ Changed by AI' },

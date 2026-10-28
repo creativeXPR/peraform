@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   arrayRemove,
   arrayUnion,
@@ -34,6 +34,9 @@ import { deleteAllResponses } from '../dashboard/formActions.js'
 import BarList from './BarList.jsx'
 import InviteTracker from './InviteTracker.jsx'
 import { downloadCsv, responsesToCsv, summarizeQuestion } from './summarize.js'
+import { resultStats } from '../../../functions/resultStats.js'
+import AnalyseResultsDialog from '../ai/AnalyseResultsDialog.jsx'
+import ResultsReport from './ResultsReport.jsx'
 import { useResponses } from './useResponses.js'
 import './ResponsesPage.css'
 
@@ -51,6 +54,11 @@ export default function ResponsesPage() {
   const [toast, showToast] = useToast()
   const { user } = useAuth()
   const sheets = useSheetsStatus(form?.id) // linked Google Sheet, if any
+  // Totals per question (functions/resultStats.js): the extra figures on
+  // each question, and the size of what "Analyse results" sends.
+  const stats = useMemo(() => (draft ? resultStats(draft.questions, responses) : null), [draft, responses])
+  const [analysing, setAnalysing] = useState(false)
+  const [report, setReport] = useState(null) // { report, charged, at }
 
   if (!form || !draft) return <div className="builder-loading" aria-busy="true" />
 
@@ -209,8 +217,15 @@ export default function ResponsesPage() {
           {view === 'summary' ? (
             <>
               {quiz.enabled && <QuizOverview responses={graded} />}
+              <ResultsReport result={report} questions={questionsOnly(items)} onAnalyse={() => setAnalysing(true)} />
               {items.map((item) => (
-                <SummaryItem key={item.id} item={item} responses={responses} quiz={quiz.enabled} />
+                <SummaryItem
+                  key={item.id}
+                  item={item}
+                  responses={responses}
+                  quiz={quiz.enabled}
+                  stat={stats?.questions.find((q) => q.id === item.id)}
+                />
               ))}
             </>
           ) : (
@@ -260,6 +275,14 @@ export default function ResponsesPage() {
           )}
         </>
       )}
+
+      <AnalyseResultsDialog
+        open={analysing}
+        onClose={() => setAnalysing(false)}
+        formId={form.id}
+        statsChars={stats ? JSON.stringify(stats).length : 0}
+        onReport={setReport}
+      />
 
       <ConfirmModal
         open={Boolean(confirm)}
@@ -314,15 +337,15 @@ function Stat({ label, value }) {
   )
 }
 
-function SummaryItem({ item, responses, quiz }) {
+function SummaryItem({ item, responses, quiz, stat }) {
   if (isSection(item)) {
     return <h2 className="summary-section">{item.title || 'Untitled section'}</h2>
   }
   if (!isQuestion(item)) return null // title, image and video blocks
-  return <QuestionSummary question={item} responses={responses} quiz={quiz} />
+  return <QuestionSummary question={item} responses={responses} quiz={quiz} stat={stat} />
 }
 
-function QuestionSummary({ question, responses, quiz }) {
+function QuestionSummary({ question, responses, quiz, stat }) {
   const [expanded, setExpanded] = useState(false)
   const summary = summarizeQuestion(question, responses)
   const shown = expanded ? summary.values : summary.values?.slice(0, TEXT_PREVIEW)
@@ -341,7 +364,16 @@ function QuestionSummary({ question, responses, quiz }) {
             {question.type === 'rating' && ` of ${question.max}`}
           </>
         )}
+        {stat?.noAnswer > 0 && ` · ${stat.noAnswer} didn’t answer`}
       </p>
+      {stat?.strongRate !== undefined && stat?.weakRate !== undefined && (
+        <p className={`summary-count${stat.strongRate <= stat.weakRate ? ' summary-warn' : ''}`}>
+          Top scorers: {Math.round(stat.strongRate * 100)}% got it right · lowest scorers:{' '}
+          {Math.round(stat.weakRate * 100)}%
+          {stat.strongRate <= stat.weakRate &&
+            ' — top scorers did no better here, so the question or its answer key may need a second look.'}
+        </p>
+      )}
       {summary.answered === 0 ? (
         <p className="summary-none">No answers yet.</p>
       ) : summary.kind === 'choice' || summary.kind === 'scale' ? (

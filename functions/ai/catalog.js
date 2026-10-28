@@ -65,6 +65,21 @@ export const AI_FEATURES = {
     overheadTokens: 1500,
     typical: { inputTokens: 2500, outputTokens: 900 },
   },
+  // Responses tab: a plain-language report on the results. Only totals go
+  // in (functions/resultStats.js) — never anyone's individual or typed
+  // answers. Read-only: it changes nothing.
+  'analyse-results': {
+    label: 'Analyse results with AI',
+    tiers: ['quick', 'standard', 'best'],
+    defaultTier: 'standard',
+    maxChars: { analyse: 500 }, // what to focus on (optional)
+    maxStatsChars: 40000, // the statistics, as compact JSON
+    maxResponses: 3000, // the newest ones are summarised
+    maxTokens: { analyse: 4000 },
+    minTokens: { analyse: 1500 },
+    overheadTokens: 1300,
+    typical: { inputTokens: 3000, outputTokens: 1200 },
+  },
 }
 
 // The design styles "Design with AI" can choose (src/lib/designStyles.js).
