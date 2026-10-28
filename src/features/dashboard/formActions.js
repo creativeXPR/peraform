@@ -1,4 +1,4 @@
-import { addDoc, collection, deleteDoc, doc, getDocs, writeBatch } from 'firebase/firestore'
+import { addDoc, collection, deleteDoc, doc, getDocs, setDoc, writeBatch } from 'firebase/firestore'
 import { db } from '../../lib/firebase.js'
 import { newForm } from '../../lib/formModel.js'
 
@@ -7,6 +7,16 @@ import { newForm } from '../../lib/formModel.js'
 export async function createForm(uid, content = {}) {
   const ref = await addDoc(collection(db, 'forms'), { ...newForm(uid), ...content })
   return ref.id
+}
+
+// An imported form (lib/formFile.js, lib/googleFormImport.js): the form,
+// then its quiz answer key in the private doc respondents can't read.
+export async function createImportedForm(uid, { content, answerKey }) {
+  const id = await createForm(uid, content)
+  if (answerKey && Object.keys(answerKey).length) {
+    await setDoc(doc(db, 'forms', id, 'private', 'answerKey'), { questions: answerKey })
+  }
+  return id
 }
 
 // Batched in 500s, Firestore's per-batch write limit.

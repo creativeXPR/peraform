@@ -4,6 +4,7 @@ import {
   ChevronDown,
   Code2,
   Copy,
+  Download,
   Eye,
   Keyboard,
   Link2,
@@ -21,7 +22,8 @@ import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import MenuButton from '../../lib/MenuButton.jsx'
 import { useToast } from '../../lib/useToast.jsx'
 import { useAuth } from '../auth/useAuth.js'
-import { createForm, deleteForm } from '../dashboard/formActions.js'
+import { createImportedForm, deleteForm } from '../dashboard/formActions.js'
+import { fileName, fileToForm, formToFile } from '../../lib/formFile.js'
 import EditFormDialog from '../ai/EditFormDialog.jsx'
 import EmbedDialog from './EmbedDialog.jsx'
 import ShareDialog from './ShareDialog.jsx'
@@ -100,19 +102,32 @@ export default function BuilderActions() {
     }
   }
 
+  // A full copy — theme, answer key and screen designs too — through the
+  // same path as a downloaded file, so every id is fresh and every
+  // reference follows (lib/formFile.js).
   async function makeCopy() {
     try {
-      const id = await createForm(user.uid, {
-        title: `Copy of ${draft.title || 'Untitled form'}`,
-        description: draft.description,
-        settings: draft.settings,
-        // Fresh ids so the copy's answers never mix with the original's.
-        questions: draft.questions.map((q) => ({ ...q, id: crypto.randomUUID() })),
+      const { content, answerKey } = fileToForm(formToFile(draft))
+      const id = await createImportedForm(user.uid, {
+        content: { ...content, title: `Copy of ${draft.title || 'Untitled form'}` },
+        answerKey,
       })
       navigate(`/forms/${id}/edit`)
     } catch {
       showToast('Couldn’t copy the form. Please try again.')
     }
+  }
+
+  // The whole form as a file on this computer (Dashboard → Import opens it).
+  function downloadFile() {
+    const blob = new Blob([JSON.stringify(formToFile(draft), null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = fileName(draft.title)
+    a.click()
+    URL.revokeObjectURL(url)
+    showToast('Saved to your downloads')
   }
 
   async function onConfirm() {
@@ -157,6 +172,7 @@ export default function BuilderActions() {
     { label: 'Theme', icon: Palette, onSelect: () => setThemeOpen(true) },
     { label: 'Edit with AI', icon: Sparkles, onSelect: () => setAiOpen(true) },
     { label: 'Make a copy', icon: Copy, onSelect: makeCopy },
+    { label: 'Download as PeraForm file', icon: Download, onSelect: downloadFile },
     {
       label: 'Get pre-filled link',
       icon: ListChecks,

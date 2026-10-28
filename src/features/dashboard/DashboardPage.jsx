@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useOutletContext } from 'react-router-dom'
 import {
   ArrowDownAZ,
@@ -33,7 +33,8 @@ import { resendVerification } from '../auth/authActions.js'
 import { useAuth } from '../auth/useAuth.js'
 import FormCard from './FormCard.jsx'
 import FormThumbnail from './FormThumbnail.jsx'
-import { createForm, deleteForm, parseImportFile } from './formActions.js'
+import { createForm, createImportedForm, deleteForm } from './formActions.js'
+import ImportDialog from './ImportDialog.jsx'
 import { saveRecentTemplateKey, TEMPLATES } from './templates.js'
 import TemplateGallery from './TemplateGallery.jsx'
 import { useMyForms } from './useMyForms.js'
@@ -89,7 +90,7 @@ export default function DashboardPage() {
   const [toast, showToast] = useToast()
   const [pendingDelete, setPendingDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
-  const fileRef = useRef(null)
+  const [importing, setImporting] = useState(false) // the Import dialog
   // Where the list is looking: 'all', 'starred', or a folder id.
   const [place, setPlace] = useState('all')
   const { meta, folders } = useOrganize(user.uid)
@@ -161,10 +162,15 @@ export default function DashboardPage() {
     }
   }
 
-  function handleImport(e) {
-    const file = e.target.files?.[0]
-    e.target.value = '' // so picking the same file again still fires
-    if (file) startForm(() => parseImportFile(file))
+  // From the Import dialog: creates the form (and its answer key) and
+  // returns its id; the dialog opens it.
+  async function handleImport(result) {
+    setCreating(true)
+    try {
+      return await createImportedForm(user.uid, result)
+    } finally {
+      setCreating(false)
+    }
   }
 
   async function copyLink(formId) {
@@ -261,7 +267,7 @@ export default function DashboardPage() {
         <button
           type="button"
           className="start-card"
-          onClick={() => fileRef.current.click()}
+          onClick={() => setImporting(true)}
           disabled={creating}
         >
           <span className="start-visual start-visual-icon">
@@ -269,14 +275,15 @@ export default function DashboardPage() {
           </span>
           <span className="start-label">Import</span>
         </button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="application/json,.json"
-          hidden
-          onChange={handleImport}
-        />
       </section>
+
+      <ImportDialog
+        open={importing}
+        onClose={() => setImporting(false)}
+        onImport={handleImport}
+        onOpen={(id) => navigate(`/forms/${id}/edit`)}
+        busy={creating}
+      />
 
       <GenerateFormDialog open={aiOpen} onClose={() => setAiOpen(false)} />
       <TemplateGallery
