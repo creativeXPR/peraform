@@ -476,3 +476,36 @@ which the failed run skipped.
 - Site loads and a test response triggers the owner notification email.
 Report to the user which cause it was (A or B), what you changed, and that
 everything is deployed (or what's left).
+
+---
+
+# Part 6 — Result statistics and "Analyse results" (requested; plan with the user first)
+
+Requested by the user (relayed from the HyperCBT session, 2026-10-28):
+"analyse result statistics" in PeraForm. HyperCBT builds the same, so keep
+shared parts reusable (pure stats helpers in `src/lib/`, AI prompts in
+`functions/ai/`, small UI pieces) — no PeraForm-only assumptions in them.
+
+**Before coding: hold a short planning session with the user** (scope, what
+the report should cover, credit cost range). Same rules as section 0.
+
+1. **Result statistics** (no AI, free) on the Responses tab
+   (`src/features/responses/`, see `summarize.js`): per question — answer
+   distribution (counts and %), averages for scales/ratings, % correct for
+   quiz questions (with the answer key), how many answered/skipped,
+   completion rate, time taken where the data exists (timed quizzes store
+   `startedAt`). Charts in the existing style.
+2. **Analyse results** (AI, shared QT credits via `aiRun`, a new feature in
+   `functions/ai/catalog.js` + `features.js`, with streaming progress and free
+   cancel like Create/Edit with AI): sends **aggregated stats only — never
+   respondents' answers to free-text questions or their emails** — and returns
+   a plain-language report: questions too easy/too hard, wrong options nobody
+   picked, questions strong respondents got wrong (possible bad question or
+   answer key), suggested next steps. Shown on the Responses tab; read-only.
+3. **Optional: Review before publishing** (AI, quizzes mainly): suggestions
+   per question (unclear wording, doubtful answer key, overlapping options,
+   spelling), **each with its own Apply button**; nothing changes until the
+   user clicks. Can reuse the Edit with AI plumbing (`applyEdit.js`).
+
+Privacy page (quality-tools site): add a line that results analysis sends
+summary statistics (not individual answers) to the AI.
