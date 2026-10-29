@@ -238,7 +238,8 @@ export const aiRun = onCall(
 
     let prepared
     try {
-      prepared = await feature.prepare(request.data?.input, { db, uid })
+      // email: HyperCBT's review-test checks the caller owns the test.
+      prepared = await feature.prepare(request.data?.input, { db, uid, email: request.auth?.token?.email })
     } catch (err) {
       if (err instanceof InputError) throw new HttpsError('invalid-argument', err.message)
       throw err
@@ -256,7 +257,8 @@ export const aiRun = onCall(
 
     let holdId, reserved
     const reserve = () =>
-      placeHold(bdb, uid, { app: 'peraform', feature: featureId, model, amount: range.max, minAmount: range.min })
+      // Which Quality Tools app spent the credits (wallet history).
+      placeHold(bdb, uid, { app: feature.app ?? 'peraform', feature: featureId, model, amount: range.max, minAmount: range.min })
     try {
       try {
         ;({ holdId, reserved } = await reserve())

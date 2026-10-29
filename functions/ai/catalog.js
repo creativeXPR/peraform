@@ -8,6 +8,7 @@
 // can repoint them). Every level carries the same markup.
 
 import { holdFor } from '../billing/pricing.js'
+import { HYPERCBT_AI_FEATURES } from './hypercbt-catalog.js'
 
 export const AI_FEATURES = {
   'generate-form': {
@@ -80,6 +81,8 @@ export const AI_FEATURES = {
     overheadTokens: 1300,
     typical: { inputTokens: 3000, outputTokens: 1200 },
   },
+  // HyperCBT's features (same wallet, same aiRun): hypercbt-catalog.js.
+  ...HYPERCBT_AI_FEATURES,
 }
 
 // The design styles "Design with AI" can choose (src/lib/designStyles.js).

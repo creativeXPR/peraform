@@ -1,5 +1,6 @@
 import { AI_FEATURES, STYLE_KEYS, compactForm } from './catalog.js'
 import { resultStats } from '../resultStats.js'
+import { HYPERCBT_FAKE_OUTPUT, hypercbtFeatures } from './hypercbt.js'
 
 // The server half of each AI feature: input checks, the prompt and the
 // output schema. The app sends only { feature, tier, input }: never a
@@ -441,8 +442,12 @@ FEATURES['analyse-results'] = {
   },
 }
 
+// HyperCBT's features run through the same aiRun and wallet (hypercbt.js).
+Object.assign(FEATURES, hypercbtFeatures({ InputError, unescapeJson }))
+
 // Canned output for the emulators (AI_FAKE=1), so tests never call the AI.
 export const FAKE_OUTPUT = {
+  ...HYPERCBT_FAKE_OUTPUT,
   'analyse-results': {
     summary: 'Ten people responded and most did well: the average was 7 of 10.',
     findings: [{ kind: 'too-easy', questionId: 'q1', detail: 'All 10 got this right, so it doesn’t tell people apart.' }],
