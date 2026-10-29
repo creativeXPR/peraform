@@ -449,8 +449,25 @@
   transform: translateX(-50%) rotate(180deg);
 }
 
+.ai-ideas.no-shuffle {
+  margin-bottom: 0;
+}
+
+.ai-create .ai-modes {
+  align-self: flex-start;
+  margin-top: -6px;
+}
+
 .ai-create-progress {
   min-height: 160px;
+}
+
+/* Buttons that replace the prompt once a change is done (Undo / Done). */
+.ai-create-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 .ai-doc-hint {

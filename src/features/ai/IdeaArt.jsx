@@ -20,9 +20,10 @@ const ICONS = { BookOpen, Briefcase, Cake, CalendarCheck, ClipboardList, Graduat
 // (sky, sun, rolling hills, a few sparkles), a little form floating in it,
 // and the idea's icon in a badge. Drawn here, so it's PeraForm's own art.
 //   art: { sky, sky2, ground, accent }; flip: mirror the layout
+//   icon: a lucide icon component, or one of the names above
 export default function IdeaArt({ art, icon, flip = false }) {
   const id = useId()
-  const Icon = ICONS[icon] ?? ClipboardList
+  const Icon = (typeof icon === 'string' ? ICONS[icon] : icon) ?? ClipboardList
   return (
     <span className={`idea-art${flip ? ' is-flipped' : ''}`} aria-hidden="true">
       <svg viewBox="0 0 300 150" preserveAspectRatio="xMidYMid slice">

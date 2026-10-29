@@ -78,3 +78,10 @@ export function useAiRun() {
 
   return { running, error, setError, progress, elapsed, run, finish, cancel }
 }
+
+// A time stamp for a finished run (undo keys, report time). Called from
+// event handlers only; kept here so the React compiler's purity check
+// doesn't mistake handlers passed through props for render code.
+export function stamp() {
+  return Date.now()
+}
