@@ -513,6 +513,11 @@ export const acceptInvites = onCall({ region: REGION }, async (request) => {
 // same link with the Admin SDK and sends it from Quality Tools' address.
 // { sent: false } when mail isn't set up, so the app falls back to
 // Firebase's own email.
+const VERIFY_APPS = {
+  peraform: { name: 'PeraForm', url: () => APP_URL.value(), doing: 'build and share forms, see results and use AI' },
+  hypercbt: { name: 'HyperCBT', url: () => 'https://hypercbt-qt.web.app', doing: 'build tests, see results and use AI' },
+}
+
 export const sendVerification = onCall({ region: REGION, secrets: [SMTP_PASS] }, async (request) => {
   requireApp(request)
   const token = request.auth?.token
@@ -523,18 +528,23 @@ export const sendVerification = onCall({ region: REGION, secrets: [SMTP_PASS] },
   if (!(await allow(db, `verify:${request.auth.uid}`, 5, 3_600_000))) {
     throw new HttpsError('resource-exhausted', 'Too many emails. Wait an hour, then try again (and check your spam folder).')
   }
-  const link = await getAuth().generateEmailVerificationLink(token.email, { url: `${APP_URL.value()}/` })
-  const body = 'Confirm this is your email address to build forms, share them, and use AI features on PeraForm and the other Quality Tools apps. If you didn’t sign up, you can ignore this email.'
+  // { app: 'hypercbt' } from HyperCBT: its name in the email, and the link
+  // returns there. Anything else is PeraForm.
+  const app = VERIFY_APPS[request.data?.app] ?? VERIFY_APPS.peraform
+  const link = await getAuth().generateEmailVerificationLink(token.email, { url: `${app.url()}/` })
+  const body = `Confirm this is your email address to ${app.doing} on ${app.name} and the other Quality Tools apps. If you didn’t sign up, you can ignore this email.`
   const sent = await sendMail({
+    fromName: `${app.name} (No-Reply)`,
     to: token.email,
-    subject: 'Verify your email for Quality Tools',
+    subject: `Verify your email for ${app.name}`,
     text: `${body}\n\n${link}`,
     html: emailHtml({
       heading: 'Verify your email',
       body,
       cta: 'Verify my email',
       href: link,
-      footer: 'This link expires in a few days. If it has, open PeraForm and press Resend.',
+      footer: `This link expires in a few days. If it has, open ${app.name} and press Resend.`,
+      brand: `${app.name} (No-Reply)`,
     }),
   })
   return { sent }
