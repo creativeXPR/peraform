@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dawn Mockup</title>
+<meta name="description" content="Logo options for Dawn, Quality Tools' AI, the AI window in Dawn's light, and the logo in motion." />
+<style>
+:root {
+  --snow: #f7f8fd;
+  --snow-2: #eef0fa;
+  --page: #f2f3fa;
+  --ink: #1c1d2e;
+  --muted: #6c6e85;
+  --line: #e2e4f2;
+  --lav: #8b8ff0;
+  --lav-soft: rgb(139 143 240 / 0.12);
+  --rose: #ff7fa0;
+  --peach: #ffa47a;
+  --gold: #ffcf6b;
+  --shadow: 0 1px 2px rgb(60 60 130 / 0.06), 0 22px 50px -22px rgb(90 90 190 / 0.35);
+  --glow: radial-gradient(120% 70% at 50% 118%, rgb(255 191 120 / 0.55), rgb(255 127 160 / 0.28) 38%, rgb(139 143 240 / 0.12) 62%, transparent 78%);
+  --tile-light: #f7f8fd;
+  --tile-dark: #15162c;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --snow: #191a33;
+  --snow-2: #212244;
+  --page: #10111f;
+  --ink: #eef0ff;
+  --muted: #a3a6c4;
+  --line: rgb(255 255 255 / 0.08);
+  --lav-soft: rgb(165 170 255 / 0.13);
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 22px 50px -22px rgb(0 0 0 / 0.8);
+  --glow: radial-gradient(120% 60% at 50% 120%, rgb(255 170 110 / 0.42), rgb(255 110 150 / 0.2) 36%, rgb(110 110 230 / 0.12) 60%, transparent 78%);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--page); color: var(--ink); font: 15px/1.5 Inter, "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+button, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--lav); outline-offset: 2px; border-radius: 10px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+::-webkit-scrollbar { width: 14px; height: 14px; }
+::-webkit-scrollbar-thumb { background: rgb(121 121 121 / 0.4); border: 3px solid transparent; border-radius: 7px; background-clip: padding-box; }
+
+.top { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 12px clamp(16px, 4vw, 40px); background: color-mix(in srgb, var(--page) 85%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.top b { font-size: 15px; }
+.top small { color: var(--muted); }
+.toggles { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+.toggle { padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--snow); font-size: 13px; }
+.toggle[aria-pressed="true"] { background: var(--lav-soft); color: var(--lav); border-color: transparent; font-weight: 600; }
+
+main { max-width: 1160px; margin: 0 auto; padding: 28px clamp(16px, 4vw, 40px) 80px; }
+h1 { font-size: clamp(28px, 4.5vw, 40px); line-height: 1.1; letter-spacing: -0.02em; margin: 8px 0 10px; }
+h1 span { background: linear-gradient(90deg, var(--lav), var(--rose) 55%, var(--peach) 80%, var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lead { color: var(--muted); max-width: 720px; margin: 0; }
+section { margin-top: 52px; }
+h2 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; }
+.sub { color: var(--muted); margin: 0 0 18px; font-size: 14px; max-width: 760px; }
+.caption { color: var(--muted); font-size: 13px; margin: 10px 2px 0; }
+.replay { padding: 6px 12px; border-radius: 999px; border: 1px dashed var(--line); background: transparent; color: var(--muted); font-size: 13px; }
+
+/* ── Logo options ─────────────────────────────────────────────────── */
+.options { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+.opt { position: relative; text-align: left; border: 0; padding: 0; border-radius: 20px; background: var(--snow); box-shadow: var(--shadow); overflow: hidden; transition: transform 180ms ease, box-shadow 180ms ease; }
+.opt:hover { transform: translateY(-2px); }
+.opt[aria-checked="true"] { box-shadow: 0 0 0 3px var(--lav), var(--shadow); }
+.opt[aria-checked="true"] .pick { background: var(--lav); color: #fff; }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; }
+.tiles div { display: grid; place-items: center; height: 120px; }
+.tiles div:first-child { background: var(--tile-light); }
+.tiles div:last-child { background: var(--tile-dark); }
+.opt-body { padding: 12px 14px 14px; }
+.opt-body b { display: block; }
+.opt-body p { margin: 2px 0 10px; color: var(--muted); font-size: 13px; line-height: 1.4; min-height: 54px; }
+.sizes { display: flex; align-items: center; gap: 12px; }
+.lockup { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; letter-spacing: -0.01em; }
+.pick { margin-left: auto; padding: 4px 10px; border-radius: 999px; background: var(--lav-soft); color: var(--lav); font-size: 12px; font-weight: 600; }
+.sketch { display: inline-flex; align-items: center; gap: 10px; margin-top: 14px; padding: 8px 12px; border-radius: 12px; background: var(--snow); box-shadow: var(--shadow); font-size: 13px; color: var(--muted); }
+
+/* ── Dawn AI window ───────────────────────────────────────────────── */
+.win-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 300px); gap: 24px; align-items: start; }
+.dawn {
+  position: relative; overflow: hidden; border-radius: 26px; background: var(--snow); box-shadow: var(--shadow);
+  padding: 22px clamp(18px, 3.4vw, 34px) 20px;
+}
+.dawn .glow { position: absolute; inset: 0; background: var(--glow); pointer-events: none; opacity: 0.85; transform-origin: 50% 100%; transition: opacity 600ms ease, transform 900ms ease; }
+.dawn > :not(.glow) { position: relative; }
+.dawn-top { display: flex; align-items: center; gap: 9px; }
+.dawn-top .name { font-weight: 700; }
+.dawn-top .what { color: var(--muted); }
+.x { margin-left: auto; width: 34px; height: 34px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-size: 16px; }
+.x:hover { background: var(--lav-soft); }
+.on-form { margin: 18px 0 0; color: var(--muted); font-size: 13.5px; display: flex; align-items: center; gap: 8px; }
+.on-form i { width: 14px; height: 17px; border-radius: 3px; border: 1.5px solid currentColor; border-top-width: 4px; opacity: 0.7; }
+.dawn h3 { font-size: clamp(26px, 3.4vw, 34px); line-height: 1.12; letter-spacing: -0.02em; margin: 26px 0 18px; font-weight: 650; }
+.pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill { border: 0; border-radius: 999px; padding: 9px 15px; background: var(--lav-soft); font-size: 14px; transition: transform 160ms ease, background 160ms ease; }
+.pill:hover { transform: translateY(-1px); background: color-mix(in srgb, var(--peach) 22%, var(--lav-soft)); }
+.pill.more { background: transparent; color: var(--lav); font-weight: 600; }
+.ask { margin-top: 26px; display: flex; align-items: flex-end; gap: 10px; padding: 10px 10px 10px 18px; border-radius: 20px; background: color-mix(in srgb, var(--snow) 80%, #fff); box-shadow: 0 0 0 1px var(--line), 0 10px 26px -14px rgb(90 90 190 / 0.4); transition: box-shadow 200ms ease; }
+:root[data-theme="dark"] .ask { background: #20213e; }
+.ask:focus-within { box-shadow: 0 0 0 1.5px var(--peach), 0 0 0 6px rgb(255 164 122 / 0.18), 0 10px 26px -14px rgb(255 140 110 / 0.5); }
+.ask textarea { flex: 1; min-height: 44px; max-height: 140px; border: 0; outline: none; resize: none; background: transparent; font-size: 16px; line-height: 1.45; padding: 10px 0; }
+.sun-btn { display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 18px; border: 0; border-radius: 999px; font-weight: 650; color: #3a1d10; background: linear-gradient(180deg, var(--gold), var(--peach) 60%, var(--rose)); box-shadow: 0 6px 16px -6px rgb(255 140 100 / 0.7); }
+.sun-btn[disabled] { filter: grayscale(0.8); opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+.foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; margin-top: 14px; color: var(--muted); font-size: 12.5px; }
+.thinking { display: grid; justify-items: start; gap: 6px; min-height: 120px; align-content: center; }
+.thinking b { font-size: 17px; }
+.thinking span { color: var(--muted); font-size: 14px; }
+.changes { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.changes li { display: flex; align-items: center; gap: 12px; font-size: 15px; }
+.changes li::before { content: ""; width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; background: radial-gradient(circle at 40% 35%, #fff6, transparent 40%), linear-gradient(var(--gold), var(--peach)); box-shadow: 0 0 0 4px rgb(255 191 120 / 0.22); }
+.acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 22px; }
+.ghost { height: 40px; padding: 0 16px; border-radius: 999px; border: 0; background: var(--lav-soft); font-weight: 600; }
+.solid { height: 40px; padding: 0 18px; border-radius: 999px; border: 0; background: var(--ink); color: var(--snow); font-weight: 650; }
+
+/* Thinking: the light rises. */
+.motion .dawn.is-thinking .glow { animation: rise 2.4s ease-in-out infinite; }
+@keyframes rise { 0% { opacity: 0.6; transform: translateY(18%) scaleY(0.9); } 50% { opacity: 1; transform: translateY(0) scaleY(1.15); } 100% { opacity: 0.6; transform: translateY(18%) scaleY(0.9); } }
+.still .dawn.is-thinking .glow { opacity: 1; transform: scaleY(1.1); }
+.motion .dawn.is-landed .glow { animation: land 1s ease-out; }
+@keyframes land { 0% { opacity: 1; transform: scaleY(1.4); filter: brightness(1.25); } 100% { opacity: 0.85; transform: none; } }
+
+.notes { background: var(--snow); border-radius: 20px; padding: 18px; box-shadow: var(--shadow); font-size: 14px; }
+.notes ul { margin: 6px 0 0; padding-left: 18px; color: var(--muted); }
+.notes li { margin: 5px 0; }
+
+/* ── Stings ───────────────────────────────────────────────────────── */
+.stings { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.stage { position: relative; aspect-ratio: 16 / 9; border-radius: 22px; overflow: hidden; box-shadow: var(--shadow); }
+.stage.calm { background: linear-gradient(180deg, #e9ebff 0%, #f6f1ff 45%, #ffe3d6 75%, #ffd7b3 100%); }
+:root[data-theme="dark"] .stage.calm { background: linear-gradient(180deg, #14152b 0%, #241f45 50%, #5a2f52 78%, #8a4a4a 100%); }
+.stage.loud { background: radial-gradient(110% 90% at 50% 80%, #4a1f3f 0%, #1b1033 50%, #08060f 100%); }
+.calm-wrap { position: absolute; inset: 0; display: grid; place-items: center; }
+.calm-inner { display: grid; justify-items: center; gap: 10px; }
+.calm-sky { position: relative; width: 120px; height: 66px; overflow: hidden; }
+.calm-sky .mk { position: absolute; left: 50%; bottom: -6px; translate: -50% 0; }
+.calm-line { width: 220px; height: 3px; border-radius: 3px; background: linear-gradient(90deg, transparent, var(--lav) 20%, var(--rose) 50%, var(--peach) 80%, transparent); transform-origin: 50% 50%; }
+.calm-word { font-weight: 750; font-size: 34px; letter-spacing: -0.02em; color: #1c1d2e; }
+:root[data-theme="dark"] .calm-word { color: #fff; }
+.calm-by { font-size: 13px; color: #6c6e85; margin-top: -8px; }
+:root[data-theme="dark"] .calm-by { color: #c7c9e6; }
+
+.loud-wrap { position: absolute; inset: 0; display: grid; place-items: center; }
+.rays { position: absolute; left: 50%; top: 58%; width: 140%; aspect-ratio: 1; translate: -50% -50%; opacity: 0; }
+.loud-word { position: relative; display: flex; gap: 0.02em; font: 900 clamp(46px, 8.4vw, 96px)/0.9 "Arial Black", Impact, Inter, sans-serif; transform: rotate(-4deg); }
+.loud-word span { display: inline-block; background: linear-gradient(180deg, #fff3c4, var(--gold) 35%, var(--peach) 65%, var(--rose)); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(4px 5px 0 #6b2a5a) drop-shadow(8px 10px 0 #3a1636) drop-shadow(0 0 1.5px #fff); }
+.loud-mark { position: absolute; right: 16%; top: 14%; opacity: 0; }
+
+@media (max-width: 860px) {
+  .win-row, .stings { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<script>
+  (function () {
+    var d = document.documentElement
+    d.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    d.classList.add(matchMedia('(prefers-reduced-motion: reduce)').matches ? 'still' : 'motion')
+  })()
+</script>
+
+<header class="top">
+  <span id="topMark"></span>
+  <div><b>Dawn</b> <small>· Quality Tools’ AI · mockup, nothing built yet</small></div>
+  <div class="toggles">
+    <button class="toggle" id="themeBtn">☾ Dark mode</button>
+    <button class="toggle" id="stillBtn">⏸ Reduced motion</button>
+  </div>
+</header>
+
+<main>
+  <h1>Dawn: <span>first light on your work.</span></h1>
+  <p class="lead">Paper stays the suite’s material, and Dawn is the light that falls on it: cool, clear air warming at the horizon. Below are eight possible marks. Pick one and the rest of the page updates to use it: the header, the AI window and the logo animations.</p>
+
+  <section>
+    <h2>1 · Choose a mark</h2>
+    <p class="sub">Each card shows the mark on light and dark, at app-icon size and tiny (20 px), next to the word “Dawn”. Most keep the Quality Tools sparkle, so Dawn still feels like part of the family.</p>
+    <div class="options" id="options" role="radiogroup" aria-label="Dawn mark"></div>
+    <div class="sketch"><span id="sketchMark"></span> Your sketch, for comparison: a half sun on a dark horizon.</div>
+  </section>
+
+  <section>
+    <h2>2 · The AI window, in Dawn’s light</h2>
+    <p class="sub">Cool and uncluttered: no boxes around the ideas and one clean field to write in. The only warmth is the glow at the bottom, like light at the horizon. While Dawn works, the glow rises instead of a spinner. When the answer lands, it brightens once.</p>
+    <div class="win-row">
+      <div>
+        <div class="dawn" id="dawn">
+          <div class="glow" aria-hidden="true"></div>
+          <div class="dawn-top">
+            <span id="winMark"></span><span class="name">Dawn</span><span class="what">· Edit this form</span>
+            <button class="x" aria-label="Close (mockup)">✕</button>
+          </div>
+          <p class="on-form"><i aria-hidden="true"></i>Customer survey · 12 questions · saved</p>
+
+          <div id="stAsk">
+            <h3>What should change?</h3>
+            <div class="pills" id="pills"></div>
+          </div>
+          <div id="stThink" class="thinking" hidden role="status"><b>Dawn is working on it…</b><span>Reading your 12 questions and making the change. Cancelling is free.</span></div>
+          <div id="stDone" hidden>
+            <h3 style="margin-bottom:14px">Done. Here’s what changed:</h3>
+            <ul class="changes" id="changes"></ul>
+            <div class="acts"><button class="ghost" id="undo">↶ Undo</button><button class="ghost" id="again">Another change</button><button class="solid">Done</button></div>
+          </div>
+
+          <div class="ask" id="ask">
+            <label class="sr-only" for="prompt">Describe the change</label>
+            <textarea id="prompt" rows="1" maxlength="600" placeholder="Tell Dawn what to change…"></textarea>
+            <button class="sun-btn" id="go" disabled>Ask Dawn</button>
+          </div>
+          <div class="foot" id="foot"><span>Standard quality · up to 6.6 credits ▾</span><span>Dawn can make mistakes, so check the changes. One Undo takes them back.</span></div>
+        </div>
+        <p class="caption">Try it: tap an idea, then <b>Ask Dawn</b>. Switch dark mode to see the pre-dawn version.</p>
+      </div>
+      <div class="notes">
+        <b>What changed from the paper version</b>
+        <ul>
+          <li>The form is one quiet line, not a card.</li>
+          <li>Ideas are light pills with no borders, and there’s more space around the question.</li>
+          <li>One clean field to write in: no lines and no margin rule. It glows peach when you click in.</li>
+          <li>The button is the sun: gold to peach to rose.</li>
+          <li>Thinking is light rising, not a spinner. With reduced motion, it’s a steady glow.</li>
+          <li>Dawn is a light, not a character: no face, no “Hello, Name”.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>3 · The mark in motion</h2>
+    <p class="sub">The same idea at two energy levels. Calm is for PeraForm and HyperCBT: the horizon draws, the mark rises, the name appears. Loud is for Static Motion and promos: the letters slam in on the beat and a sunburst flares.</p>
+    <div class="stings">
+      <div>
+        <div class="stage calm" id="calmStage">
+          <div class="calm-wrap"><div class="calm-inner">
+            <div class="calm-sky"><span class="mk" id="calmMark"></span></div>
+            <div class="calm-line" id="calmLine"></div>
+            <div class="calm-word" id="calmWord">Dawn</div>
+            <div class="calm-by" id="calmBy">by Quality Tools</div>
+          </div></div>
+        </div>
+        <p class="caption">Calm (1.6 s) <button class="replay" id="calmReplay">↻ Replay</button></p>
+      </div>
+      <div>
+        <div class="stage loud" id="loudStage">
+          <svg class="rays" id="rays" viewBox="-100 -100 200 200" aria-hidden="true"></svg>
+          <div class="loud-wrap" id="loudCam">
+            <div class="loud-word" id="loudWord" aria-label="Dawn"><span>D</span><span>A</span><span>W</span><span>N</span></div>
+          </div>
+          <span class="loud-mark" id="loudMark"></span>
+        </div>
+        <p class="caption">Loud, at 120 BPM (2 s) <button class="replay" id="loudReplay">↻ Replay</button></p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+const root = document.documentElement
+const still = () => root.classList.contains('still')
+const $ = (s) => document.querySelector(s)
+let uid = 0
+
+// A 4-point sparkle with curved sides, like the Quality Tools mark.
+function sparkle(cx, cy, r, k = 0.13) {
+  const q = r * k
+  return `M${cx} ${cy - r}Q${cx + q} ${cy - q} ${cx + r} ${cy}Q${cx + q} ${cy + q} ${cx} ${cy + r}Q${cx - q} ${cy + q} ${cx - r} ${cy}Q${cx - q} ${cy - q} ${cx} ${cy - r}Z`
+}
+const SUN = (id) => `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd36e"/><stop offset=".55" stop-color="#ffa47a"/><stop offset="1" stop-color="#ff7fa0"/></linearGradient>`
+const SKY = (id) => `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8b8ff0"/><stop offset=".55" stop-color="#d9a4e0"/><stop offset="1" stop-color="#ffb38a"/></linearGradient>`
+const SPEC = (id) => `<linearGradient id="${id}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8b8ff0"/><stop offset=".5" stop-color="#ff7fa0"/><stop offset="1" stop-color="#ffcf6b"/></linearGradient>`
+
+// Each mark draws in a 64×64 box. `ink` is the horizon/line colour for
+// the background it sits on.
+const MARKS = [
+  {
+    key: 'sun-spark', name: 'Sunrise with sparkle',
+    note: 'Your sketch, refined: a half sun on the horizon with the Quality Tools sparkle cut out of it.',
+    svg: (ink) => { const g = `g${uid++}`, m = `m${uid++}`; return `<defs>${SUN(g)}<mask id="${m}"><rect width="64" height="64" fill="#fff"/><path d="${sparkle(32, 33, 9)}" fill="#000"/></mask></defs>
+      <path d="M12 44a20 20 0 0 1 40 0z" fill="url(#${g})" mask="url(#${m})"/>
+      <rect x="6" y="47" width="52" height="4" rx="2" fill="${ink}"/>` },
+  },
+  {
+    key: 'reflect', name: 'Sparkle over still water',
+    note: 'The sparkle rises over the horizon, with a faint reflection below, like the light on the ice in your picture.',
+    svg: (ink) => { const g = `g${uid++}`, c = `c${uid++}`; return `<defs>${SUN(g)}<clipPath id="${c}"><rect x="0" y="40" width="64" height="24"/></clipPath></defs>
+      <path d="${sparkle(32, 26, 16)}" fill="url(#${g})"/>
+      <g clip-path="url(#${c})" opacity=".3"><path d="${sparkle(32, 54, 16)}" fill="#8b8ff0"/></g>
+      <rect x="8" y="40" width="48" height="2.6" rx="1.3" fill="${ink}"/>` },
+  },
+  {
+    key: 'bands', name: 'Rings of first light',
+    note: 'Three rings rising from the horizon in gold, rose and lavender, echoing the suite’s spectrum.',
+    svg: (ink) => `<g fill="none" stroke-linecap="round" stroke-width="5">
+      <path d="M24 46a8 8 0 0 1 16 0" stroke="#ffcf6b"/><path d="M17 46a15 15 0 0 1 30 0" stroke="#ff8f8f"/><path d="M10 46a22 22 0 0 1 44 0" stroke="#8b8ff0"/></g>
+      <path d="${sparkle(32, 14, 5)}" fill="#ffcf6b"/>
+      <rect x="6" y="49" width="52" height="3.4" rx="1.7" fill="${ink}"/>`,
+  },
+  {
+    key: 'sliced', name: 'Sliced sun',
+    note: 'A full sun with horizon gaps across its lower half, and a small sparkle above. Bold, and reads well tiny.',
+    svg: () => { const g = `g${uid++}`, m = `m${uid++}`; return `<defs>${SUN(g)}<mask id="${m}"><rect width="64" height="64" fill="#fff"/>
+      <rect x="0" y="35" width="64" height="2.5" fill="#000"/><rect x="0" y="41" width="64" height="3.5" fill="#000"/><rect x="0" y="48" width="64" height="4.5" fill="#000"/></mask></defs>
+      <circle cx="30" cy="34" r="20" fill="url(#${g})" mask="url(#${m})"/>
+      <path d="${sparkle(52, 12, 6)}" fill="#8b8ff0"/>` },
+  },
+  {
+    key: 'd', name: 'D for Dawn',
+    note: 'A “D” filled with a dawn sky, cool at the top and warm at the bottom, with the sparkle rising inside it. Strong as an app icon.',
+    svg: () => { const g = `g${uid++}`; return `<defs>${SKY(g)}</defs>
+      <path d="M14 10h15a22 22 0 0 1 0 44H14z" fill="url(#${g})"/>
+      <path d="${sparkle(29, 34, 9)}" fill="#fff"/>
+      <rect x="14" y="44" width="30" height="2" rx="1" fill="#fff" opacity=".55"/>` },
+  },
+  {
+    key: 'tile', name: 'Window on the sky',
+    note: 'A rounded tile like the QT logo, holding a whole dawn: lavender sky, warm horizon and the sparkle sun. The most “app icon” of the set.',
+    svg: () => { const g = `g${uid++}`; return `<defs>${SKY(g)}</defs>
+      <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#${g})"/>
+      <circle cx="32" cy="44" r="13" fill="#fff" opacity=".28"/>
+      <path d="${sparkle(32, 34, 11)}" fill="#fff"/>
+      <rect x="10" y="44" width="44" height="2.4" rx="1.2" fill="#fff" opacity=".75"/>` },
+  },
+  {
+    key: 'burst', name: 'Sunburst',
+    note: 'Rays fanning up from a point on the horizon. Built to animate: it flares on the beat in Static Motion.',
+    svg: (ink) => { const g = `g${uid++}`; let rays = ''; for (let i = 0; i < 7; i++) { const a = Math.PI + (i + 1) * (Math.PI / 8); const len = i % 2 ? 18 : 25; rays += `<line x1="${32 + Math.cos(a) * 9}" y1="${44 + Math.sin(a) * 9}" x2="${32 + Math.cos(a) * (9 + len)}" y2="${44 + Math.sin(a) * (9 + len)}"/>` }
+      return `<defs>${SPEC(g)}</defs><g stroke="url(#${g})" stroke-width="4" stroke-linecap="round">${rays}</g>
+      <path d="${sparkle(32, 42, 6)}" fill="#ffcf6b"/>
+      <rect x="6" y="47" width="52" height="3.4" rx="1.7" fill="${ink}"/>` },
+  },
+  {
+    key: 'minimal', name: 'Sparkle on the line',
+    note: 'The quietest one: a gold sparkle resting on a horizon that fades from lavender to rose. Calm, and very Quality Tools.',
+    svg: () => { const g = `g${uid++}`, s = `s${uid++}`; return `<defs>${SUN(g)}${SPEC(s)}</defs>
+      <path d="${sparkle(32, 30, 15)}" fill="url(#${g})"/>
+      <rect x="6" y="46" width="20" height="3" rx="1.5" fill="url(#${s})"/><rect x="38" y="46" width="20" height="3" rx="1.5" fill="url(#${s})"/>` },
+  },
+]
+const svg = (mark, size, ink) => `<svg width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true">${mark.svg(ink)}</svg>`
+const inkFor = () => (root.dataset.theme === 'dark' ? '#3a3d66' : '#2a2b45')
+
+let chosen = MARKS[0]
+function renderOptions() {
+  const box = $('#options'); box.innerHTML = ''
+  MARKS.forEach((m) => {
+    const b = document.createElement('button')
+    b.className = 'opt'; b.type = 'button'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', m === chosen)
+    b.innerHTML = `<div class="tiles"><div>${svg(m, 76, '#2a2b45')}</div><div>${svg(m, 76, '#4a4e86')}</div></div>
+      <div class="opt-body"><b>${m.name}</b><p>${m.note}</p>
+      <div class="sizes">${svg(m, 20, inkFor())}<span class="lockup">${svg(m, 26, inkFor())} Dawn</span><span class="pick">${m === chosen ? 'Chosen' : 'Choose'}</span></div></div>`
+    b.onclick = () => { chosen = m; renderAll(); playCalm() }
+    box.append(b)
+  })
+}
+function renderAll() {
+  renderOptions()
+  $('#topMark').innerHTML = svg(chosen, 26, inkFor())
+  $('#winMark').innerHTML = svg(chosen, 24, inkFor())
+  $('#calmMark').innerHTML = svg(chosen, 60, inkFor())
+  $('#loudMark').innerHTML = svg(chosen, 70, '#ffffff')
+  $('#sketchMark').innerHTML = `<svg width="30" height="30" viewBox="0 0 64 64"><path d="M14 44a18 18 0 0 1 36 0z" fill="#ffa62b"/><rect x="6" y="44" width="52" height="10" rx="3" fill="#2a2b45"/></svg>`
+}
+
+// ── Toggles ───────────────────────────────────────────────────────────
+const themeBtn = $('#themeBtn'), stillBtn = $('#stillBtn')
+function syncToggles() { themeBtn.setAttribute('aria-pressed', root.dataset.theme === 'dark'); stillBtn.setAttribute('aria-pressed', still()) }
+themeBtn.onclick = () => { root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark'; syncToggles(); renderAll() }
+stillBtn.onclick = () => { root.classList.toggle('still'); root.classList.toggle('motion'); syncToggles(); playCalm(); playLoud() }
+syncToggles()
+
+// ── AI window ─────────────────────────────────────────────────────────
+const IDEAS = ['Add a required email question', 'Turn the ratings into one grid', 'Make the wording friendlier', 'Split it into sections']
+const PROMPTS = ['Add an email question after the name, and make it required', 'Turn the satisfaction questions into one grid', 'Make the wording friendlier and shorter', 'Group the questions into sections with short titles']
+const pills = $('#pills'), prompt = $('#prompt'), go = $('#go'), dawn = $('#dawn')
+IDEAS.forEach((t, i) => { const b = document.createElement('button'); b.className = 'pill'; b.type = 'button'; b.textContent = t; b.onclick = () => { prompt.value = PROMPTS[i]; sync(); prompt.focus() }; pills.append(b) })
+const more = document.createElement('button'); more.className = 'pill more'; more.type = 'button'; more.textContent = 'More ideas'; pills.append(more)
+function sync() { go.disabled = prompt.value.trim().length < 3; prompt.style.height = 'auto'; prompt.style.height = Math.min(prompt.scrollHeight, 140) + 'px' }
+prompt.oninput = sync
+prompt.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!go.disabled) go.click() } }
+function step(s) {
+  $('#stAsk').hidden = s !== 'ask'; $('#stThink').hidden = s !== 'think'; $('#stDone').hidden = s !== 'done'
+  $('#ask').hidden = s === 'done'; $('#foot').hidden = s === 'done'
+  dawn.classList.toggle('is-thinking', s === 'think')
+  prompt.disabled = s === 'think'; go.textContent = s === 'think' ? 'Cancel' : 'Ask Dawn'; go.disabled = s === 'think' ? false : prompt.value.trim().length < 3
+}
+go.onclick = () => {
+  if (dawn.classList.contains('is-thinking')) { step('ask'); return }
+  step('think')
+  setTimeout(() => {
+    if (!dawn.classList.contains('is-thinking')) return
+    step('done'); prompt.value = ''; sync()
+    dawn.classList.remove('is-landed'); void dawn.offsetWidth; dawn.classList.add('is-landed')
+    const list = $('#changes'); list.innerHTML = ''
+    ;['Added “Email” after “Your name”', 'Made “Email” required', 'Kept every existing answer matched to its question'].forEach((t, i) => {
+      const li = document.createElement('li'); li.textContent = t; list.append(li)
+      if (!still()) li.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 420, delay: 250 + i * 220, easing: 'ease-out', fill: 'backwards' })
+    })
+  }, still() ? 700 : 2600)
+}
+$('#undo').onclick = () => step('ask')
+$('#again').onclick = () => step('ask')
+
+// ── Calm sting ───────────────────────────────────────────────────────
+function playCalm() {
+  const mk = $('#calmMark'), line = $('#calmLine'), word = $('#calmWord'), by = $('#calmBy')
+  ;[mk, line, word, by].forEach((el) => el.getAnimations().forEach((a) => a.cancel()))
+  if (still()) return
+  const ease = 'cubic-bezier(.2,.8,.25,1)'
+  line.animate([{ transform: 'scaleX(0)', opacity: 0 }, { transform: 'scaleX(1)', opacity: 1 }], { duration: 600, easing: ease, fill: 'backwards' })
+  mk.animate([{ transform: 'translateY(70px)', filter: 'brightness(.7)' }, { transform: 'translateY(0)', filter: 'brightness(1.15)', offset: 0.8 }, { transform: 'translateY(0)', filter: 'brightness(1)' }], { duration: 900, delay: 300, easing: ease, fill: 'backwards' })
+  word.animate([{ opacity: 0, transform: 'translateY(6px)', letterSpacing: '0.12em' }, { opacity: 1, transform: 'none', letterSpacing: '-0.02em' }], { duration: 700, delay: 900, easing: ease, fill: 'backwards' })
+  by.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: 1200, fill: 'backwards' })
+}
+$('#calmReplay').onclick = playCalm
+
+// ── Loud sting ───────────────────────────────────────────────────────
+const BEAT = 250
+const rays = $('#rays')
+;(function drawRays() {
+  const cols = ['#ffcf6b', '#ffa47a', '#ff7fa0', '#8b8ff0']
+  let out = ''
+  for (let i = 0; i < 24; i++) { const a = (i / 24) * 360; out += `<path d="M0 0L-4 -100L4 -100Z" fill="${cols[i % 4]}" opacity=".55" transform="rotate(${a})"/>` }
+  rays.innerHTML = out + '<circle r="22" fill="#ffcf6b" opacity=".35"/>'
+})()
+function playLoud() {
+  const letters = [...document.querySelectorAll('#loudWord span')], cam = $('#loudCam'), mark = $('#loudMark')
+  ;[...letters, cam, mark, rays].forEach((el) => el.getAnimations().forEach((a) => a.cancel()))
+  if (still()) { rays.style.opacity = 0.6; mark.style.opacity = 1; return }
+  rays.style.opacity = 0; mark.style.opacity = 0
+  letters.forEach((l, i) => l.animate([
+    { transform: 'translateY(-140%) scale(1.8) rotate(-14deg)', opacity: 0 },
+    { transform: 'translateY(6%) scale(.9) rotate(4deg)', opacity: 1, offset: 0.7 },
+    { transform: 'none', opacity: 1 },
+  ], { duration: 280, delay: i * BEAT, easing: 'cubic-bezier(.3,0,.3,1.4)', fill: 'backwards' }))
+  const hit = 4 * BEAT
+  cam.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.14) rotate(-1.5deg)', offset: 0.15 }, { transform: 'translate(-7px,4px) scale(1.07)', offset: 0.3 }, { transform: 'translate(6px,-3px) scale(1.05)', offset: 0.45 }, { transform: 'scale(1)' }], { duration: 700, delay: hit, easing: 'ease-out' })
+  rays.animate([{ opacity: 0, transform: 'scale(.3) rotate(0deg)' }, { opacity: 0.9, transform: 'scale(1.05) rotate(8deg)', offset: 0.3 }, { opacity: 0.6, transform: 'scale(1) rotate(20deg)' }], { duration: 1400, delay: hit, easing: 'cubic-bezier(.1,.7,.3,1)', fill: 'forwards' })
+  mark.animate([{ opacity: 0, transform: 'scale(.2) rotate(-90deg)' }, { opacity: 1, transform: 'scale(1.2) rotate(10deg)', offset: 0.7 }, { opacity: 1, transform: 'none' }], { duration: 500, delay: hit + 150, easing: 'cubic-bezier(.3,0,.3,1.5)', fill: 'forwards' })
+}
+$('#loudReplay').onclick = playLoud
+
+renderAll(); playCalm(); playLoud()
+</script>
+</body>
+</html>
