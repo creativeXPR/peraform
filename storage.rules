@@ -14,7 +14,9 @@ service firebase.storage {
     // own folder, images only, up to 10 MB.
     match /creators/{uid}/images/{file} {
       allow read: if true;
+      // Makers need a verified email (same as firestore.rules).
       allow create: if isRealUser()
+        && request.auth.token.get('email_verified', false) == true
         && request.auth.uid == uid
         && request.resource.contentType.matches('image/.*')
         && request.resource.size < 10 * 1024 * 1024;

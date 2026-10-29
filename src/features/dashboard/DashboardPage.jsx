@@ -29,7 +29,6 @@ import MoveDialog from './MoveDialog.jsx'
 import MenuButton from '../../lib/MenuButton.jsx'
 import { useToast } from '../../lib/useToast.jsx'
 import GenerateFormDialog from '../ai/GenerateFormDialog.jsx'
-import { resendVerification } from '../auth/authActions.js'
 import { useAuth } from '../auth/useAuth.js'
 import FormCard from './FormCard.jsx'
 import FormThumbnail from './FormThumbnail.jsx'
@@ -100,11 +99,6 @@ export default function DashboardPage() {
   const activeFolder = folders.find((f) => f.id === place)
   // A deleted folder that was being viewed falls back to "All forms".
   const where = place === 'all' || place === 'starred' || activeFolder ? place : 'all'
-  const [verifySent, setVerifySent] = useState(false)
-  // Email/password accounts must verify their address before invites to it
-  // can be accepted; Google accounts are verified already.
-  const needsVerify =
-    !user.emailVerified && user.providerData.some((p) => p.providerId === 'password')
 
   // Forms shared with this email before the account existed join the list.
   useEffect(() => {
@@ -198,22 +192,6 @@ export default function DashboardPage() {
 
   return (
     <div className="dash">
-      {needsVerify && (
-        <p className="form-notice dash-verify" role="status">
-          Verify your email ({user.email}) so collaborators can share forms with you.{' '}
-          {verifySent ? (
-            'Sent — check your inbox, then refresh this page.'
-          ) : (
-            <button
-              type="button"
-              className="link-btn"
-              onClick={() => resendVerification().then(() => setVerifySent(true), () => {})}
-            >
-              Resend email
-            </button>
-          )}
-        </p>
-      )}
       <div className="dash-start-header">
         <span className="dash-start-title">Start a new form</span>
         <button

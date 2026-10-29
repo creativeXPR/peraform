@@ -29,8 +29,16 @@ const ANON = 'anon'
 
 let testEnv
 
+// Google accounts are always verified.
 const real = (uid) =>
-  testEnv.authenticatedContext(uid, { firebase: { sign_in_provider: 'google.com' } }).firestore()
+  testEnv
+    .authenticatedContext(uid, { email_verified: true, firebase: { sign_in_provider: 'google.com' } })
+    .firestore()
+// A password account that hasn't clicked its verification link yet.
+const unverified = (uid) =>
+  testEnv
+    .authenticatedContext(uid, { email_verified: false, firebase: { sign_in_provider: 'password' } })
+    .firestore()
 const anon = (uid = ANON) =>
   testEnv.authenticatedContext(uid, { firebase: { sign_in_provider: 'anonymous' } }).firestore()
 const guest = () => testEnv.unauthenticatedContext().firestore()
@@ -88,6 +96,30 @@ describe('forms: read', () => {
     await seed('forms/f1', form({ status: 'draft' }))
     await assertSucceeds(getDoc(doc(real(OWNER), 'forms/f1')))
     await assertSucceeds(getDoc(doc(real(EDITOR), 'forms/f1')))
+  })
+})
+
+describe('makers need a verified email', () => {
+  it('keeps unverified members out of drafts, answer keys and responses', async () => {
+    await seed('forms/f1', form({ status: 'draft' }))
+    await seed('forms/f1/private/answerKey', { q1: 'a' })
+    await seed('forms/f1/responses/r1', response('someone'))
+    await assertFails(getDoc(doc(unverified(OWNER), 'forms/f1')))
+    await assertFails(getDoc(doc(unverified(OWNER), 'forms/f1/private/answerKey')))
+    await assertFails(getDoc(doc(unverified(EDITOR), 'forms/f1/responses/r1')))
+  })
+
+  it('stops unverified accounts creating or editing forms', async () => {
+    await seed('forms/f1', form())
+    await assertFails(
+      setDoc(doc(unverified(OWNER), 'forms/f2'), form({ status: 'draft', memberIds: [OWNER] })),
+    )
+    await assertFails(setDoc(doc(unverified(OWNER), 'forms/f1'), form({ title: 'Changed' })))
+  })
+
+  it('still lets unverified accounts fill in a published form', async () => {
+    await seed('forms/f1', form())
+    await assertSucceeds(getDoc(doc(unverified(STRANGER), 'forms/f1')))
   })
 })
 

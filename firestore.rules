@@ -17,21 +17,28 @@ service cloud.firestore {
         && request.auth.token.firebase.sign_in_provider != 'anonymous';
     }
 
+    // Makers (people who build forms) need a verified email; people filling
+    // in forms don't. Google and email-link accounts are verified already.
+    // Same rule as requireVerified() in functions/app.js.
+    function isMaker() {
+      return isRealUser() && request.auth.token.get('email_verified', false) == true;
+    }
+
     // Each person's own organising: starred forms and folders. Private to
     // them — collaborators organise the same form their own way.
     //   users/{uid}/formMeta/{formId}  { starred, folderId }
     //   users/{uid}/folders/{folderId} { name, createdAt }
     match /users/{uid}/{document=**} {
-      allow read, write: if isRealUser() && request.auth.uid == uid;
+      allow read, write: if isMaker() && request.auth.uid == uid;
     }
 
     match /forms/{formId} {
       function isMember() {
-        return isSignedIn() && request.auth.uid in resource.data.memberIds;
+        return isMaker() && request.auth.uid in resource.data.memberIds;
       }
 
       function isOwner() {
-        return isSignedIn() && request.auth.uid == resource.data.ownerId;
+        return isMaker() && request.auth.uid == resource.data.ownerId;
       }
 
       // "Only people you choose": the signed-in, verified account email is on
@@ -54,7 +61,7 @@ service cloud.firestore {
         && (resource.data.get('settings', {}).get('restricted', false) != true
           || isAllowedResponder()));
 
-      allow create: if isRealUser()
+      allow create: if isMaker()
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.memberIds == [request.auth.uid]
         && request.resource.data.status == 'draft';
@@ -87,7 +94,7 @@ service cloud.firestore {
       }
 
       function isFormMember() {
-        return isSignedIn() && request.auth.uid in form().memberIds;
+        return isMaker() && request.auth.uid in form().memberIds;
       }
 
       // Minutes, or 0 when the form isn't a timed quiz.

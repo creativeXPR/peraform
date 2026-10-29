@@ -7,7 +7,7 @@ import { onDocumentCreated } from 'firebase-functions/v2/firestore'
 import { HttpsError, onCall, onRequest } from 'firebase-functions/v2/https'
 import { onObjectFinalized } from 'firebase-functions/v2/storage'
 import { isAllowedResponder } from './access.js'
-import { REGION, billingDb, db, lagosDay, requireApp } from './app.js'
+import { REGION, billingDb, db, lagosDay, requireApp, requireVerified } from './app.js'
 import { MARK, compressBuffer, compressionFor } from './compress.js'
 import { gradeResponse } from './grade.js'
 import { formatRespondentCopy, formatScoreRelease, formatEmailFormInvitation } from './emailFormat.js'
@@ -192,6 +192,7 @@ export const sheetsLink = onCall({ region: REGION, secrets: [GOOGLE_OAUTH_CLIENT
   if (!request.auth || request.auth.token.firebase?.sign_in_provider === 'anonymous') {
     throw new HttpsError('unauthenticated', 'Sign in first.')
   }
+  requireVerified(request, 'link Google Sheets')
   const { action, formId, code } = request.data ?? {}
   if (typeof formId !== 'string') throw new HttpsError('invalid-argument', 'No form.')
   if (!GOOGLE_OAUTH_CLIENT_ID.value()) {
@@ -409,6 +410,7 @@ export const manageCollaborators = onCall(
     if (!request.auth || request.auth.token.firebase?.sign_in_provider === 'anonymous') {
       throw new HttpsError('unauthenticated', 'Sign in first.')
     }
+    requireVerified(request, 'share forms')
     const caller = request.auth.uid
     const { action, formId } = request.data ?? {}
     if (typeof formId !== 'string') throw new HttpsError('invalid-argument', 'No form.')
@@ -505,6 +507,39 @@ export const acceptInvites = onCall({ region: REGION }, async (request) => {
   return { joined: snap.size }
 })
 
+// ── Email verification through our own mail ────────────────
+// Firebase's built-in verification email comes from a shared
+// noreply@…firebaseapp.com sender and often lands in spam. This makes the
+// same link with the Admin SDK and sends it from Quality Tools' address.
+// { sent: false } when mail isn't set up, so the app falls back to
+// Firebase's own email.
+export const sendVerification = onCall({ region: REGION, secrets: [SMTP_PASS] }, async (request) => {
+  requireApp(request)
+  const token = request.auth?.token
+  if (!token || token.firebase?.sign_in_provider === 'anonymous' || !token.email) {
+    throw new HttpsError('unauthenticated', 'Sign in first.')
+  }
+  if (token.email_verified === true) return { sent: false, verified: true }
+  if (!(await allow(db, `verify:${request.auth.uid}`, 5, 3_600_000))) {
+    throw new HttpsError('resource-exhausted', 'Too many emails. Wait an hour, then try again (and check your spam folder).')
+  }
+  const link = await getAuth().generateEmailVerificationLink(token.email, { url: `${APP_URL.value()}/` })
+  const body = 'Confirm this is your email address to build forms, share them, and use AI features on PeraForm and the other Quality Tools apps. If you didn’t sign up, you can ignore this email.'
+  const sent = await sendMail({
+    to: token.email,
+    subject: 'Verify your email for Quality Tools',
+    text: `${body}\n\n${link}`,
+    html: emailHtml({
+      heading: 'Verify your email',
+      body,
+      cta: 'Verify my email',
+      href: link,
+      footer: 'This link expires in a few days. If it has, open PeraForm and press Resend.',
+    }),
+  })
+  return { sent }
+})
+
 // ── Release quiz scores by email ────────────────────────────
 export const releaseScores = onCall(
   { region: REGION, secrets: [SMTP_PASS] },
@@ -513,6 +548,7 @@ export const releaseScores = onCall(
     if (!request.auth || request.auth.token.firebase?.sign_in_provider === 'anonymous') {
       throw new HttpsError('unauthenticated', 'Sign in first.')
     }
+    requireVerified(request, 'release scores')
     const { formId, responseIds } = request.data ?? {}
     if (typeof formId !== 'string' || !formId) {
       throw new HttpsError('invalid-argument', 'No form.')
@@ -558,9 +594,7 @@ export const emailForm = onCall(
     if (!request.auth || request.auth.token.firebase?.sign_in_provider === 'anonymous') {
       throw new HttpsError('unauthenticated', 'Sign in first.')
     }
-    if (request.auth.token.email_verified !== true) {
-      throw new HttpsError('failed-precondition', 'Please verify your email address before emailing the form.')
-    }
+    requireVerified(request, 'email your form')
     const { formId, to, subject: customSubject, message } = request.data ?? {}
     if (typeof formId !== 'string' || !formId) {
       throw new HttpsError('invalid-argument', 'No form.')

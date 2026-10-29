@@ -8,7 +8,7 @@ import {
   signOut as firebaseSignOut,
   updateProfile,
 } from 'firebase/auth'
-import { getFirebaseAuth, googleProvider } from '../../lib/firebase.js'
+import { callSendVerification, getFirebaseAuth, googleProvider } from '../../lib/firebase.js'
 
 export function signInWithGoogle() {
   return signInWithPopup(getFirebaseAuth(), googleProvider)
@@ -23,12 +23,23 @@ export async function createAccount(name, email, password) {
   if (name) await updateProfile(user, { displayName: name })
   // A verified address is what lets someone accept collaboration invites
   // sent to it (see acceptInvites in functions/index.js).
-  await sendEmailVerification(user).catch(() => {})
+  await resendVerification().catch(() => {})
   return user
 }
 
-export function resendVerification() {
-  return sendEmailVerification(getFirebaseAuth().currentUser)
+// The link goes out from Quality Tools' own address (sendVerification in
+// functions/index.js), which spam filters trust more than Firebase's shared
+// sender. If our mail isn't working, Firebase sends its own email instead.
+// A "too many emails" refusal is passed on rather than sending another.
+export async function resendVerification() {
+  const user = getFirebaseAuth().currentUser
+  try {
+    const { data } = await callSendVerification()
+    if (data.sent || data.verified) return
+  } catch (err) {
+    if (err?.code === 'functions/resource-exhausted') throw err
+  }
+  await sendEmailVerification(user)
 }
 
 export function resetPassword(email) {

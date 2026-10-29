@@ -5,7 +5,7 @@ import { logger } from 'firebase-functions'
 import { defineSecret, defineString } from 'firebase-functions/params'
 import { HttpsError, onCall, onRequest } from 'firebase-functions/v2/https'
 import { onSchedule } from 'firebase-functions/v2/scheduler'
-import { EMULATED, REGION, billingDb as bdb, db, lagosDay, requireApp } from '../app.js'
+import { EMULATED, REGION, billingDb as bdb, db, lagosDay, requireApp, requireVerified } from '../app.js'
 import { holdRange, inputTokensFor, tierFor } from '../ai/catalog.js'
 import { AiError } from '../ai/errors.js'
 import { runModel } from '../ai/run.js'
@@ -103,6 +103,7 @@ async function recordActive(uid) {
 // Checkout happens on Paystack's page; it returns to /credits/return.
 export const createTopup = onCall({ region: REGION, secrets: [PAYSTACK_SECRET_KEY] }, async (request) => {
   const uid = requireAccount(request)
+  requireVerified(request, 'buy credits')
   const email = request.auth.token.email
   if (!email) throw new HttpsError('failed-precondition', 'Your account needs an email address to pay.')
   const { packs } = await loadConfig()
@@ -231,6 +232,9 @@ export const aiRun = onCall(
     if (request.data?.cancel) {
       return { cancelled: await cancelHold(bdb, uid, String(request.data.cancel)) }
     }
+    // The one gate for every app's AI (PeraForm and HyperCBT). Cancelling
+    // above stays open, so a run started before is never stuck.
+    requireVerified(request, 'use AI features')
     const featureId = request.data?.feature
     const feature = FEATURES[featureId]
     if (!feature) throw new HttpsError('invalid-argument', 'Unknown AI feature.')

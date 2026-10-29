@@ -26,6 +26,16 @@ export function requireApp(request) {
   }
 }
 
+// Makers (people who build forms, tests, or use AI and credits) need a
+// verified email; people filling in forms or sitting tests don't. Google and
+// email-link accounts are verified already; password accounts verify by
+// clicking the link they were sent. Same rule as isMaker() in firestore.rules.
+export function requireVerified(request, doing = 'do this') {
+  if (request.auth?.token?.email_verified !== true) {
+    throw new HttpsError('failed-precondition', `Verify your email to ${doing}. Check your inbox for the link, or resend it from the banner.`)
+  }
+}
+
 // The day in Lagos (UTC+1, no daylight saving), e.g. '2026-10-25': the
 // admin page's daily counts (billing DB, activity/{day}).
 export const lagosDay = (ms = Date.now()) => new Date(ms + 3600_000).toISOString().slice(0, 10)
