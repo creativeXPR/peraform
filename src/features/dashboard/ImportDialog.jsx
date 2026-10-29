@@ -1,20 +1,33 @@
 import { useEffect, useRef, useState } from 'react'
-import { FileJson, HardDrive, Info, Upload, X } from 'lucide-react'
+import { FileJson, FileText, HardDrive, Info, Upload, X } from 'lucide-react'
 import { fileToForm } from '../../lib/formFile.js'
 import { convertGoogleForm } from '../../lib/googleFormImport.js'
 import { driveImportReady, pickGoogleForm } from '../../lib/googleDrive.js'
+import { useAuth } from '../auth/useAuth.js'
+import IdeaArt from '../ai/IdeaArt.jsx'
+import '../ai/ai.css'
 
 const MAX_BYTES = 5 * 1024 * 1024
 
+// Picture colours for the three ways in (IdeaArt.jsx).
+const ART = {
+  file: { sky: '#eef0ff', sky2: '#d3d8ff', ground: '#a3acf5', accent: '#4f46e5' },
+  drive: { sky: '#e6f4ea', sky2: '#c4e8cf', ground: '#81c995', accent: '#1e8e3e' },
+  paper: { sky: '#fff1dc', sky2: '#ffd9b0', ground: '#f4b183', accent: '#e8743b' },
+}
+
 // Dashboard → Import: a PeraForm file from the computer, or a Google Form
 // from Google Drive. (Google Forms can't be saved as a file — Google keeps
-// them in Drive — so that's the way to bring one in.)
+// them in Drive — so that's the way to bring one in.) A printout or PDF
+// goes to Create with AI instead. Same look as the AI windows (ai.css).
 //   onImport({ content, answerKey, skipped? }) creates the form → its id
 //   onOpen(id) opens it — straight away, or after saying what didn't come
 //   across (images from Google Forms).
-export default function ImportDialog({ open, onClose, onImport, onOpen, busy }) {
+//   onCreateAi() opens Create with AI (for a printout or PDF)
+export default function ImportDialog({ open, onClose, onImport, onOpen, onCreateAi, busy }) {
   const ref = useRef(null)
   const fileRef = useRef(null)
+  const { user } = useAuth()
   const [error, setError] = useState('')
   const [working, setWorking] = useState('') // '' | 'file' | 'drive'
   const [done, setDone] = useState(null) // { id, skipped }
@@ -83,27 +96,64 @@ export default function ImportDialog({ open, onClose, onImport, onOpen, busy }) 
     }
   }
 
+  function choose(key) {
+    if (key === 'file') fileRef.current.click()
+    else if (key === 'drive') fromDrive()
+    else onCreateAi()
+  }
+
   const disabled = Boolean(working) || busy
+  const name = (user?.displayName || '').trim().split(/\s+/)[0]
+
+  const options = [
+    {
+      key: 'file',
+      title: working === 'file' ? 'Importing…' : 'PeraForm file from your computer',
+      text: 'A form saved with “Download as PeraForm file” (in a form’s ⋮ menu). Questions, sections, actions, quiz answers, theme and screen designs all come back.',
+      icon: FileJson,
+    },
+    {
+      key: 'drive',
+      title: working === 'drive' ? 'Waiting for Google…' : 'Google Form from Google Drive',
+      text: driveImportReady
+        ? 'Pick a form in Google’s file picker; PeraForm only sees the form you pick. Questions, sections, “go to section” choices and quiz answers come across. Images don’t, because Google’s image links expire.'
+        : 'Not set up yet: this needs a one-time Google setup by the site’s owner.',
+      icon: HardDrive,
+      off: !driveImportReady,
+    },
+    onCreateAi && {
+      key: 'paper',
+      title: 'A printout or PDF',
+      text: 'Paste its text into Create with AI, and it builds the form for you. Uses AI credits.',
+      icon: FileText,
+    },
+  ].filter(Boolean)
 
   return (
     <dialog
       ref={ref}
-      className="confirm import-dialog"
+      className="ai-create import-studio"
+      aria-label="Import a form"
       onCancel={(e) => {
         e.preventDefault()
         if (!disabled) onClose()
       }}
       onClick={(e) => e.target === ref.current && !disabled && onClose()}
     >
-      <div className="confirm-body">
-        <div className="collab-head">
-          <h2>
-            <Upload size={18} /> Import a form
-          </h2>
+      <div className="ai-create-body">
+        <header className="ai-create-top">
+          <span className="ai-create-brand">
+            <Upload size={16} aria-hidden="true" /> Import a form
+          </span>
           <button type="button" className="icon-btn" onClick={onClose} aria-label="Close" disabled={disabled}>
-            <X size={18} />
+            <X size={20} />
           </button>
-        </div>
+        </header>
+
+        <h2 className="ai-hello">
+          <span className="ai-hello-name">{name ? `Hello, ${name}` : 'Hello'}</span>
+          <span className="ai-hello-sub">{done ? 'Your form is in.' : 'Where is your form coming from?'}</span>
+        </h2>
 
         {done ? (
           <section className="import-done" role="status">
@@ -117,62 +167,46 @@ export default function ImportDialog({ open, onClose, onImport, onOpen, busy }) 
               ))}
               {done.skipped.length > 8 && <li>and {done.skipped.length - 8} more</li>}
             </ul>
-            <div className="confirm-actions">
+            <div className="ai-create-actions">
               <button type="button" className="btn btn-primary" onClick={() => onOpen(done.id)}>
                 Open the form
               </button>
             </div>
           </section>
         ) : (
-          <>
-            <button
-              type="button"
-              className="import-option"
-              onClick={() => fileRef.current.click()}
-              disabled={disabled}
-            >
-              <FileJson size={26} aria-hidden="true" />
-              <span>
-                <strong>{working === 'file' ? 'Importing…' : 'PeraForm file from your computer'}</strong>
-                <small>
-                  A form saved with “Download as PeraForm file” (in a form’s ⋮ menu): questions, sections, actions,
-                  quiz answers, theme and screen designs all come back.
-                </small>
-              </span>
-            </button>
-            <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={fromFile} />
-
-            <button
-              type="button"
-              className="import-option"
-              onClick={fromDrive}
-              disabled={disabled || !driveImportReady}
-            >
-              <HardDrive size={26} aria-hidden="true" />
-              <span>
-                <strong>{working === 'drive' ? 'Waiting for Google…' : 'Google Form from Google Drive'}</strong>
-                <small>
-                  {driveImportReady
-                    ? 'Pick a form in Google’s file picker. PeraForm only sees the form you pick. Questions, sections, “go to section” choices and quiz answers come across; images don’t (Google’s image links expire).'
-                    : 'Not set up yet — this needs a one-time Google setup by the site’s owner.'}
-                </small>
-              </span>
-            </button>
-
-            <p className="import-note">
-              <Info size={15} aria-hidden="true" />
-              <span>
-                Google Forms can’t be saved as a file on your computer — Google keeps them in Drive — so import yours
-                from Google Drive above. Have a printout or PDF of a form instead? Use <strong>Create with AI</strong>{' '}
-                and paste its text.
-              </span>
-            </p>
-          </>
+          <div className={`ai-ideas no-shuffle import-ways is-${options.length}`}>
+            {options.map((o, i) => (
+              <button
+                key={o.key}
+                type="button"
+                className="ai-idea import-way"
+                onClick={() => choose(o.key)}
+                disabled={disabled || o.off}
+              >
+                <IdeaArt art={ART[o.key]} icon={o.icon} flip={i % 2 === 1} />
+                <span className="import-way-words">
+                  <span className="ai-idea-title">{o.title}</span>
+                  <small>{o.text}</small>
+                </span>
+              </button>
+            ))}
+          </div>
         )}
+        <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={fromFile} />
 
         {error && (
           <p className="form-error" role="alert">
             {error}
+          </p>
+        )}
+
+        {!done && (
+          <p className="ai-create-note import-note">
+            <Info size={14} aria-hidden="true" />
+            <span>
+              Google Forms can’t be saved as a file on your computer, because Google keeps them in Drive. Import yours
+              from Google Drive instead.
+            </span>
           </p>
         )}
       </div>

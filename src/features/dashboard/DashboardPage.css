@@ -461,54 +461,39 @@
 }
 
 /* Import (ImportDialog.jsx). */
-.import-dialog {
-  width: min(520px, calc(100vw - 24px));
+/* Same frame as the AI windows (.ai-create in ai.css). */
+.import-studio {
+  width: min(900px, calc(100vw - 24px));
 }
 
-.import-dialog h2 {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+.import-ways.is-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.import-option {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  width: 100%;
-  padding: 14px 16px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--surface);
-  color: var(--text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 0.2s var(--ease), background 0.2s var(--ease);
+.import-way {
+  align-items: stretch;
 }
 
-.import-option:hover:not(:disabled) {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-}
-
-.import-option:disabled {
+.ai-idea.import-way:disabled {
+  background: var(--fill);
+  box-shadow: none;
   cursor: not-allowed;
   opacity: 0.6;
+  transform: none;
 }
 
-.import-option > svg {
-  flex-shrink: 0;
-  color: var(--accent);
-}
-
-.import-option span {
+.import-way-words {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
-.import-option small {
+.import-way .ai-idea-title {
+  white-space: normal;
+}
+
+.import-way small {
   color: var(--text-muted);
   font-size: 13px;
   line-height: 1.45;
@@ -516,16 +501,31 @@
 
 .import-note {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   margin: 0;
-  color: var(--text-muted);
-  font-size: 13px;
-  line-height: 1.45;
 }
 
 .import-note svg {
   flex-shrink: 0;
   margin-top: 2px;
+}
+
+/* On phones the AI cards turn into rows (ai.css); these keep their words
+   under the picture so the explanations stay readable. */
+@media (max-width: 720px) {
+  .import-ways.is-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-idea.import-way {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ai-idea.import-way .idea-art {
+    width: 100%;
+    aspect-ratio: 3 / 1;
+  }
 }
 
 .import-done ul {

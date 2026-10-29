@@ -282,6 +282,10 @@ export default function DashboardPage() {
         onClose={() => setImporting(false)}
         onImport={handleImport}
         onOpen={(id) => navigate(`/forms/${id}/edit`)}
+        onCreateAi={() => {
+          setImporting(false)
+          setAiOpen(true)
+        }}
         busy={creating}
       />
 
