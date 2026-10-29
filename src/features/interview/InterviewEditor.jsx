@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { Monitor, RotateCcw, Smartphone, Sparkles } from 'lucide-react'
 import ColorPicker from '../../lib/ColorPicker.jsx'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
@@ -69,6 +69,10 @@ const SCREEN_BG_PRESETS = [
 // never edited shows its starter design until the first change saves it.
 export default function InterviewEditor({ viewSwitch }) {
   const { draft, edit } = useFormEditor()
+  // The editor fits the space below its toolbar (screens, canvas and panel
+  // scroll on their own), so nothing needs the page scrolled to reach it.
+  const bodyRef = useRef(null)
+  useFitBelow(bodyRef)
   const [screenKey, setScreenKey] = useState(null)
   const [device, setDevice] = useState('phone')
   // Selected blocks, in the order picked; the last one is shown in the
@@ -331,7 +335,7 @@ export default function InterviewEditor({ viewSwitch }) {
         onFixButton={(issue) => change(`fix-button:${issue.nodeId}`, (dsn) => fixButton(dsn, issue.nodeId, issue.want))}
       />
 
-      <div className="ie-body">
+      <div className="ie-body" ref={bodyRef}>
         <LayersPanel
           issueKeys={issueKeys}
           screens={screens}
@@ -573,3 +577,30 @@ export default function InterviewEditor({ viewSwitch }) {
   )
 }
 
+// Sets --ie-fit on the element: the height left from its top to the bottom
+// of the scrolling page area it sits in (at least 420px). Kept up to date
+// as the window or anything above it (e.g. notices) changes size.
+function useFitBelow(ref) {
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    let scroller = el.parentElement
+    while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement
+    const measure = () => {
+      const box = scroller ? scroller.getBoundingClientRect() : { top: 0, bottom: window.innerHeight }
+      const pad = scroller ? parseFloat(getComputedStyle(scroller).paddingBottom) || 0 : 16
+      const top = el.getBoundingClientRect().top + (scroller ? scroller.scrollTop : 0)
+      const fit = Math.max(420, Math.floor(box.bottom - pad - top))
+      el.style.setProperty('--ie-fit', `${fit}px`)
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(document.documentElement)
+    if (el.parentElement) ro.observe(el.parentElement)
+    window.addEventListener('resize', measure)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [ref])
+}
