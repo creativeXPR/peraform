@@ -41,4 +41,20 @@ export const HYPERCBT_AI_FEATURES = {
     overheadTokens: 1100,
     typical: { inputTokens: 2000, outputTokens: 1200 },
   },
+  // Results tab: a plain-language report on how the test went. Only the
+  // totals from hypercbt-stats.js go in (score spread, per-question correct
+  // rates, option picks) - never a name, email, Student ID or anyone's own
+  // answers. Read-only: it changes nothing.
+  'analyse-test-results': {
+    app: 'hypercbt',
+    label: 'Analyse test results with AI',
+    tiers: ['quick', 'standard', 'best'],
+    defaultTier: 'standard',
+    maxChars: { analyse: 500 }, // what to focus on (optional)
+    maxStatsChars: 40000, // the statistics, as compact JSON
+    maxTokens: { analyse: 4000 },
+    minTokens: { analyse: 1500 },
+    overheadTokens: 1300,
+    typical: { inputTokens: 3000, outputTokens: 1200 },
+  },
 }
