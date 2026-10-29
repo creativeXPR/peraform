@@ -286,3 +286,323 @@
 .ai-done-head svg {
   color: var(--success);
 }
+
+/* ── Create with AI (GenerateFormDialog.jsx) ─────────────────────────── */
+.ai-create {
+  width: min(980px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 0;
+  border: 0;
+  border-radius: 28px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 24px 64px rgb(0 0 0 / 0.18);
+}
+
+.ai-create::backdrop {
+  background: var(--backdrop, rgb(0 0 0 / 0.35));
+}
+
+.ai-create-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 22px clamp(18px, 4vw, 44px) 22px;
+}
+
+.ai-create-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ai-create-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.ai-create-brand svg {
+  color: var(--accent);
+}
+
+.ai-hello {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 8px 0 4px;
+  font-size: clamp(26px, 4vw, 36px);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+/* The Quality Tools spectrum, as on the suite's mark. */
+.ai-hello-name {
+  width: fit-content;
+  background: linear-gradient(100deg, #3f6ff5 0%, #7c5cf0 45%, #d9467a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.ai-hello-sub {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.ai-ideas {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.ai-idea {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px 14px 14px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--fill);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.ai-idea:hover,
+.ai-idea:focus-visible {
+  background: var(--accent-soft);
+  box-shadow: 0 8px 22px rgb(0 0 0 / 0.08);
+  transform: translateY(-2px);
+}
+
+.ai-idea-title {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.idea-art {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 2 / 1;
+  border-radius: 12px;
+}
+
+.idea-art svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.idea-art.is-flipped .idea-form {
+  transform: translateX(114px);
+}
+
+.idea-badge {
+  position: absolute;
+  right: 16%;
+  bottom: 22%;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 18px rgb(0 0 0 / 0.12);
+}
+
+.idea-art.is-flipped .idea-badge {
+  right: auto;
+  left: 14%;
+}
+
+.ai-shuffle {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 4px solid var(--surface);
+  border-radius: 50%;
+  background: var(--fill-strong, #e6e8f0);
+  color: var(--text);
+  cursor: pointer;
+  transform: translateX(-50%);
+  transition: transform 0.25s var(--ease);
+}
+
+.ai-shuffle:hover {
+  transform: translateX(-50%) rotate(180deg);
+}
+
+.ai-create-progress {
+  min-height: 160px;
+}
+
+.ai-doc-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* The prompt bar: a pill like a chat box; it grows as you type. */
+.ai-prompt {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 8px 8px 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.ai-prompt:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.ai-prompt.is-doc {
+  border-radius: 20px;
+}
+
+.ai-prompt textarea {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 9px 4px;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.4;
+  resize: none;
+}
+
+.ai-prompt-mode {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.ai-prompt-mode:hover,
+.ai-prompt-mode.is-on {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.ai-prompt-go {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent, #fff);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ai-prompt-go:disabled {
+  background: var(--fill-strong, #e6e8f0);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.ai-prompt-go.is-cancel {
+  background: var(--fill);
+  color: var(--text);
+}
+
+.ai-create-options > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.ai-create-options > summary::-webkit-details-marker {
+  display: none;
+}
+
+.ai-create-options[open] > summary svg {
+  transform: rotate(180deg);
+}
+
+.ai-create-options[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ai-create-note {
+  margin: -6px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+@media (max-width: 720px) {
+  .ai-ideas {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .ai-idea {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .ai-idea-title {
+    flex: 1;
+    white-space: normal;
+  }
+
+  .ai-idea .idea-art {
+    width: 120px;
+    flex-shrink: 0;
+  }
+
+  .idea-badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+  }
+
+  .idea-badge svg {
+    width: 20px;
+    height: 20px;
+  }
+}
