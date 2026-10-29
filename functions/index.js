@@ -533,21 +533,29 @@ export const sendVerification = onCall({ region: REGION, secrets: [SMTP_PASS] },
   const app = VERIFY_APPS[request.data?.app] ?? VERIFY_APPS.peraform
   const link = await getAuth().generateEmailVerificationLink(token.email, { url: `${app.url()}/` })
   const body = `Confirm this is your email address to ${app.doing} on ${app.name} and the other Quality Tools apps. If you didn’t sign up, you can ignore this email.`
-  const sent = await sendMail({
-    fromName: `${app.name} (No-Reply)`,
-    to: token.email,
-    subject: `Verify your email for ${app.name}`,
-    text: `${body}\n\n${link}`,
-    html: emailHtml({
-      heading: 'Verify your email',
-      body,
-      cta: 'Verify my email',
-      href: link,
-      footer: `This link expires in a few days. If it has, open ${app.name} and press Resend.`,
-      brand: `${app.name} (No-Reply)`,
-    }),
-  })
-  return { sent }
+  // Our mailbox can fail (Gmail's ~500 a day cap, or mail down): then
+  // { sent: false } and the app has Firebase send its own email instead,
+  // so a verification email always goes out.
+  try {
+    const sent = await sendMail({
+      fromName: `${app.name} (No-Reply)`,
+      to: token.email,
+      subject: `Verify your email for ${app.name}`,
+      text: `${body}\n\n${link}`,
+      html: emailHtml({
+        heading: 'Verify your email',
+        body,
+        cta: 'Verify my email',
+        href: link,
+        footer: `This link expires in a few days. If it has, open ${app.name} and press Resend.`,
+        brand: `${app.name} (No-Reply)`,
+      }),
+    })
+    return { sent }
+  } catch (err) {
+    logger.warn('Verification email failed; the app falls back to Firebase’s email', { err: err.message })
+    return { sent: false, fallback: true }
+  }
 })
 
 // ── Release quiz scores by email ────────────────────────────

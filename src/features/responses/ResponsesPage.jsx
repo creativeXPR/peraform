@@ -39,6 +39,7 @@ import AnalyseResultsDialog from '../ai/AnalyseResultsDialog.jsx'
 import ResultsReport from './ResultsReport.jsx'
 import { useResponses } from './useResponses.js'
 import './ResponsesPage.css'
+import Spinner from '../../lib/Spinner.jsx'
 
 const TEXT_PREVIEW = 5
 
@@ -60,7 +61,7 @@ export default function ResponsesPage() {
   const [analysing, setAnalysing] = useState(false)
   const [report, setReport] = useState(null) // { report, charged, at }
 
-  if (!form || !draft) return <div className="builder-loading" aria-busy="true" />
+  if (!form || !draft) return <Spinner />
 
   const items = draft.questions // questions and section breaks
   const title = draft.title || 'Untitled form'
@@ -183,7 +184,7 @@ export default function ResponsesPage() {
       )}
 
       {loading ? (
-        <div className="builder-loading" aria-busy="true" />
+        <Spinner />
       ) : error ? (
         <p className="form-error" role="alert">
           Couldn’t load responses. Check your connection and refresh.

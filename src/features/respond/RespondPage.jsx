@@ -42,6 +42,7 @@ import { useSavedProgress } from './useSavedProgress.js'
 import './RespondPage.css'
 import HeaderBanner from '../../lib/HeaderBanner.jsx'
 import LogoMark from '../../lib/LogoMark.jsx'
+import Spinner from '../../lib/Spinner.jsx'
 
 // The public form at /f/:formId. Anyone with the link can read a published
 // form; members can also open drafts here as a preview.
@@ -133,7 +134,7 @@ export default function RespondPage() {
               : 'Check your connection and refresh the page.'}
           </Notice>
         ) : !form ? (
-          <div className="respond-skeleton" aria-busy="true" />
+          <Spinner label="Loading the form" />
         ) : (
           <FormView
             form={form}
@@ -724,7 +725,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
   const lowAt = Math.min(60, quiz.timeLimit * 15)
 
   // Waiting (briefly) to see if there are answers to bring back.
-  if (!saved.ready) return <div className="respond-card respond-loading" aria-busy="true" />
+  if (!saved.ready) return <Spinner fill="page" />
 
   const restoredNote = saved.restored && (
     <p className="respond-banner respond-restored">

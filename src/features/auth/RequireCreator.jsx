@@ -3,6 +3,7 @@ import WalletProvider from '../credits/WalletProvider.jsx'
 import KeepProvider from '../keep/KeepProvider.jsx'
 import { isCreator, useAuth } from './useAuth.js'
 import VerifyEmailPage from './VerifyEmailPage.jsx'
+import Spinner from '../../lib/Spinner.jsx'
 
 // Gate for creator screens: anyone without a real account goes to /signin
 // and comes back to where they were headed afterwards.
@@ -10,7 +11,7 @@ export default function RequireCreator() {
   const { user, loading } = useAuth()
   const location = useLocation()
 
-  if (loading) return null
+  if (loading) return <Spinner fill="page" />
   if (!isCreator(user)) {
     const next = location.pathname + location.search
     return <Navigate to={`/signin?next=${encodeURIComponent(next)}`} replace />

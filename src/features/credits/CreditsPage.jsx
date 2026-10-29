@@ -10,6 +10,7 @@ import { useWallet } from './walletContext.js'
 import './credits.css'
 
 import { entryLabel } from './entries.js'
+import Spinner from '../../lib/Spinner.jsx'
 
 function when(ts) {
   const ms = typeof ts === 'number' ? ts : ts?.toMillis?.()
@@ -122,7 +123,7 @@ export default function CreditsPage() {
       <section aria-labelledby="usage-h">
         <h2 id="usage-h">Usage</h2>
         {ledger === null ? (
-          <p className="credits-sub">Loading…</p>
+          <Spinner fill="box" label="Loading your credits" />
         ) : ledger.length === 0 ? (
           <p className="credits-sub">Nothing yet.</p>
         ) : (

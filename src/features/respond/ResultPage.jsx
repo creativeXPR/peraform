@@ -9,6 +9,7 @@ import { useAuth } from '../auth/useAuth.js'
 import QuizResult from './QuizResult.jsx'
 import './RespondPage.css'
 import LogoMark from '../../lib/LogoMark.jsx'
+import Spinner from '../../lib/Spinner.jsx'
 
 // /f/:formId/r/:responseId — a respondent's quiz result, readable once the
 // creator releases it (and only by the person who submitted it).
@@ -63,7 +64,7 @@ export default function ResultPage() {
       </header>
       <main className="respond-main">
         {state.status === 'loading' ? (
-          <div className="respond-skeleton" aria-busy="true" />
+          <Spinner label="Loading your result" />
         ) : state.status === 'ready' ? (
           <QuizResult form={state.form} response={state.response} quiz={quizSettings(state.form)} />
         ) : (

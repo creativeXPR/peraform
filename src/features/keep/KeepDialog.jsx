@@ -6,6 +6,7 @@ import { TYPE_INFO } from '../builder/questionTypes.js'
 import { useKeep } from './keepContext.js'
 import { deleteKeep, renameKeep, saveKeep, watchKeeps } from './keepStore.js'
 import './keep.css'
+import Spinner from '../../lib/Spinner.jsx'
 
 const ICONS = { field: ListChecks, block: LayoutTemplate, text: FileText, link: Link2 }
 const typeLabel = (t) => TYPE_INFO[t]?.label ?? { section: 'Section', text: 'Title and description', image: 'Image', video: 'Video' }[t] ?? t
@@ -146,7 +147,7 @@ export default function KeepDialog({ open, onClose, uid }) {
           </p>
         )}
         <ul className="keep-list">
-          {items === null && !error && <li className="keep-empty">Loading…</li>}
+          {items === null && !error && <li><Spinner fill="box" label="Loading your Keep" /></li>}
           {items !== null && !shown.length && (
             <li className="keep-empty">
               Nothing kept here yet. Use <Bookmark size={13} aria-hidden="true" /> Keep on a question card or a design

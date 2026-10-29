@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import AppShell from './lib/AppShell.jsx'
 import RequireCreator from './features/auth/RequireCreator.jsx'
+import Spinner from './lib/Spinner.jsx'
 
 // Each screen is its own chunk, so someone opening a form link downloads the
 // respond page, not the dashboard and builder (dnd-kit and all).
@@ -21,7 +22,7 @@ const InvoicePage = lazy(() => import('./features/credits/InvoicePage.jsx'))
 export default function App() {
   return (
     <BrowserRouter>
-      <Suspense fallback={null}>
+      <Suspense fallback={<Spinner fill="page" />}>
         <Routes>
           {/* Creator screens: signed-in (non-anonymous) only. */}
           <Route element={<RequireCreator />}>

@@ -5,6 +5,7 @@ import { callEmailForm, callManageCollaborators } from '../../lib/firebase.js'
 import AllowedResponders from './AllowedResponders.jsx'
 import { useFormEditor } from './editorContext.js'
 import Select from '../../lib/Select.jsx'
+import Spinner from '../../lib/Spinner.jsx'
 
 // "Share" dialog, modelled on Google Forms': add people by email (owner),
 // who has access, general access (editors restricted; respondents anyone
@@ -184,7 +185,7 @@ export default function ShareDialog({ formId, open, onClose, showToast, onPublis
         {loadError ? (
           <p className="form-error">{loadError}</p>
         ) : !data ? (
-          <div className="collab-loading" aria-busy="true" />
+          <Spinner fill="box" />
         ) : (
           <ul className="collab-list">
             {data.members.map((m) => (

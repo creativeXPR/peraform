@@ -4,6 +4,7 @@ import { ChevronLeft, X } from 'lucide-react'
 import { isQuestion, isSection } from '../../lib/formLogic.js'
 import { useAuth } from '../auth/useAuth.js'
 import { useMyForms } from '../dashboard/useMyForms.js'
+import Spinner from '../../lib/Spinner.jsx'
 
 // "Import questions": pick one of your other forms, tick its questions,
 // and they're copied in with fresh ids. Skip logic inside the copies is
@@ -92,7 +93,7 @@ export default function ImportQuestionsDialog({ open, onClose, onImport }) {
           <>
             <p className="collab-sub">Choose a form to copy questions from.</p>
             {loading ? (
-              <div className="collab-loading" aria-busy="true" />
+              <Spinner fill="box" />
             ) : others.length === 0 ? (
               <p className="key-note">You don’t have any other forms yet.</p>
             ) : (

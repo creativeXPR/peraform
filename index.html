@@ -47,7 +47,28 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- The loading ring (src/lib/Spinner.jsx) while the app downloads; React
+         replaces it on start. Styles inline because the CSS isn't loaded yet. -->
+    <div id="root">
+      <div class="boot-spinner" role="status" aria-label="Loading">
+        <svg width="40" height="40" viewBox="0 0 50 50" aria-hidden="true">
+          <circle cx="25" cy="25" r="20" fill="none" stroke-width="4.5" stroke-linecap="round" />
+        </svg>
+      </div>
+    </div>
+    <style>
+      .boot-spinner { display: grid; place-items: center; min-height: 100dvh; color: #a9b8c3; }
+      [data-theme='dark'] .boot-spinner { color: #5f6e7a; }
+      @media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .boot-spinner { color: #5f6e7a; } }
+      .boot-spinner svg { animation: boot-turn 1.4s linear infinite; }
+      .boot-spinner circle { stroke: currentColor; stroke-dasharray: 1 150; animation: boot-arc 1.4s ease-in-out infinite; }
+      @keyframes boot-turn { to { transform: rotate(360deg); } }
+      @keyframes boot-arc {
+        0% { stroke-dasharray: 1 150; stroke-dashoffset: 0; }
+        50% { stroke-dasharray: 90 150; stroke-dashoffset: -35; }
+        100% { stroke-dasharray: 90 150; stroke-dashoffset: -124; }
+      }
+    </style>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

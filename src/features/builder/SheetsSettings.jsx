@@ -4,6 +4,7 @@ import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { callSheetsLink } from '../../lib/firebase.js'
 import { SHEETS_CLIENT_ID, requestSheetsCode, useSheetsStatus } from '../../lib/googleSheets.js'
 import { timeAgo } from '../../lib/timeAgo.js'
+import Spinner from '../../lib/Spinner.jsx'
 
 // Settings → Google Sheets: link the form to a spreadsheet in the owner's
 // Drive that fills itself with responses, re-sync it, or unlink it.
@@ -47,7 +48,7 @@ export default function SheetsSettings({ formId }) {
   if (!SHEETS_CLIENT_ID) {
     return <p className="sheets-note">Google Sheets isn’t set up for PeraForm yet.</p>
   }
-  if (status === undefined) return <div className="collab-loading" aria-busy="true" />
+  if (status === undefined) return <Spinner fill="box" />
 
   return (
     <div className="sheets">

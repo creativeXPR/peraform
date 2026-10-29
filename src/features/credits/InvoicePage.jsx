@@ -7,6 +7,7 @@ import { formatCredits, formatNaira } from '../../../functions/billing/pricing.j
 import { useAuth } from '../auth/useAuth.js'
 import { useWallet } from './walletContext.js'
 import './credits.css'
+import Spinner from '../../lib/Spinner.jsx'
 
 const CHANNEL = {
   card: 'Card',
@@ -38,7 +39,7 @@ export default function InvoicePage() {
     )
   }, [reference])
 
-  if (payment === undefined) return <div className="credits credits-sub">Loading…</div>
+  if (payment === undefined) return <Spinner fill="page" label="Loading the invoice" />
   if (!payment || !payment.credited) {
     return (
       <div className="credits">

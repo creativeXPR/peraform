@@ -34,6 +34,7 @@ import FormCard from './FormCard.jsx'
 import FormThumbnail from './FormThumbnail.jsx'
 import { createForm, createImportedForm, deleteForm } from './formActions.js'
 import ImportDialog from './ImportDialog.jsx'
+import Spinner from '../../lib/Spinner.jsx'
 import { saveRecentTemplateKey, TEMPLATES } from './templates.js'
 import TemplateGallery from './TemplateGallery.jsx'
 import { useMyForms } from './useMyForms.js'
@@ -362,11 +363,7 @@ export default function DashboardPage() {
         </nav>
 
         {loading ? (
-          <div className={`forms forms-${view}`} aria-busy="true">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="skeleton" />
-            ))}
-          </div>
+          <Spinner label="Loading your forms" />
         ) : error ? (
           <p className="form-error" role="alert">
             Couldn’t load your forms. Check your connection and refresh.

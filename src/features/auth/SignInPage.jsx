@@ -11,6 +11,7 @@ import { isCreator, useAuth } from './useAuth.js'
 import './SignInPage.css'
 import LogoMark from '../../lib/LogoMark.jsx'
 import GoogleMark from '../../lib/GoogleMark.jsx'
+import Spinner from '../../lib/Spinner.jsx'
 
 const TITLES = {
   signin: 'Sign in to PeraForm',
@@ -35,7 +36,7 @@ export default function SignInPage() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
 
-  if (loading) return null
+  if (loading) return <Spinner fill="page" />
   if (isCreator(user)) return <Navigate to={safeNext(params.get('next'))} replace />
 
   function switchMode(next) {

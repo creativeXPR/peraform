@@ -7,13 +7,14 @@ import { quizSettings, settingsOf } from '../../lib/formModel.js'
 import { useFormEditor } from './editorContext.js'
 import SheetsSettings from './SheetsSettings.jsx'
 import Select from '../../lib/Select.jsx'
+import Spinner from '../../lib/Spinner.jsx'
 
 // Settings tab: who can respond and how, presentation, and quiz options.
 // Saved through the same autosave/undo pipeline as the questions.
 export default function SettingsPage() {
   const { form, draft, edit } = useFormEditor()
   const [removingIcon, setRemovingIcon] = useState(false)
-  if (!draft) return <div className="builder-loading" aria-busy="true" />
+  if (!draft) return <Spinner />
 
   const {
     requireSignIn,

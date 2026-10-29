@@ -1,0 +1,72 @@
+/* Spinner.jsx: the Quality Tools loading ring. */
+.qt-spinner {
+  display: grid;
+  place-items: center;
+  color: var(--spinner, #a9b8c3); /* index.css, per theme */
+}
+
+.qt-spinner.is-page {
+  min-height: 100dvh;
+}
+
+.qt-spinner.is-area {
+  min-height: 240px;
+}
+
+.qt-spinner.is-inline {
+  display: inline-grid;
+  padding: 12px;
+}
+
+.qt-spinner svg {
+  animation: qt-spinner-turn 1.4s linear infinite;
+}
+
+.qt-spinner circle {
+  stroke: currentColor;
+  stroke-dasharray: 1 150;
+  stroke-dashoffset: 0;
+  animation: qt-spinner-arc 1.4s ease-in-out infinite;
+}
+
+@keyframes qt-spinner-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes qt-spinner-arc {
+  0% {
+    stroke-dasharray: 1 150;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 90 150;
+    stroke-dashoffset: -35;
+  }
+  100% {
+    stroke-dasharray: 90 150;
+    stroke-dashoffset: -124;
+  }
+}
+
+/* Reduced motion: the ring still turns (it's the only sign of progress),
+   but slowly and without the arc changing size. */
+@media (prefers-reduced-motion: reduce) {
+  .qt-spinner svg {
+    animation-duration: 3s;
+  }
+
+  .qt-spinner circle {
+    stroke-dasharray: 80 150;
+    animation: none;
+  }
+}
+
+.qt-spinner.is-box {
+  min-height: 120px;
+}
+
+.qt-spinner.is-box {
+  min-height: 120px;
+}

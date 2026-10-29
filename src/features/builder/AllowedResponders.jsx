@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { AtSign, FileUp, Search, UserPlus, X } from 'lucide-react'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
+import Spinner from '../../lib/Spinner.jsx'
 import {
   MAX_ENTRIES,
   extractEmails,
@@ -26,7 +27,7 @@ export default function AllowedResponders({ formId }) {
   const fileRef = useRef(null)
 
   if (error) return <p className="form-error">Couldn’t load the list. Check your connection.</p>
-  if (!access) return <div className="collab-loading" aria-busy="true" />
+  if (!access) return <Spinner fill="box" />
 
   const total = access.emails.length + access.domains.length
 

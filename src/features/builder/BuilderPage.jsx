@@ -31,6 +31,7 @@ import { buildTargets } from './questionTypes.js'
 import { keepField, pasteFields, textAsField } from '../../lib/keep.js'
 import HeaderBanner from '../../lib/HeaderBanner.jsx'
 import { useKeep, useKeepTargets } from '../keep/keepContext.js'
+import Spinner from '../../lib/Spinner.jsx'
 
 // Questions tab: header card (title + description), the question and
 // section cards, and the floating toolbar (add question / add section).
@@ -52,7 +53,7 @@ export default function BuilderPage() {
   // Kept fields, text and links paste below the selected card (pasteKept).
   useKeepTargets(draft ? { field: pasteKept, text: (data) => pasteKept(textAsField(data)) } : null)
 
-  if (!draft) return <div className="builder-loading" aria-busy="true" />
+  if (!draft) return <Spinner />
 
   // Questions and section breaks, in order (see lib/formLogic.js).
   const questions = draft.questions
