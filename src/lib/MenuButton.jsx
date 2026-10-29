@@ -1,18 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Check } from 'lucide-react'
-import { placeMenu } from './placeMenu.js'
+import { placeMenu, portalTarget } from './placeMenu.js'
 import './MenuButton.css'
-
-
-// Where the open list is drawn: outside any scrolling panel (so it's never
-// clipped), inside the app frame (so it keeps the form's theme colours), or
-// inside the full-screen element when one is showing.
-function portalTarget(button) {
-  const full = document.fullscreenElement
-  if (full?.contains(button)) return full
-  return button.closest('.shell, .respond') ?? document.body
-}
 
 // Icon button that opens a small popover list.
 // items: [{ label, onSelect, checked?, danger?, icon? }]

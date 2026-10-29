@@ -1,7 +1,7 @@
 import { Children, isValidElement, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Check, ChevronDown } from 'lucide-react'
-import { placeMenu } from './placeMenu.js'
+import { placeMenu, portalTarget } from './placeMenu.js'
 import './MenuButton.css'
 import './Select.css'
 
@@ -26,13 +26,6 @@ function readOptions(children) {
     } else if (child.props?.children) out.push(...readOptions(child.props.children))
   })
   return out
-}
-
-// Like MenuButton: drawn outside any scrolling panel, inside the themed frame.
-function portalTarget(el) {
-  const full = document.fullscreenElement
-  if (full?.contains(el)) return full
-  return el.closest('.shell, .respond') ?? document.body
 }
 
 export default function Select({ value, onChange, onClick, children, className = '', disabled = false, title, ...aria }) {

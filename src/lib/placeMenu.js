@@ -18,6 +18,27 @@ export function placeMenu(pop, b, align = 'right') {
   if (used < h) pop.style.maxHeight = `${used}px`
   const top = below ? b.bottom + GAP : b.top - GAP - used
   const left = align === 'left' ? b.left : b.right - w
-  pop.style.top = `${Math.round(Math.max(EDGE, top))}px`
-  pop.style.left = `${Math.round(Math.min(Math.max(EDGE, left), vw - w - EDGE))}px`
+  const wantTop = Math.round(Math.max(EDGE, top))
+  const wantLeft = Math.round(Math.min(Math.max(EDGE, left), vw - w - EDGE))
+  pop.style.top = `${wantTop}px`
+  pop.style.left = `${wantLeft}px`
+  // Inside a dialog that's moved or animated (a transform), "fixed" is
+  // measured from the dialog, not the window: correct by the difference.
+  const r = pop.getBoundingClientRect()
+  if (Math.abs(r.top - wantTop) > 1 || Math.abs(r.left - wantLeft) > 1) {
+    pop.style.top = `${Math.round(2 * wantTop - r.top)}px`
+    pop.style.left = `${Math.round(2 * wantLeft - r.left)}px`
+  }
+}
+
+// Where an open menu or list is drawn: inside an open dialog when the
+// button is in one (a modal dialog covers everything outside it), else in
+// the full-screen element, or the app frame (so it keeps the form's theme
+// colours), outside any scrolling panel so it's never clipped.
+export function portalTarget(el) {
+  const dialog = el.closest('dialog[open]')
+  if (dialog) return dialog
+  const full = document.fullscreenElement
+  if (full?.contains(el)) return full
+  return el.closest('.shell, .respond') ?? document.body
 }
