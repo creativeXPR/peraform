@@ -109,3 +109,18 @@ describe('Google Form import', () => {
     expect(skipped).toEqual(['image “Logo”'])
   })
 })
+
+describe('PeraForm file: header art', () => {
+  it('keeps this site’s own header images and the banner settings', () => {
+    const file = formToFile({
+      title: 'T',
+      questions: [],
+      theme: { headerImage: { url: '/headers/waves-ocean.svg' }, header: { overlayOpacity: 40, logo: { url: 'https://x.example/logo.png' }, title: 'Hi' } },
+    })
+    const { content } = fileToForm(JSON.parse(JSON.stringify(file)))
+    expect(content.theme.headerImage.url).toBe('/headers/waves-ocean.svg')
+    expect(content.theme.header).toMatchObject({ overlayOpacity: 40, logo: { url: 'https://x.example/logo.png' }, title: 'Hi' })
+    const bad = fileToForm({ ...file, form: { ...file.form, theme: { headerImage: { url: '//evil.example/x.png' } } } })
+    expect(bad.content.theme.headerImage.url).toBeUndefined()
+  })
+})

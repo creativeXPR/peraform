@@ -48,16 +48,16 @@ function getToken() {
   })
 }
 
-function pick(token) {
+function pick(token, viewId = 'FORMS', title = 'Choose a Google Form to import') {
   return new Promise((resolve) => {
     const { picker } = window.google
-    const view = new picker.DocsView(picker.ViewId.FORMS).setMode(picker.DocsViewMode.LIST)
+    const view = new picker.DocsView(picker.ViewId[viewId]).setMode(viewId === 'FORMS' ? picker.DocsViewMode.LIST : picker.DocsViewMode.GRID)
     new picker.PickerBuilder()
       .addView(view)
       .setOAuthToken(token)
       .setDeveloperKey(API_KEY)
       .setAppId(APP_ID)
-      .setTitle('Choose a Google Form to import')
+      .setTitle(title)
       .setCallback((data) => {
         if (data.action === picker.Action.PICKED) resolve(data.docs?.[0]?.id ?? null)
         else if (data.action === picker.Action.CANCEL) resolve(null)
@@ -67,19 +67,41 @@ function pick(token) {
   })
 }
 
-// The picked form's JSON (Google Forms API forms.get), or null if the
-// person cancelled. Throws an Error with a plain message on failure.
-export async function pickGoogleForm() {
-  if (!driveImportReady) throw new Error('Importing from Google Drive isn’t set up yet.')
+// Google's sign-in, then its picker (scripts load the first time).
+async function startGoogle() {
+  if (!driveImportReady) throw new Error('Google Drive isn’t set up yet.')
   await Promise.all([loadScript('https://accounts.google.com/gsi/client'), loadScript('https://apis.google.com/js/api.js')])
   await new Promise((resolve) => window.gapi.load('picker', resolve))
-  let token
   try {
-    token = await getToken()
+    return await getToken()
   } catch (err) {
     if (err.message === 'cancelled') return null
     throw err
   }
+}
+
+// An image picked in Google Drive, downloaded as a File (Drive links aren't
+// public, so the caller uploads it to PeraForm), or null if cancelled.
+// Needs the Google Drive API enabled too.
+export async function pickDriveImage() {
+  const token = await startGoogle()
+  if (!token) return null
+  const id = await pick(token, 'DOCS_IMAGES', 'Choose an image for the header')
+  if (!id) return null
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(id)}?alt=media`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) throw new Error('Couldn’t get that image from Google Drive. Please try again.')
+  const blob = await res.blob()
+  if (!blob.type.startsWith('image/')) throw new Error('That file isn’t an image.')
+  return new File([blob], 'drive-image', { type: blob.type })
+}
+
+// The picked form's JSON (Google Forms API forms.get), or null if the
+// person cancelled. Throws an Error with a plain message on failure.
+export async function pickGoogleForm() {
+  const token = await startGoogle()
+  if (!token) return null
   const id = await pick(token)
   if (!id) return null
   const res = await fetch(`https://forms.googleapis.com/v1/forms/${encodeURIComponent(id)}`, {

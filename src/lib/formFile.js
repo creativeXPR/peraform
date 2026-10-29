@@ -60,7 +60,8 @@ function clean(value, key, parent) {
   if (typeof value === 'string') {
     if (key === 'url' || key === 'src' || key === 'href') {
       if (parent?.type === 'embed') return embedSrc(value) ?? undefined
-      return /^https:\/\/[^\s"'<>]+$/i.test(value) ? value : undefined
+      // https, or a path on this site (gallery and template headers), never "//".
+      return /^(https:\/\/[^\s"'<>]+|\/(?!\/)[^\s"'<>]*)$/i.test(value) ? value : undefined
     }
     if (key === 'videoId') return /^[\w-]{6,20}$/.test(value) ? value : ''
     return value.slice(0, MAX_TEXT)

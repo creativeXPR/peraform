@@ -29,6 +29,7 @@ import SectionCard from './SectionCard.jsx'
 import { useFormEditor } from './editorContext.js'
 import { buildTargets } from './questionTypes.js'
 import { keepField, pasteFields, textAsField } from '../../lib/keep.js'
+import HeaderBanner from '../../lib/HeaderBanner.jsx'
 import { useKeep, useKeepTargets } from '../keep/keepContext.js'
 
 // Questions tab: header card (title + description), the question and
@@ -233,9 +234,7 @@ export default function BuilderPage() {
   return (
     <div className="builder themed" style={themeStyle(formTheme, mode === 'dark')}>
       <div className="builder-column">
-        {formTheme.headerImage && (
-          <img className="form-header-image" src={formTheme.headerImage.url} alt="" />
-        )}
+        <HeaderBanner theme={formTheme} />
         <section
           className={`form-head${activeId === 'head' ? ' q-card-active' : ''}`}
           onFocus={() => setActiveId('head')}

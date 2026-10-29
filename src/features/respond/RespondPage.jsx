@@ -40,6 +40,7 @@ import EmailConsent from './EmailConsent.jsx'
 import { formatClock, useCountdown } from './useCountdown.js'
 import { useSavedProgress } from './useSavedProgress.js'
 import './RespondPage.css'
+import HeaderBanner from '../../lib/HeaderBanner.jsx'
 import LogoMark from '../../lib/LogoMark.jsx'
 
 // The public form at /f/:formId. Anyone with the link can read a published
@@ -907,9 +908,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
         <p className="respond-banner">Preview — publish this form to start collecting responses.</p>
       )}
 
-      {formTheme.headerImage && (
-        <img className="form-header-image" src={formTheme.headerImage.url} alt="" />
-      )}
+      <HeaderBanner theme={formTheme} />
       <header className="respond-card respond-head">
         <h1>{title}</h1>
         {pageIndex === 0 && (

@@ -190,3 +190,64 @@ button {
   object-fit: cover;
   border-radius: var(--radius-card);
 }
+
+/* A header with an overlay, logo and/or text on top (lib/HeaderBanner.jsx). */
+.form-header-banner {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  width: 100%;
+  border-radius: var(--radius-card);
+  isolation: isolate;
+}
+
+.form-header-banner-img,
+.form-header-banner-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.form-header-banner-img {
+  object-fit: cover;
+}
+
+.form-header-banner-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px clamp(14px, 4%, 40px);
+  color: #fff;
+  text-align: center;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.45);
+}
+
+.form-header-banner.align-left .form-header-banner-content {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.form-header-banner-logo {
+  max-width: 40%;
+  height: clamp(28px, 22%, 72px);
+  margin-bottom: 4px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 3px rgb(0 0 0 / 0.3));
+}
+
+.form-header-banner-title {
+  margin: 0;
+  font-size: clamp(15px, 2.6vw, 24px);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.form-header-banner-sub {
+  margin: 0;
+  font-size: clamp(11px, 1.6vw, 14px);
+  opacity: 0.92;
+}
