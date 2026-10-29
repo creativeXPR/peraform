@@ -59,8 +59,19 @@ export default function ImportDialog({ open, onClose, onImport, onOpen, busy }) 
   async function fromDrive() {
     setError('')
     setWorking('drive')
+    // Google's picker is an ordinary layer on the page; a modal dialog
+    // makes everything outside it unclickable. So this window steps aside
+    // while the picker is open, and comes back for progress or errors.
+    const dialog = ref.current
+    dialog.close()
+    const back = () => !dialog.open && dialog.showModal()
     try {
-      const g = await pickGoogleForm()
+      let g
+      try {
+        g = await pickGoogleForm()
+      } finally {
+        back()
+      }
       if (g) {
         const result = convertGoogleForm(g)
         finish(await onImport(result), result.skipped)
