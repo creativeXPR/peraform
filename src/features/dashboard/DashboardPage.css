@@ -464,6 +464,13 @@
 /* Same frame as the AI windows (.ai-create in ai.css). */
 .import-studio {
   width: min(900px, calc(100vw - 24px));
+  /* The window family (lib/window.css), not Dawn's light: not an AI window. */
+  background: var(--win-bg);
+  box-shadow: 0 1px 2px rgb(60 60 130 / 0.06), 0 30px 70px -30px rgb(60 60 150 / 0.45);
+}
+
+.import-studio .ai-idea {
+  background: var(--win-card);
 }
 
 .import-ways.is-2 {

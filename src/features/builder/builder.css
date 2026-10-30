@@ -949,7 +949,7 @@
 
 /* ── Collaborators dialog ────────────────────────────────── */
 .collab {
-  width: min(480px, calc(100vw - 32px));
+  width: min(520px, calc(100vw - 24px));
 }
 
 
@@ -957,21 +957,32 @@
   margin-top: -6px;
 }
 
+/* Window family (lib/window.css): one clean field with the button inside. */
 .collab-add {
   display: flex;
+  align-items: center;
   gap: 8px;
+  padding: 6px 6px 6px 14px;
+  border-radius: 20px;
+  background: var(--win-field);
+  box-shadow: 0 0 0 1px var(--line), 0 12px 30px -22px rgb(60 60 150 / 0.45);
+}
+
+.collab-add:focus-within {
+  box-shadow: 0 0 0 1.5px var(--accent), 0 0 0 6px var(--accent-soft);
 }
 
 .collab-add input {
   flex: 1;
   min-width: 0;
   height: 40px;
-  padding: 0 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-control);
-  background: var(--bg);
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
   color: var(--text);
   font: inherit;
+  font-size: 15px;
 }
 
 .collab-add .btn {
@@ -988,6 +999,7 @@
 .collab-list {
   display: flex;
   flex-direction: column;
+  gap: 8px;
   margin: 4px 0 0;
   padding: 0;
   list-style: none;
@@ -997,8 +1009,9 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 0;
-  border-top: 1px solid var(--line);
+  padding: 10px 12px;
+  border-radius: 18px;
+  background: var(--win-card);
 }
 
 .collab-avatar {
@@ -1034,7 +1047,7 @@
 }
 
 .collab-who strong {
-  font-weight: 500;
+  font-weight: 600;
   font-size: 14px;
 }
 
@@ -1044,8 +1057,12 @@
 }
 
 .collab-role {
-  color: var(--text-muted);
-  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 /* ── Share dialog: general access + footer ───────────────── */

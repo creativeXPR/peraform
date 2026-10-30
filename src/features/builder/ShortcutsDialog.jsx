@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { X } from 'lucide-react'
+import { Keyboard, X } from 'lucide-react'
 
 const GROUPS = [
   {
@@ -59,7 +59,9 @@ export default function ShortcutsDialog({ open, onClose }) {
     >
       <div className="confirm-body">
         <div className="collab-head">
-          <h2>Keyboard shortcuts</h2>
+          <h2>
+            <Keyboard size={18} aria-hidden="true" />
+            Keyboard shortcuts</h2>
           <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">
             <X size={18} />
           </button>

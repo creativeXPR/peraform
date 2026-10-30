@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Globe, Info, Link2, Lock, Mail, MailPlus, UserCheck, X } from 'lucide-react'
+import { Globe, Info, Link2, Lock, Mail, MailPlus, UserCheck, Users, X } from 'lucide-react'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { callEmailForm, callManageCollaborators } from '../../lib/firebase.js'
 import AllowedResponders from './AllowedResponders.jsx'
@@ -152,13 +152,18 @@ export default function ShareDialog({ formId, open, onClose, showToast, onPublis
       onClick={(e) => e.target === ref.current && onClose()}
     >
       <div className="confirm-body">
-        <div className="collab-head">
-          <h2>Share “{draft?.title || 'Untitled form'}”</h2>
+        <div className="win-head">
+          <span className="win-icon" aria-hidden="true">
+            <Users size={18} />
+          </span>
+          <b>Share</b>
+          <span className="win-what">· {draft?.title || 'Untitled form'}</span>
           <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">
             <X size={18} />
           </button>
         </div>
-        <p className="collab-sub">Collaborators can edit the form and see its responses.</p>
+        <h2 className="win-q">Who can edit this form?</h2>
+        <p className="win-hint">Editors can change the questions and see the responses. Only the owner adds or removes people.</p>
 
         {data?.isOwner && (
           <form className="collab-add" onSubmit={add}>

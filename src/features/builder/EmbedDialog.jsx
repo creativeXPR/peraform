@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Copy, X } from 'lucide-react'
+import { Code2, Copy, X } from 'lucide-react'
 
 // "Embed HTML": code to put the form inside another website. The embedded
 // form drops PeraForm's top bar and footer (?embed=1).
@@ -37,7 +37,9 @@ export default function EmbedDialog({ open, link, onClose, showToast }) {
     >
       <div className="confirm-body">
         <div className="collab-head">
-          <h2>Embed HTML</h2>
+          <h2>
+            <Code2 size={18} aria-hidden="true" />
+            Embed HTML</h2>
           <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">
             <X size={18} />
           </button>

@@ -561,6 +561,7 @@ export default function InterviewEditor({ viewSwitch }) {
               : 'Removed from this screen on both devices. You can undo this.'
         }
         confirmLabel={pending?.kind === 'reset' ? 'Start over' : pending?.kind === 'share' ? 'Share' : 'Delete'}
+        tone={pending?.kind === 'share' ? 'neutral' : 'danger'}
         onConfirm={() => {
           if (pending.kind === 'reset') {
             const isLast = screen.index === screens.length - 1

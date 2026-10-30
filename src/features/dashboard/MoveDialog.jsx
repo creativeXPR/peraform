@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Check, Folder, FolderPlus, Inbox, X } from 'lucide-react'
+import { Check, Folder, FolderInput, FolderPlus, Inbox, X } from 'lucide-react'
 
 // "Move to folder" picker for a dashboard card.
 export default function MoveDialog({ form, folders, currentId, onMove, onNewFolder, onClose }) {
@@ -26,7 +26,9 @@ export default function MoveDialog({ form, folders, currentId, onMove, onNewFold
     >
       <div className="confirm-body">
         <div className="collab-head">
-          <h2>Move “{form?.title || 'Untitled form'}”</h2>
+          <h2>
+            <FolderInput size={18} aria-hidden="true" />
+            Move “{form?.title || 'Untitled form'}”</h2>
           <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">
             <X size={18} />
           </button>

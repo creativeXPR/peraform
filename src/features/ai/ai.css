@@ -395,41 +395,7 @@
   white-space: nowrap;
 }
 
-.idea-art {
-  position: relative;
-  display: block;
-  overflow: hidden;
-  aspect-ratio: 2 / 1;
-  border-radius: 12px;
-}
-
-.idea-art svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.idea-art.is-flipped .idea-form {
-  transform: translateX(114px);
-}
-
-.idea-badge {
-  position: absolute;
-  right: 16%;
-  bottom: 22%;
-  display: grid;
-  place-items: center;
-  width: 54px;
-  height: 54px;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 8px 18px rgb(0 0 0 / 0.12);
-}
-
-.idea-art.is-flipped .idea-badge {
-  right: auto;
-  left: 14%;
-}
+/* .idea-art (IdeaArt.jsx) lives in lib/window.css: every window uses it. */
 
 .ai-shuffle {
   position: absolute;

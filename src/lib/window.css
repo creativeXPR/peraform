@@ -1,0 +1,275 @@
+/* The Quality Tools window family (approved mockup:
+   mockups/qt-modals-mockup.html). Every ordinary window shares the frame,
+   spacing, header icon tile, big plain question, card surfaces, clean
+   fields and pill buttons, in the app's accent. Dawn's AI windows add
+   their own light on top (features/ai/ai.css); ordinary windows never get
+   the glow, greeting or sun button. Shared with HyperCBT. */
+
+/* The frame: every <dialog class="confirm"> in the app. */
+.confirm {
+  width: min(460px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  border: 0;
+  border-radius: 24px;
+  background: var(--win-bg);
+  box-shadow: 0 1px 2px rgb(60 60 130 / 0.06), 0 30px 70px -30px rgb(60 60 150 / 0.45);
+}
+
+.confirm::backdrop {
+  background: rgb(14 15 35 / 0.38);
+  backdrop-filter: blur(2px);
+}
+
+.confirm-body {
+  gap: 12px;
+  padding: 22px clamp(18px, 4vw, 28px) 22px;
+}
+
+.confirm-body h2 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 680;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+}
+
+.confirm-actions {
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.confirm .btn,
+.ai-create .btn {
+  border-radius: var(--radius-pill);
+}
+
+.confirm-actions .btn {
+  height: 42px;
+  padding: 0 18px;
+}
+
+/* Header row: an icon tile, the window's name, and Close on the right.
+   Older windows use .collab-head with an icon inside their <h2>; they get
+   the same tile. */
+.win-head,
+.collab-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.win-head b,
+.collab-head h2 {
+  font-size: 15.5px;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.collab-head h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.win-what {
+  overflow: hidden;
+  color: var(--text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.win-head > .icon-btn,
+.collab-head > .icon-btn {
+  margin-left: auto;
+}
+
+.win-icon,
+.collab-head h2 > svg:first-child {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  box-sizing: content-box;
+  width: 18px;
+  height: 18px;
+  padding: 7px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.win-icon.is-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* The big, plain question and its hint. */
+.win-q {
+  margin: 14px 0 0;
+  font-size: clamp(24px, 3.6vw, 34px);
+  font-weight: 680;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+}
+
+.confirm-body .win-q {
+  font-size: clamp(22px, 3.2vw, 30px);
+}
+
+.win-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 15px;
+}
+
+/* A clean field with its button inside, focus in the app's accent. */
+.win-field {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 8px 8px 8px 16px;
+  border-radius: 20px;
+  background: var(--win-field);
+  box-shadow: 0 0 0 1px var(--line), 0 12px 30px -22px rgb(60 60 150 / 0.45);
+  transition: box-shadow 200ms var(--ease);
+}
+
+.win-field:focus-within {
+  box-shadow: 0 0 0 1.5px var(--accent), 0 0 0 6px var(--accent-soft);
+}
+
+.win-field textarea,
+.win-field input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  max-height: 140px;
+  padding: 10px 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 15.5px;
+  line-height: 1.45;
+  resize: none;
+}
+
+.win-field .btn {
+  height: 44px;
+}
+
+/* Cards and chips. */
+.win-card {
+  border-radius: 18px;
+  background: var(--win-card);
+}
+
+.win-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.win-chips button {
+  height: 32px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--win-card);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.win-chips button[aria-selected='true'] {
+  background: var(--text);
+  color: var(--surface);
+  font-weight: 600;
+}
+
+/* An illustrated state (empty, confirm): the Quality Tools art, centred. */
+.win-art {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 6px 0 2px;
+  text-align: center;
+}
+
+.win-art .idea-art {
+  width: min(320px, 100%);
+}
+
+.win-art h3 {
+  margin: 8px 0 0;
+  font-size: 18px;
+}
+
+.win-art p {
+  max-width: 420px;
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.confirm-art .idea-art {
+  width: 100%;
+  aspect-ratio: 3 / 1;
+}
+
+/* Gentle arrival; nothing moves with reduced motion. */
+.confirm[open] {
+  animation: win-arrive 360ms cubic-bezier(0.2, 0.9, 0.25, 1.1);
+}
+
+@keyframes win-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confirm[open] {
+    animation: none;
+  }
+}
+
+/* The Quality Tools illustration (features/ai/IdeaArt.jsx): idea cards,
+   import choices, empty states, confirms. */
+.idea-art {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 2 / 1;
+  border-radius: 12px;
+}
+
+.idea-art svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.idea-art.is-flipped .idea-form {
+  transform: translateX(114px);
+}
+
+.idea-badge {
+  position: absolute;
+  right: 16%;
+  bottom: 22%;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 18px rgb(0 0 0 / 0.12);
+}
+
+.idea-art.is-flipped .idea-badge {
+  right: auto;
+  left: 14%;
+}
+

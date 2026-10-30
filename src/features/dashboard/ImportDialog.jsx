@@ -3,7 +3,6 @@ import { FileJson, FileText, HardDrive, Info, Upload, X } from 'lucide-react'
 import { fileToForm } from '../../lib/formFile.js'
 import { convertGoogleForm } from '../../lib/googleFormImport.js'
 import { driveImportReady, pickGoogleForm } from '../../lib/googleDrive.js'
-import { useAuth } from '../auth/useAuth.js'
 import IdeaArt from '../ai/IdeaArt.jsx'
 import '../ai/ai.css'
 
@@ -27,7 +26,6 @@ const ART = {
 export default function ImportDialog({ open, onClose, onImport, onOpen, onCreateAi, busy }) {
   const ref = useRef(null)
   const fileRef = useRef(null)
-  const { user } = useAuth()
   const [error, setError] = useState('')
   const [working, setWorking] = useState('') // '' | 'file' | 'drive'
   const [done, setDone] = useState(null) // { id, skipped }
@@ -103,7 +101,6 @@ export default function ImportDialog({ open, onClose, onImport, onOpen, onCreate
   }
 
   const disabled = Boolean(working) || busy
-  const name = (user?.displayName || '').trim().split(/\s+/)[0]
 
   const options = [
     {
@@ -123,8 +120,8 @@ export default function ImportDialog({ open, onClose, onImport, onOpen, onCreate
     },
     onCreateAi && {
       key: 'paper',
-      title: 'A printout or PDF',
-      text: 'Paste its text into Create with AI, and it builds the form for you. Uses AI credits.',
+      title: 'A printout, PDF or Word file',
+      text: 'Dawn reads it and builds the form for you. Uses AI credits.',
       icon: FileText,
     },
   ].filter(Boolean)
@@ -141,19 +138,20 @@ export default function ImportDialog({ open, onClose, onImport, onOpen, onCreate
       onClick={(e) => e.target === ref.current && !disabled && onClose()}
     >
       <div className="ai-create-body">
-        <header className="ai-create-top">
-          <span className="ai-create-brand">
-            <Upload size={16} aria-hidden="true" /> Import a form
+        <header className="win-head">
+          <span className="win-icon" aria-hidden="true">
+            <Upload size={18} />
           </span>
+          <b>Import a form</b>
           <button type="button" className="icon-btn" onClick={onClose} aria-label="Close" disabled={disabled}>
             <X size={20} />
           </button>
         </header>
 
-        <h2 className="ai-hello">
-          <span className="ai-hello-name">{name ? `Hello, ${name}` : 'Hello'}</span>
-          <span className="ai-hello-sub">{done ? 'Your form is in.' : 'Where is your form coming from?'}</span>
-        </h2>
+        <div>
+          <h2 className="win-q">{done ? 'Your form is in.' : 'Where is your form coming from?'}</h2>
+          {!done && <p className="win-hint">Bring in a form you already have. Nothing changes where it came from.</p>}
+        </div>
 
         {done ? (
           <section className="import-done" role="status">

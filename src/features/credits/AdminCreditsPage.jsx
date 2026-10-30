@@ -226,6 +226,7 @@ export default function AdminCreditsPage() {
             : 'This is recorded in their usage history, with your note.'
         }
         confirmLabel={pending?.kind === 'refund' ? 'Refund' : pending?.kind === 'adjust' ? 'Take away' : 'Give'}
+        tone={pending?.kind === 'refund' || pending?.kind === 'adjust' ? 'danger' : 'neutral'}
         busy={busy}
         onConfirm={confirm}
         onCancel={() => setPending(null)}

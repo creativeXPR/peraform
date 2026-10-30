@@ -24,6 +24,11 @@
   --danger: #dc2626;
   --danger-soft: rgb(220 38 38 / 0.1);
   --scrollbar-rgb: 100 100 100;
+  /* Windows (lib/window.css): a whisper of the app's accent in the surface,
+     so they read as one Quality Tools family in light and dark. */
+  --win-bg: color-mix(in srgb, var(--surface) 96%, var(--accent));
+  --win-card: color-mix(in srgb, var(--surface) 90%, var(--accent));
+  --win-field: var(--surface);
 
   --font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --radius-pill: 999px;

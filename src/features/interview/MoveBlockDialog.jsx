@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { X } from 'lucide-react'
+import { Move, X } from 'lucide-react'
 
 // "Move to…": pick a card on any screen (or, for cards, a screen's top
 // level). targets: from moveTargets() in lib/interview.js.
@@ -29,7 +29,9 @@ export default function MoveBlockDialog({ open, blockLabel, targets, currentKey,
     >
       <div className="confirm-body">
         <div className="collab-head">
-          <h2>Move “{blockLabel}”</h2>
+          <h2>
+            <Move size={18} aria-hidden="true" />
+            Move “{blockLabel}”</h2>
           <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">
             <X size={18} />
           </button>
