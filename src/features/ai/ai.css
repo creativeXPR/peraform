@@ -1075,3 +1075,77 @@ a.dawn-go {
     opacity: 0.7;
   }
 }
+
+/* Documents: drop target, the read file's chip, and "Choose a file". */
+.dawn-drop {
+  position: absolute;
+  inset: 10px;
+  z-index: 3;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 6px;
+  border: 2px dashed var(--dawn-peach);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--dawn-bg) 88%, transparent);
+  color: var(--text);
+  text-align: center;
+  pointer-events: none;
+}
+
+.dawn-drop svg {
+  color: var(--dawn-peach);
+}
+
+.dawn-drop span {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.dawn-doc {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dawn-doc-chip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 12px 10px 12px 14px;
+  border-radius: 16px;
+  background: var(--dawn-card);
+}
+
+.dawn-doc-chip svg {
+  flex-shrink: 0;
+  color: var(--dawn-peach);
+}
+
+.dawn-doc-chip > span {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dawn-doc-chip b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dawn-doc-chip small {
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+.dawn-doc-pick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  color: var(--text-muted);
+  font-size: 14px;
+}

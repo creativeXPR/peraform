@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronDown, FileText, Shuffle, X } from 'lucide-react'
+import { ChevronDown, FileText, FileUp, Shuffle, X } from 'lucide-react'
+import { filesFrom } from '../../lib/readDocument.js'
 import { useAuth } from '../auth/useAuth.js'
 import DawnOrb from './DawnOrb.jsx'
 import IdeaArt from './IdeaArt.jsx'
@@ -32,6 +33,9 @@ const SHOWN = 3
 //   options, optionsSummary         the Options line and what opens
 //   error, note, actions            actions: buttons shown instead of the
 //                                   prompt (e.g. Undo / Done)
+//   onFiles(files)                  documents dropped on the window or
+//                                   pasted (Ctrl+V a copied file); when
+//                                   set, the window shows a drop target
 export default function AiStudio({
   open,
   onClose,
@@ -51,11 +55,14 @@ export default function AiStudio({
   error,
   note = 'Dawn can make mistakes, so check the result before you share it. Uses your Quality Tools AI credits; cancelling is free.',
   actions,
+  onFiles,
 }) {
   const ref = useRef(null)
   const inputRef = useRef(null)
   const { user } = useAuth()
   const [first, setFirst] = useState(() => Math.floor(Math.random() * Math.max(1, ideas.length)))
+  const [dragging, setDragging] = useState(false)
+  const takesFiles = Boolean(onFiles) && !running && !actions
   const done = Boolean(actions)
 
   // Opening: the edge glows once. Done: the horizon brightens once.
@@ -99,7 +106,36 @@ export default function AiStudio({
         close()
       }}
       onClick={(e) => e.target === ref.current && close()}
+      onDragOver={(e) => {
+        if (!takesFiles || !e.dataTransfer.types.includes('Files')) return
+        e.preventDefault()
+        if (!dragging) setDragging(true)
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setDragging(false)
+      }}
+      onDrop={(e) => {
+        if (!takesFiles) return
+        e.preventDefault()
+        setDragging(false)
+        const files = filesFrom(e.dataTransfer)
+        if (files.length) onFiles(files)
+      }}
+      onPaste={(e) => {
+        // Ctrl+V of a copied file; pasted text goes into the field as usual.
+        const files = takesFiles ? filesFrom(e.clipboardData) : []
+        if (!files.length) return
+        e.preventDefault()
+        onFiles(files)
+      }}
     >
+      {dragging && (
+        <div className="dawn-drop" aria-hidden="true">
+          <FileUp size={34} />
+          <b>Drop your document</b>
+          <span>PDF, Word or text. Dawn reads it here, in your browser.</span>
+        </div>
+      )}
       <div className="dawn-glow" aria-hidden="true" />
       <div className="dawn-edge is-soft" aria-hidden="true" />
       <div className="dawn-edge" aria-hidden="true" />
