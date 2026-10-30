@@ -63,12 +63,38 @@ button { cursor: pointer; }
   padding: 22px clamp(18px, 4vw, 42px) 20px;
 }
 .glow { position: absolute; inset: 0; background: var(--glow); pointer-events: none; opacity: 0.8; transform-origin: 50% 100%; }
-.win > :not(.glow) { position: relative; }
+.win > :not(.glow):not(.edge) { position: relative; }
 .motion .win.is-thinking .glow { animation: rise 2.6s ease-in-out infinite; }
 @keyframes rise { 0%, 100% { opacity: 0.6; transform: translateY(14%) scaleY(0.92); } 50% { opacity: 1; transform: translateY(0) scaleY(1.2); } }
 .still .win.is-thinking .glow { opacity: 1; transform: scaleY(1.12); }
 .motion .win.is-landed .glow { animation: land 1.1s ease-out; }
 @keyframes land { 0% { opacity: 1; transform: scaleY(1.45); filter: brightness(1.25); } 100% { opacity: 0.8; transform: none; } }
+
+/* The edge glow: Dawn's colours travel round the window's rim. A sharp
+   ring plus a soft, blurred one inside it. */
+@property --a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.edge { position: absolute; inset: 0; border-radius: inherit; padding: 2px; pointer-events: none; opacity: 0;
+  background: conic-gradient(from var(--a), #8b8ff0, #ff7fa0, #ffcf6b, #ffa47a, #c98ae0, #8b8ff0);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
+.edge.soft { padding: 14px; filter: blur(12px); }
+.motion .edge { animation: orbit 4s linear infinite; }
+@keyframes orbit { to { --a: 360deg; } }
+.win.is-opening .edge { animation: orbit 4s linear infinite, open-glow 1.8s ease-out forwards; }
+.still .win.is-opening .edge { animation: open-glow 1.8s ease-out forwards; }
+@keyframes open-glow { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; } }
+.win.is-thinking .edge { opacity: 1; transition: opacity 500ms ease; }
+.motion .win.is-thinking .edge { animation-duration: 2.6s; }
+.still .win.is-thinking .edge { opacity: 0.7; }
+.win.is-thinking .edge.soft { opacity: 0.8; }
+
+/* The greeting: sunrise-coloured name, then the question. */
+.hello { margin: 26px 0 22px; font-size: clamp(30px, 4.4vw, 44px); line-height: 1.1; letter-spacing: -0.025em; font-weight: 680; }
+.hello .w { display: inline-block; white-space: pre; }
+.hello .greet { display: block; background: linear-gradient(90deg, #8b8ff0, #c98ae0 28%, #ff7fa0 52%, #ffa47a 74%, #ffcf6b 92%); background-size: 220% 100%; background-position: 0 0; -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hello .ask-line { display: block; color: var(--muted); }
+.motion .win.is-opening .hello .greet { animation: dawnlight 2.2s ease-out both; }
+@keyframes dawnlight { from { background-position: 100% 0; } to { background-position: 0 0; } }
 
 .top { display: flex; align-items: center; gap: 9px; }
 .top .name { font-weight: 700; font-size: 15.5px; }
@@ -173,6 +199,7 @@ h2 { margin: 26px 0 4px; font-size: clamp(28px, 4vw, 40px); line-height: 1.1; le
 <div class="bar">
   <p>Mockup · PeraForm’s Edit with AI as <b>Dawn</b>. Nothing in the app has changed.</p>
   <div class="toggles">
+    <button class="toggle" id="openBtn">↻ Replay opening</button>
     <button class="toggle" id="themeBtn">☾ Dark mode</button>
     <button class="toggle" id="stillBtn">⏸ Reduced motion</button>
   </div>
@@ -181,6 +208,8 @@ h2 { margin: 26px 0 4px; font-size: clamp(28px, 4vw, 40px); line-height: 1.1; le
 <div class="stage">
   <div class="win" id="win" role="dialog" aria-label="Dawn, edit this form">
     <div class="glow" aria-hidden="true"></div>
+    <div class="edge soft" aria-hidden="true"></div>
+    <div class="edge" aria-hidden="true"></div>
 
     <div class="top">
       <span class="mark" id="mark"></span>
@@ -193,8 +222,7 @@ h2 { margin: 26px 0 4px; font-size: clamp(28px, 4vw, 40px); line-height: 1.1; le
     </p>
 
     <div id="ask">
-      <h2>What should change?</h2>
-      <p class="hint">Pick an idea, or describe it in your own words.</p>
+      <h2 class="hello" id="hello"><span class="greet" id="greet"></span><span class="ask-line" id="askLine"></span></h2>
       <div class="ideas" id="ideas"></div>
     </div>
 
@@ -230,7 +258,8 @@ h2 { margin: 26px 0 4px; font-size: clamp(28px, 4vw, 40px); line-height: 1.1; le
     <div><b>Dawn’s light</b>Cool snow surfaces, with warmth only at the horizon glow and in the sun button.</div>
     <div><b>First light on hover</b>A warm band sweeps across an idea card. The card you pick keeps a peach halo.</div>
     <div><b>Thinking</b>The glow rises, the Sunburst’s rays light in turn, and the steps light up one by one. No spinner.</div>
-    <div><b>No “Hello, Name”</b>Dawn is a light, not a character. It just asks the question.</div>
+    <div><b>A Dawn greeting</b>“Good morning / afternoon / evening, Adedamola” (or “Still up?” late at night) in sunrise colours, rising into focus as the window opens.</div>
+    <div><b>Glowing edge</b>Dawn’s colours circle the window’s rim: briefly when it opens, and the whole time Dawn works.</div>
   </div>
 </div>
 
@@ -363,7 +392,30 @@ function syncToggles() { themeBtn.setAttribute('aria-pressed', root.dataset.them
 themeBtn.onclick = () => { root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark'; syncToggles(); drawMarks() }
 stillBtn.onclick = () => { root.classList.toggle('still'); root.classList.toggle('motion'); syncToggles() }
 
-syncToggles(); drawMarks(); renderIdeas(); show('ask')
+// ── Greeting: by time of day, words rising into focus ─────────────────
+const NAME = 'Adedamola'
+function greeting(h = new Date().getHours()) {
+  if (h >= 5 && h < 12) return `Good morning, ${NAME}`
+  if (h >= 12 && h < 17) return `Good afternoon, ${NAME}`
+  if (h >= 17 && h < 22) return `Good evening, ${NAME}`
+  return `Still up, ${NAME}?`
+}
+const words = (el, text) => { el.innerHTML = ''; text.split(' ').forEach((w, i, all) => { const s = document.createElement('span'); s.className = 'w'; s.textContent = w + (i < all.length - 1 ? ' ' : ''); el.append(s) }) }
+function openWindow() {
+  $('#greet').textContent = greeting(); words($('#askLine'), 'What should we change?')
+  win.classList.remove('is-opening'); void win.offsetWidth; win.classList.add('is-opening')
+  setTimeout(() => win.classList.remove('is-opening'), 1900)
+  if (still()) return
+  $('#greet').animate([{ opacity: 0, transform: 'translateY(14px)', filter: 'blur(8px)' }, { opacity: 1, transform: 'none', filter: 'blur(0)' }], { duration: 800, delay: 100, easing: 'cubic-bezier(.2,.8,.25,1)', fill: 'backwards' })
+  ;[...document.querySelectorAll('#askLine .w')].forEach((w, i) => w.animate(
+    [{ opacity: 0, transform: 'translateY(14px)', filter: 'blur(8px)' }, { opacity: 1, transform: 'none', filter: 'blur(0)' }],
+    { duration: 650, delay: 450 + i * 90, easing: 'cubic-bezier(.2,.8,.25,1)', fill: 'backwards' }))
+  ;[...document.querySelectorAll('.idea')].forEach((b, i) => b.animate([{ opacity: 0, transform: 'translateY(12px)' }, { opacity: 1, transform: 'none' }], { duration: 450, delay: 650 + i * 80, easing: 'cubic-bezier(.2,.9,.25,1.1)', fill: 'backwards' }))
+}
+$('#openBtn').onclick = () => { clearTimers(); show('ask'); openWindow() }
+$('#close').onclick = () => { show('ask'); openWindow() }
+
+syncToggles(); drawMarks(); renderIdeas(); show('ask'); openWindow()
 </script>
 </body>
 </html>
