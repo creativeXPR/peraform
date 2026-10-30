@@ -91,7 +91,9 @@ button { cursor: pointer; }
 /* The greeting: sunrise-coloured name, then the question. */
 .hello { margin: 26px 0 22px; font-size: clamp(30px, 4.4vw, 44px); line-height: 1.1; letter-spacing: -0.025em; font-weight: 680; }
 .hello .w { display: inline-block; white-space: pre; }
-.hello .greet { display: block; background: linear-gradient(90deg, #8b8ff0, #c98ae0 28%, #ff7fa0 52%, #ffa47a 74%, #ffcf6b 92%); background-size: 220% 100%; background-position: 0 0; -webkit-background-clip: text; background-clip: text; color: transparent; }
+/* padding-bottom: room for descenders (g, comma), which the clipped
+   gradient would otherwise cut off. */
+.hello .greet { display: block; padding-bottom: 0.14em; margin-bottom: -0.14em;background: linear-gradient(90deg, #8b8ff0, #c98ae0 28%, #ff7fa0 52%, #ffa47a 74%, #ffcf6b 92%); background-size: 220% 100%; background-position: 0 0; -webkit-background-clip: text; background-clip: text; color: transparent; }
 .hello .ask-line { display: block; color: var(--muted); }
 .motion .win.is-opening .hello .greet { animation: dawnlight 2.2s ease-out both; }
 @keyframes dawnlight { from { background-position: 100% 0; } to { background-position: 0 0; } }

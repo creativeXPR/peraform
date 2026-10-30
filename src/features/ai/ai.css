@@ -342,6 +342,9 @@
 /* The Quality Tools spectrum, as on the suite's mark. */
 .ai-hello-name {
   width: fit-content;
+  /* Room for descenders (g, comma) that the clipped gradient would cut. */
+  padding-bottom: 0.14em;
+  margin-bottom: -0.14em;
   background: linear-gradient(100deg, #3f6ff5 0%, #7c5cf0 45%, #d9467a 100%);
   -webkit-background-clip: text;
   background-clip: text;
