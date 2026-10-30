@@ -18,11 +18,12 @@ const spec = AI_FEATURES[FEATURE]
 // "Create a form" with Dawn: describe it (illustrated ideas to start from),
 // or switch to pasting a document. While Dawn writes, the ideas give way to
 // live progress (each question appears as it's written). Cancel is free.
-export default function GenerateFormDialog({ open, onClose }) {
+//   startMode: 'describe' (default) or 'text' (from Import: a document)
+export default function GenerateFormDialog({ open, onClose, startMode = 'describe' }) {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { spendable, billing, loaded } = useWallet()
-  const [mode, setMode] = useState('describe')
+  const [mode, setMode] = useState(startMode)
   const [text, setText] = useState('')
   const [tier, setTier] = useState(spec.defaultTier)
   // The document that was read into the field: { name, pages, chars, cut }

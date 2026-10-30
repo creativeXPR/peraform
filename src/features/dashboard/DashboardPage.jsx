@@ -84,6 +84,7 @@ export default function DashboardPage() {
   const [sort, setSort] = useState('edited')
   const [view, setView] = useState(readSavedView)
   const [creating, setCreating] = useState(false)
+  // Create with Dawn: false, or the mode it opens in (from Import: a document)
   const [aiOpen, setAiOpen] = useState(false)
   const [galleryOpen, setGalleryOpen] = useState(false)
   const [actionError, setActionError] = useState('')
@@ -208,7 +209,7 @@ export default function DashboardPage() {
         <button
           type="button"
           className="start-card start-card-ai"
-          onClick={() => setAiOpen(true)}
+          onClick={() => setAiOpen('describe')}
           disabled={creating}
         >
           <span className="start-visual start-visual-icon start-visual-ai">
@@ -263,12 +264,17 @@ export default function DashboardPage() {
         onOpen={(id) => navigate(`/forms/${id}/edit`)}
         onCreateAi={() => {
           setImporting(false)
-          setAiOpen(true)
+          setAiOpen('text')
         }}
         busy={creating}
       />
 
-      <GenerateFormDialog open={aiOpen} onClose={() => setAiOpen(false)} />
+      <GenerateFormDialog
+        key={aiOpen || 'closed'}
+        open={Boolean(aiOpen)}
+        startMode={aiOpen || 'describe'}
+        onClose={() => setAiOpen(false)}
+      />
       <TemplateGallery
         open={galleryOpen}
         uid={user?.uid}
