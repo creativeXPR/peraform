@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dawn In Ice</title>
+<meta name="description" content="Mockup: four ways to set Dawn's Sunburst mark in ice, glowing from within." />
+<style>
+:root {
+  --page: #eef1f8; --card: #ffffff; --ink: #1c1d2e; --muted: #6c6e85; --line: #e1e3f1;
+  --lav: #8b8ff0; --lav-soft: rgb(139 143 240 / 0.12);
+  --shadow: 0 1px 2px rgb(60 60 130 / 0.06), 0 24px 54px -26px rgb(70 90 190 / 0.45);
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --page: #0c0d1a; --card: #17182e; --ink: #eef0ff; --muted: #a3a6c4; --line: rgb(255 255 255 / 0.08);
+  --lav-soft: rgb(165 170 255 / 0.14); --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 24px 54px -26px rgb(0 0 0 / 0.85);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body { background: var(--page); color: var(--ink); font: 15px/1.5 Inter, "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--lav); outline-offset: 2px; border-radius: 10px; }
+::-webkit-scrollbar { width: 14px; height: 14px; }
+::-webkit-scrollbar-thumb { background: rgb(121 121 121 / 0.4); border: 3px solid transparent; border-radius: 7px; background-clip: padding-box; }
+
+.bar { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 12px clamp(16px, 4vw, 40px); background: color-mix(in srgb, var(--page) 85%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.bar p { margin: 0; color: var(--muted); font-size: 13.5px; }
+.toggles { margin-left: auto; display: flex; gap: 8px; }
+.toggle { padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); font-size: 13px; }
+.toggle[aria-pressed="true"] { background: var(--lav-soft); color: var(--lav); border-color: transparent; font-weight: 600; }
+
+main { max-width: 1160px; margin: 0 auto; padding: 26px clamp(16px, 4vw, 40px) 80px; }
+h1 { font-size: clamp(28px, 4.5vw, 40px); line-height: 1.1; letter-spacing: -0.02em; margin: 6px 0 10px; }
+h1 span { background: linear-gradient(90deg, #5ad1f5, #8b8ff0 40%, #ff7fa0 70%, #ffcf6b); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lead { color: var(--muted); margin: 0 0 30px; max-width: 760px; }
+h2 { font-size: 21px; margin: 46px 0 6px; }
+.sub { color: var(--muted); margin: 0 0 16px; font-size: 14px; max-width: 760px; }
+
+.opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
+.opt { text-align: left; border: 0; padding: 0; border-radius: 22px; background: var(--card); box-shadow: var(--shadow); overflow: hidden; transition: transform 180ms ease; }
+.opt:hover { transform: translateY(-2px); }
+.opt[aria-checked="true"] { box-shadow: 0 0 0 3px var(--lav), var(--shadow); }
+.opt[aria-checked="true"] .pick { background: var(--lav); color: #fff; }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; }
+.tiles div { display: grid; place-items: center; height: 170px; }
+.tiles div:first-child { background: linear-gradient(180deg, #f7f9ff, #eaf1fb); }
+.tiles div:last-child { background: radial-gradient(120% 100% at 50% 100%, #1b2350, #0b0c18); }
+.body { padding: 12px 14px 14px; }
+.body b { display: block; }
+.body p { margin: 2px 0 10px; color: var(--muted); font-size: 13px; line-height: 1.4; min-height: 54px; }
+.sizes { display: flex; align-items: center; gap: 10px; }
+.lockup { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; }
+.pick { margin-left: auto; padding: 4px 10px; border-radius: 999px; background: var(--lav-soft); color: var(--lav); font-size: 12px; font-weight: 600; }
+
+/* In context */
+.context { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 22px; align-items: start; }
+.phone { border-radius: 36px; padding: 12px; background: #0b0b12; box-shadow: var(--shadow); }
+.home { border-radius: 26px; height: 420px; padding: 34px 20px; background: radial-gradient(120% 80% at 30% 0%, #6f7cf0 0%, #4a3a9a 35%, #1d1840 70%, #120f28 100%); display: grid; grid-template-columns: repeat(4, 1fr); align-content: start; gap: 22px 10px; }
+.app { display: grid; justify-items: center; gap: 6px; color: #fff; font-size: 11px; }
+.app i { width: 54px; height: 54px; border-radius: 14px; background: rgb(255 255 255 / 0.16); }
+.app .ico { width: 54px; height: 54px; }
+.win { border-radius: 24px; background: var(--card); box-shadow: var(--shadow); padding: 20px 24px; }
+.win .top { display: flex; align-items: center; gap: 9px; }
+.win .top b { font-size: 15.5px; }
+.win .top span { color: var(--muted); }
+.win h3 { margin: 22px 0 6px; font-size: 30px; line-height: 1.1; letter-spacing: -0.02em; background: linear-gradient(90deg, #8b8ff0, #ff7fa0 55%, #ffcf6b); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.win p { margin: 0; color: var(--muted); }
+.btn-sun { display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; height: 46px; padding: 0 18px 0 8px; border: 0; border-radius: 999px; font-weight: 680; color: #3a1d10; background: linear-gradient(180deg, #ffe08a, #ffa47a 58%, #ff7fa0); box-shadow: 0 8px 18px -8px rgb(255 130 100 / 0.8); }
+
+/* Ice life: the core breathes and a glint crosses the ice. */
+.ice .core { transform-box: fill-box; transform-origin: center; }
+.motion .ice .core { animation: breathe 3.2s ease-in-out infinite; }
+@keyframes breathe { 50% { opacity: 0.72; transform: scale(0.94); } }
+.ice .glint { transform-box: view-box; }
+.motion .ice .glint { animation: glint 5s ease-in-out infinite; }
+@keyframes glint { 0%, 55% { transform: translateX(-140px); } 85%, 100% { transform: translateX(150px); } }
+.still .ice .glint { display: none; }
+.motion .ice .rays line { animation: rayglow 3.2s ease-in-out infinite; animation-delay: calc(var(--i) * 0.12s); }
+@keyframes rayglow { 50% { opacity: 0.7; } }
+
+@media (max-width: 760px) { .context { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<script>
+  (function () {
+    var d = document.documentElement
+    d.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    d.classList.add(matchMedia('(prefers-reduced-motion: reduce)').matches ? 'still' : 'motion')
+  })()
+</script>
+
+<div class="bar">
+  <p>Mockup · Dawn’s Sunburst set in ice. Nothing in the apps has changed.</p>
+  <div class="toggles">
+    <button class="toggle" id="themeBtn">☾ Dark mode</button>
+    <button class="toggle" id="stillBtn">⏸ Reduced motion</button>
+  </div>
+</div>
+
+<main>
+  <h1>Dawn, <span>glowing out of ice.</span></h1>
+  <p class="lead">The Sunburst sits inside clear ice: cold aqua and blue outside, with warm dawn light (rose, peach, gold) glowing from within, like sunrise seen through frozen glass. A light glint crosses the ice now and then, and the core breathes gently. Both stop with reduced motion. Choose a shape and the examples below update.</p>
+
+  <h2>1 · Four ways to hold the light</h2>
+  <p class="sub">Each card shows the mark large on light and dark, then at 64, 40 and 24 px next to the word “Dawn”, so you can judge how it holds up small.</p>
+  <div class="opts" id="opts" role="radiogroup" aria-label="Ice shape"></div>
+
+  <h2>2 · In use</h2>
+  <p class="sub">As an app icon on a phone, in Dawn’s window header and greeting, and inside the “Ask Dawn” button.</p>
+  <div class="context">
+    <div class="phone"><div class="home" id="home"></div></div>
+    <div class="win">
+      <div class="top"><span id="winMark"></span><b>Dawn</b><span>· Edit this form</span></div>
+      <h3>Good morning, Adedamola</h3>
+      <p>What should we change?</p>
+      <button class="btn-sun" type="button"><span id="btnMark"></span>Ask Dawn</button>
+    </div>
+  </div>
+</main>
+
+<script>
+const root = document.documentElement
+const still = () => root.classList.contains('still')
+const $ = (s) => document.querySelector(s)
+let uid = 0
+
+function sparkle(cx, cy, r, k = 0.13) { const q = r * k; return `M${cx} ${cy - r}Q${cx + q} ${cy - q} ${cx + r} ${cy}Q${cx + q} ${cy + q} ${cx} ${cy + r}Q${cx - q} ${cy + q} ${cx - r} ${cy}Q${cx - q} ${cy - q} ${cx} ${cy - r}Z` }
+
+// The Sunburst inside a 128 box, centred on (64, cy): rays, sparkle, horizon.
+function sunburst(id, cy, scale, horizon = true) {
+  let rays = ''
+  for (let i = 0; i < 7; i++) {
+    const a = Math.PI + (i + 1) * (Math.PI / 8), len = (i % 2 ? 22 : 31) * scale, r0 = 12 * scale
+    rays += `<line style="--i:${i}" x1="${64 + Math.cos(a) * r0}" y1="${cy + Math.sin(a) * r0}" x2="${64 + Math.cos(a) * (r0 + len)}" y2="${cy + Math.sin(a) * (r0 + len)}"/>`
+  }
+  return `<g filter="url(#${id}-glow)">
+      <g class="rays" stroke="url(#${id}-ray)" stroke-width="${5.4 * scale}" stroke-linecap="round">${rays}</g>
+      <path d="${sparkle(64, cy - 2 * scale, 8 * scale)}" fill="#fff4cf"/>
+    </g>
+    ${horizon ? `<rect x="${64 - 34 * scale}" y="${cy + 4 * scale}" width="${68 * scale}" height="${3.4 * scale}" rx="${1.7 * scale}" fill="#ffffff" opacity=".85"/>` : ''}`
+}
+
+// Shared ice materials. Cold outside, warm dawn inside.
+function defs(id) {
+  return `<defs>
+    <radialGradient id="${id}-ice" cx=".32" cy=".26" r=".95">
+      <stop offset="0" stop-color="#effcff"/><stop offset=".22" stop-color="#9eeefc"/><stop offset=".5" stop-color="#46c0f2"/>
+      <stop offset=".78" stop-color="#3360dc"/><stop offset="1" stop-color="#1d2b8c"/>
+    </radialGradient>
+    <radialGradient id="${id}-core" cx=".5" cy=".62" r=".5">
+      <stop offset="0" stop-color="#fff1c2" stop-opacity="1"/><stop offset=".28" stop-color="#ffa47a" stop-opacity=".9"/>
+      <stop offset=".55" stop-color="#ff6fa0" stop-opacity=".7"/><stop offset=".8" stop-color="#9d7bf5" stop-opacity=".45"/>
+      <stop offset="1" stop-color="#9d7bf5" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="${id}-ray" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#c9ccff"/><stop offset=".5" stop-color="#ffb3c6"/><stop offset="1" stop-color="#ffe39a"/>
+    </linearGradient>
+    <linearGradient id="${id}-rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".45" stop-color="#bff4ff" stop-opacity=".35"/>
+      <stop offset=".7" stop-color="#fff" stop-opacity=".1"/><stop offset="1" stop-color="#9fe7ff" stop-opacity=".7"/>
+    </linearGradient>
+    <linearGradient id="${id}-glintg" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="${id}-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="2.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="${id}-soft"><feGaussianBlur stdDeviation="3"/></filter>
+    <filter id="${id}-frost" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="4"/>
+      <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .16 0"/>
+    </filter>
+  </defs>`
+}
+// Inside any ice shape: frost, warm core, the mark, a glint, a rim.
+function insides(id, shape, cy, scale, rim) {
+  return `<clipPath id="${id}-clip">${shape}</clipPath>
+    <g clip-path="url(#${id}-clip)">
+      <g fill="url(#${id}-ice)">${shape}</g>
+      <rect width="128" height="128" filter="url(#${id}-frost)"/>
+      <ellipse class="core" cx="64" cy="${cy - 4}" rx="${46 * scale}" ry="${40 * scale}" fill="url(#${id}-core)"/>
+      ${sunburst(id, cy, scale)}
+      <path d="M8 34 Q 40 6 82 10" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".55" filter="url(#${id}-soft)"/>
+      <rect class="glint" x="-10" y="-20" width="34" height="170" fill="url(#${id}-glintg)" transform="rotate(18 64 64)"/>
+    </g>
+    ${rim}`
+}
+
+const SHAPES = [
+  {
+    key: 'orb', name: 'Ice orb',
+    note: 'A clear ice sphere with the sunrise glowing at its heart, like the glass ball you shared. Rings on the rim catch the light.',
+    draw: (id) => insides(id, '<circle cx="64" cy="64" r="58"/>', 74, 1,
+      `<circle cx="64" cy="64" r="57" fill="none" stroke="url(#${id}-rim)" stroke-width="2.6"/>
+       <circle cx="64" cy="64" r="47" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="1.4"/>`),
+  },
+  {
+    key: 'tile', name: 'Ice tile',
+    note: 'The same light in a rounded square of ice. It matches the Quality Tools logo tile and works best as an app icon.',
+    draw: (id) => insides(id, '<rect x="6" y="6" width="116" height="116" rx="32"/>', 74, 1,
+      `<rect x="7" y="7" width="114" height="114" rx="31" fill="none" stroke="url(#${id}-rim)" stroke-width="2.6"/>
+       <rect x="16" y="16" width="96" height="96" rx="24" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="1.4"/>`),
+  },
+  {
+    key: 'crystal', name: 'Ice crystal',
+    note: 'A faceted hexagon, like a cut block of ice. Crisp edges, and the facets catch the light differently as the glint passes.',
+    draw: (id) => {
+      const hex = '<path d="M64 4 L116 34 L116 94 L64 124 L12 94 L12 34 Z"/>'
+      return insides(id, hex, 74, 0.95,
+        `<path d="M64 4 L116 34 L116 94 L64 124 L12 94 L12 34 Z" fill="none" stroke="url(#${id}-rim)" stroke-width="2.4" stroke-linejoin="round"/>
+         <g stroke="#fff" stroke-opacity=".2" stroke-width="1.2" fill="none"><path d="M64 4 L64 34 L116 34"/><path d="M64 34 L12 34"/><path d="M12 94 L40 80 M116 94 L88 80 M64 124 L64 102"/></g>`)
+    },
+  },
+  {
+    key: 'rise', name: 'Rising from the ice',
+    note: 'An ice dome sitting on a frozen surface, with the sun breaking out of it and reflecting below. The most literal “dawn over ice”.',
+    draw: (id) => {
+      const dome = '<path d="M10 82 A54 54 0 0 1 118 82 Z"/>'
+      return `<g>
+        <ellipse cx="64" cy="98" rx="60" ry="16" fill="url(#${id}-ice)" opacity=".55"/>
+        <ellipse cx="64" cy="96" rx="44" ry="8" fill="url(#${id}-core)" opacity=".7" filter="url(#${id}-soft)"/>
+        <g opacity=".35" transform="translate(0 176) scale(1 -1)">${sunburst(id + 'r', 92, 0.85, false).replaceAll(`url(#${id}r-`, `url(#${id}-`)}</g>
+      </g>` + insides(id, dome, 80, 0.95,
+        `<path d="M10 82 A54 54 0 0 1 118 82" fill="none" stroke="url(#${id}-rim)" stroke-width="2.6"/>
+         <path d="M20 82 A44 44 0 0 1 108 82" fill="none" stroke="#fff" stroke-opacity=".2" stroke-width="1.3"/>
+         <rect x="4" y="81" width="120" height="3" rx="1.5" fill="#dff6ff" opacity=".9"/>`)
+    },
+  },
+]
+function ice(shape, size) {
+  const id = `ice${uid++}`
+  return `<svg class="ice" width="${size}" height="${size}" viewBox="0 0 128 128" aria-hidden="true">${defs(id)}${shape.draw(id)}</svg>`
+}
+
+let chosen = SHAPES[0]
+function render() {
+  const box = $('#opts'); box.innerHTML = ''
+  SHAPES.forEach((s) => {
+    const b = document.createElement('button')
+    b.type = 'button'; b.className = 'opt'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', s === chosen)
+    b.innerHTML = `<div class="tiles"><div>${ice(s, 132)}</div><div>${ice(s, 132)}</div></div>
+      <div class="body"><b>${s.name}</b><p>${s.note}</p>
+      <div class="sizes">${ice(s, 64)}${ice(s, 40)}<span class="lockup">${ice(s, 24)} Dawn</span><span class="pick">${s === chosen ? 'Chosen' : 'Choose'}</span></div></div>`
+    b.onclick = () => { chosen = s; render() }
+    box.append(b)
+  })
+  const names = ['PeraForm', 'Dawn', 'HyperCBT', 'Photos', 'Mail', 'Maps', 'Static Motion', 'Notes']
+  $('#home').innerHTML = names.map((n) => `<div class="app">${n === 'Dawn' ? `<span class="ico">${ice(chosen, 54)}</span>` : '<i></i>'}${n}</div>`).join('')
+  $('#winMark').innerHTML = ice(chosen, 30)
+  $('#btnMark').innerHTML = ice(chosen, 32)
+}
+
+const themeBtn = $('#themeBtn'), stillBtn = $('#stillBtn')
+function sync() { themeBtn.setAttribute('aria-pressed', root.dataset.theme === 'dark'); stillBtn.setAttribute('aria-pressed', still()) }
+themeBtn.onclick = () => { root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark'; sync() }
+stillBtn.onclick = () => { root.classList.toggle('still'); root.classList.toggle('motion'); sync() }
+sync(); render()
+</script>
+</body>
+</html>
