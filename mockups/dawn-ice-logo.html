@@ -69,7 +69,11 @@ h2 { font-size: 21px; margin: 46px 0 6px; }
 .win .top span { color: var(--muted); }
 .win h3 { margin: 22px 0 6px; padding-bottom: 0.14em;font-size: 30px; line-height: 1.1; letter-spacing: -0.02em; background: linear-gradient(90deg, #8b8ff0, #ff7fa0 55%, #ffcf6b); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .win p { margin: 0; color: var(--muted); }
-.btn-sun { display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; height: 46px; padding: 0 18px 0 8px; border: 0; border-radius: 999px; font-weight: 680; color: #3a1d10; background: linear-gradient(180deg, #ffe08a, #ffa47a 58%, #ff7fa0); box-shadow: 0 8px 18px -8px rgb(255 130 100 / 0.8); }
+/* The icon's wrapper is a centred block, so the icon sits in the middle,
+   not on the text baseline. */
+.btn-sun > span { display: grid; place-items: center; }
+.btn-sun svg { display: block; }
+.btn-sun { display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; height: 46px; padding: 0 18px 0 7px; border: 0; border-radius: 999px; font-weight: 680; color: #3a1d10; background: linear-gradient(180deg, #ffe08a, #ffa47a 58%, #ff7fa0); box-shadow: 0 8px 18px -8px rgb(255 130 100 / 0.8); }
 
 /* Ice life: the core breathes and a glint crosses the ice. */
 .ice .core { transform-box: fill-box; transform-origin: center; }

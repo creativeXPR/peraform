@@ -150,6 +150,8 @@ h2 { margin: 26px 0 4px; font-size: clamp(28px, 4vw, 40px); line-height: 1.1; le
 .ask:focus-within { box-shadow: 0 0 0 1.5px var(--peach), 0 0 0 6px rgb(255 164 122 / 0.16), 0 12px 30px -18px rgb(255 140 110 / 0.55); }
 .ask textarea { flex: 1; min-height: 46px; max-height: 150px; border: 0; outline: none; resize: none; background: transparent; font-size: 16px; line-height: 1.45; padding: 11px 0; }
 .sun-btn { display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 18px 0 14px; border: 0; border-radius: 999px; font-weight: 680; color: #3a1d10; background: linear-gradient(180deg, #ffe08a, var(--peach) 58%, var(--rose)); box-shadow: 0 8px 18px -8px rgb(255 130 100 / 0.8), inset 0 1px 0 rgb(255 255 255 / 0.6); transition: transform 140ms ease, filter 140ms ease; }
+.sun-btn > span { display: grid; place-items: center; }
+.sun-btn svg { display: block; }
 .sun-btn:hover:not([disabled]) { transform: translateY(-1px); filter: saturate(1.1); }
 .sun-btn[disabled] { filter: grayscale(0.85); opacity: 0.45; cursor: not-allowed; box-shadow: none; }
 .sun-btn.is-cancel { background: var(--lav-soft); color: var(--ink); box-shadow: none; }
