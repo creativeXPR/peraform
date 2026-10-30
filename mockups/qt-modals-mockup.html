@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QT Windows</title>
+<meta name="description" content="Mockup: Import, Keep, Share and a delete confirmation in the same family as the Dawn window." />
+<style>
+:root {
+  --page: #eef0f8; --snow: #f8f9fe; --card: #f0f1fb; --field: #ffffff;
+  --ink: #1c1d2e; --muted: #6c6e85; --line: #e1e3f1;
+  --accent: #4f46e5; --accent-soft: rgb(79 70 229 / 0.1); --on-accent: #fff;
+  --danger: #d64541;
+  --shadow: 0 1px 2px rgb(60 60 130 / 0.06), 0 30px 70px -30px rgb(90 90 190 / 0.45);
+  --lift: 0 14px 30px -16px rgb(90 90 190 / 0.45);
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --page: #0e0f1d; --snow: #181932; --card: #20213f; --field: #1f2040;
+  --ink: #eef0ff; --muted: #a3a6c4; --line: rgb(255 255 255 / 0.08);
+  --accent: #818cf8; --accent-soft: rgb(129 140 248 / 0.16); --on-accent: #12132a;
+  --danger: #f06b67;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 30px 70px -30px rgb(0 0 0 / 0.85);
+  --lift: 0 14px 30px -16px rgb(0 0 0 / 0.8);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body { background: var(--page); color: var(--ink); font: 15px/1.5 Inter, "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 10px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+::-webkit-scrollbar { width: 14px; height: 14px; }
+::-webkit-scrollbar-thumb { background: rgb(121 121 121 / 0.4); border: 3px solid transparent; border-radius: 7px; background-clip: padding-box; }
+
+.bar { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px clamp(16px, 4vw, 40px); background: color-mix(in srgb, var(--page) 85%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.bar p { margin: 0; color: var(--muted); font-size: 13.5px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tab, .toggle { padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--snow); font-size: 13px; }
+.tab[aria-selected="true"], .toggle[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: transparent; font-weight: 600; }
+.toggles { margin-left: auto; display: flex; gap: 8px; }
+
+main { display: grid; justify-items: center; gap: 18px; padding: 24px 16px 70px; }
+.rules { width: min(980px, 100%); display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.rules div { padding: 11px 13px; border-radius: 16px; background: var(--snow); font-size: 13px; color: var(--muted); }
+.rules b { display: block; color: var(--ink); font-size: 14px; }
+
+/* ── The shared window frame ───────────────────────────────────────── */
+.win { position: relative; width: min(980px, 100%); border-radius: 28px; background: var(--snow); box-shadow: var(--shadow); padding: 22px clamp(18px, 4vw, 42px) 22px; }
+.win.small { width: min(460px, 100%); }
+.motion .win.arrive { animation: arrive 420ms cubic-bezier(.2,.9,.25,1.1) both; }
+@keyframes arrive { from { opacity: 0; transform: translateY(14px) scale(.985); } }
+.top { display: flex; align-items: center; gap: 10px; }
+.top .ico { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); }
+.top b { font-size: 15.5px; }
+.top .what { color: var(--muted); }
+.x { margin-left: auto; width: 36px; height: 36px; border: 0; border-radius: 12px; background: transparent; color: var(--muted); display: grid; place-items: center; }
+.x:hover { background: var(--accent-soft); color: var(--ink); }
+h2 { margin: 26px 0 6px; font-size: clamp(28px, 4vw, 40px); line-height: 1.12; letter-spacing: -0.025em; font-weight: 680; }
+.hint { margin: 0 0 22px; color: var(--muted); font-size: 15px; max-width: 640px; }
+.note { display: flex; gap: 8px; align-items: flex-start; margin: 18px 0 0; color: var(--muted); font-size: 13px; }
+.note svg { flex-shrink: 0; margin-top: 2px; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 20px; border: 0; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-weight: 650; transition: transform 140ms ease, filter 140ms ease; }
+.btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
+.btn.ghost { background: var(--accent-soft); color: var(--ink); }
+.btn.danger { background: var(--danger); color: #fff; }
+.btn[disabled] { opacity: .45; cursor: not-allowed; transform: none; }
+.acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 22px; }
+
+/* Illustrated cards: the same QT art as the idea cards. */
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.cardbtn { display: flex; flex-direction: column; gap: 12px; text-align: left; padding: 14px; border: 0; border-radius: 20px; background: var(--card); transition: transform 260ms cubic-bezier(.2,.9,.25,1.15), box-shadow 260ms ease; }
+.cardbtn:hover { transform: translateY(-3px); box-shadow: var(--lift); }
+.cardbtn b { font-size: 15px; }
+.cardbtn small { color: var(--muted); font-size: 13px; line-height: 1.45; }
+.tag { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 4px; border-radius: 999px; background: color-mix(in srgb, #ffa47a 18%, transparent); font-size: 12px; font-weight: 600; }
+.art { position: relative; display: block; overflow: hidden; aspect-ratio: 2 / 1; border-radius: 14px; }
+.art svg { display: block; width: 100%; height: 100%; }
+.art.flip .form { transform: translateX(114px); }
+.badge { position: absolute; right: 16%; bottom: 22%; display: grid; place-items: center; width: 54px; height: 54px; border-radius: 16px; background: #fff; box-shadow: 0 8px 18px rgb(0 0 0 / 0.12); }
+.art.flip .badge { right: auto; left: 14%; }
+
+/* A clean field, like Dawn's, with the app's own accent. */
+.field { display: flex; align-items: flex-end; gap: 10px; padding: 8px 8px 8px 18px; border-radius: 22px; background: var(--field); box-shadow: 0 0 0 1px var(--line), 0 12px 30px -20px rgb(90 90 190 / 0.45); transition: box-shadow 200ms ease; }
+.field:focus-within { box-shadow: 0 0 0 1.5px var(--accent), 0 0 0 6px var(--accent-soft); }
+.field textarea, .field input { flex: 1; min-width: 0; border: 0; outline: none; resize: none; background: transparent; font-size: 16px; line-height: 1.45; padding: 11px 0; }
+.field textarea { min-height: 46px; max-height: 140px; }
+
+/* Keep */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0 0; }
+.chip { padding: 6px 13px; border-radius: 999px; border: 0; background: var(--card); color: var(--muted); font-size: 13px; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--snow); }
+.notes { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; margin-top: 16px; }
+.kept { display: flex; flex-direction: column; gap: 10px; min-height: 150px; padding: 14px; border-radius: 20px; background: var(--card); transition: transform 240ms cubic-bezier(.2,.9,.25,1.15), box-shadow 240ms ease; }
+.kept:hover { transform: translateY(-3px); box-shadow: var(--lift); }
+.kept .kind { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 650; color: var(--k); }
+.kept .kind span { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 10px; background: #fff; box-shadow: 0 4px 10px rgb(0 0 0 / 0.08); }
+.kept p { margin: 0; flex: 1; font-size: 14.5px; line-height: 1.45; word-break: break-word; }
+.kept .row { display: flex; align-items: center; gap: 2px; color: var(--muted); font-size: 12px; }
+.kept .row span { margin-right: auto; }
+.mini { width: 32px; height: 32px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); display: grid; place-items: center; }
+.mini:hover { background: var(--accent-soft); color: var(--ink); }
+.motion .kept.placed { animation: placed 520ms cubic-bezier(.2,.9,.25,1.2) both; }
+@keyframes placed { from { opacity: 0; transform: translateY(-18px) scale(1.03); } }
+.empty { display: grid; justify-items: center; text-align: center; gap: 6px; padding: 18px 0 6px; }
+.empty .art { width: min(360px, 100%); }
+.empty h3 { margin: 10px 0 0; font-size: 20px; }
+.empty p { margin: 0; color: var(--muted); max-width: 420px; }
+.ghostcard { height: 150px; border-radius: 20px; background: var(--card); }
+.motion .ghostcard { animation: breathe 1.5s ease-in-out infinite; }
+.motion .ghostcard:nth-child(2) { animation-delay: .15s; }
+.motion .ghostcard:nth-child(3) { animation-delay: .3s; }
+@keyframes breathe { 50% { opacity: .45; } }
+
+/* Share */
+.people { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 8px; }
+.person { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 18px; background: var(--card); }
+.avatar { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; color: #fff; font-weight: 700; flex-shrink: 0; }
+.person b { display: block; font-size: 14.5px; }
+.person small { color: var(--muted); }
+.role { margin-left: auto; padding: 4px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; }
+.role.owner { background: color-mix(in srgb, #ffcf6b 26%, transparent); color: #9a6a00; }
+:root[data-theme="dark"] .role.owner { color: #ffd98a; }
+.linkrow { display: flex; align-items: center; gap: 12px; margin-top: 18px; padding: 12px 14px; border-radius: 18px; background: var(--card); }
+.linkrow span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 14px; }
+
+/* Confirm */
+.confirm-art { margin-top: 16px; }
+.small h2 { font-size: 26px; margin-top: 18px; }
+
+.toast { position: fixed; left: 50%; bottom: 24px; translate: -50% 0; z-index: 40; padding: 10px 16px; border-radius: 14px; background: var(--ink); color: var(--snow); font-size: 14px; opacity: 0; pointer-events: none; transition: opacity 200ms; }
+.toast.on { opacity: 1; }
+dialog { border: 0; padding: 0; background: transparent; color: var(--ink); width: min(460px, calc(100vw - 32px)); }
+dialog::backdrop { background: rgb(14 15 35 / 0.4); backdrop-filter: blur(2px); }
+
+@media (max-width: 760px) {
+  .cards { grid-template-columns: 1fr; gap: 10px; }
+  .cardbtn .art { display: none; }
+}
+</style>
+</head>
+<body>
+<script>
+  (function () {
+    var d = document.documentElement
+    d.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    d.classList.add(matchMedia('(prefers-reduced-motion: reduce)').matches ? 'still' : 'motion')
+  })()
+</script>
+
+<div class="bar">
+  <div class="tabs" role="tablist" aria-label="Window">
+    <button class="tab" role="tab" data-tab="import" aria-selected="true">Import</button>
+    <button class="tab" role="tab" data-tab="keep" aria-selected="false">Keep</button>
+    <button class="tab" role="tab" data-tab="share" aria-selected="false">Share</button>
+    <button class="tab" role="tab" data-tab="confirm" aria-selected="false">Delete (confirm)</button>
+  </div>
+  <div class="toggles">
+    <button class="toggle" id="themeBtn">☾ Dark mode</button>
+    <button class="toggle" id="stillBtn">⏸ Reduced motion</button>
+  </div>
+</div>
+
+<main>
+  <div class="rules">
+    <div><b>Same family as Dawn</b>The same frame, spacing, big plain question, illustrated cards and clean fields.</div>
+    <div><b>Dawn’s light is Dawn’s</b>No sunrise glow, greeting or sun button here. Those mean “AI”.</div>
+    <div><b>App accent</b>PeraForm’s indigo for buttons and focus. HyperCBT and Static Motion would use their own.</div>
+    <div><b>House rules</b>Every delete asks first. Notices say plainly what happens.</div>
+  </div>
+
+  <!-- Import -->
+  <section class="win arrive" data-panel="import" aria-label="Import a form">
+    <div class="top"><span class="ico" data-icon="upload"></span><b>Import a form</b><button class="x" aria-label="Close" data-icon="x"></button></div>
+    <h2>Where is your form coming from?</h2>
+    <p class="hint">Bring in a form you already have. Nothing is changed where it came from.</p>
+    <div class="cards" id="importCards"></div>
+    <p class="note"><span data-icon="info"></span>Google Forms can’t be saved as a file, because Google keeps them in Drive, so import yours from Google Drive.</p>
+  </section>
+
+  <!-- Keep -->
+  <section class="win arrive" data-panel="keep" aria-label="Keep" hidden>
+    <div class="top"><span class="ico" data-icon="bookmark"></span><b>Keep</b><span class="what">· in every Quality Tools app</span><button class="x" aria-label="Close" data-icon="x"></button></div>
+    <h2>Your Keep</h2>
+    <p class="hint">Things to paste later. Text and links work in every Quality Tools app; questions and design blocks are PeraForm’s.</p>
+    <form class="field" id="keepForm">
+      <label class="sr-only" for="keepText">Write a note or paste a link</label>
+      <textarea id="keepText" rows="1" maxlength="2000" placeholder="Write a note or paste a link…"></textarea>
+      <button class="btn" id="keepBtn" disabled>Keep it</button>
+    </form>
+    <div class="chips" id="keepChips"></div>
+    <div id="keepBody"></div>
+    <div class="acts" style="justify-content:flex-start;margin-top:16px">
+      <span style="color:var(--muted);font-size:13px;align-self:center">Mockup views:</span>
+      <button class="chip" data-kv="full" aria-pressed="true">With items</button>
+      <button class="chip" data-kv="empty" aria-pressed="false">Empty</button>
+      <button class="chip" data-kv="loading" aria-pressed="false">Loading</button>
+    </div>
+  </section>
+
+  <!-- Share -->
+  <section class="win arrive" data-panel="share" aria-label="Share" hidden>
+    <div class="top"><span class="ico" data-icon="users"></span><b>Share</b><span class="what">· Customer survey</span><button class="x" aria-label="Close" data-icon="x"></button></div>
+    <h2>Who can edit this form?</h2>
+    <p class="hint">Editors can change questions and see responses. Only you can add or remove people.</p>
+    <form class="field" id="shareForm">
+      <label class="sr-only" for="shareEmail">Email address</label>
+      <input id="shareEmail" type="email" placeholder="Add someone by email…" />
+      <button class="btn" id="shareBtn" disabled>Invite</button>
+    </form>
+    <ul class="people" id="people"></ul>
+    <div class="linkrow"><span data-icon="link"></span><span>peraform-qt.web.app/f/8kQ2x…</span><button class="btn ghost" id="copyLink">Copy link</button></div>
+  </section>
+
+  <!-- Confirm -->
+  <section class="win small arrive" data-panel="confirm" aria-label="Delete form" hidden>
+    <div class="top"><span class="ico" style="background:color-mix(in srgb, var(--danger) 14%, transparent);color:var(--danger)" data-icon="trash"></span><b>Delete form</b><button class="x" aria-label="Close" data-icon="x"></button></div>
+    <div class="confirm-art" id="confirmArt"></div>
+    <h2>Delete “Customer survey”?</h2>
+    <p class="hint" style="margin-bottom:0">Its 128 responses are deleted with it, and this can’t be undone. Download the responses first if you need them.</p>
+    <div class="acts"><button class="btn ghost" id="cancelDel">Cancel</button><button class="btn danger" id="doDel">Delete form</button></div>
+  </section>
+</main>
+
+<dialog id="confirm"><form method="dialog" class="win small" style="width:100%">
+  <div class="top"><span class="ico" style="background:color-mix(in srgb, var(--danger) 14%, transparent);color:var(--danger)" data-icon="trash"></span><b id="cTitle">Delete</b></div>
+  <h2 id="cHead" style="font-size:24px;margin-top:16px">Delete this?</h2>
+  <p class="hint" id="cText" style="margin-bottom:0"></p>
+  <div class="acts"><button class="btn ghost" value="cancel">Cancel</button><button class="btn danger" value="ok">Delete</button></div>
+</form></dialog>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const root = document.documentElement
+const still = () => root.classList.contains('still')
+const $ = (s) => document.querySelector(s)
+let uid = 0
+
+const ICON = {
+  upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+  json: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 12a1 1 0 0 0-1 1v1a1 1 0 0 1-1 1 1 1 0 0 1 1 1v1a1 1 0 0 0 1 1"/><path d="M14 18a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1 1 1 0 0 1-1-1v-1a1 1 0 0 0-1-1"/>',
+  drive: '<line x1="22" x2="2" y1="12" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" x2="6.01" y1="16" y2="16"/><line x1="10" x2="10.01" y1="16" y2="16"/>',
+  paper: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8M16 13H8M16 17H8"/>',
+  bookmark: '<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>',
+  trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+  users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  copy: '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  checks: '<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>',
+  layout: '<rect width="18" height="7" x="3" y="3" rx="1"/><rect width="9" height="7" x="3" y="14" rx="1"/><rect width="5" height="7" x="16" y="14" rx="1"/>',
+  type: '<path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/>',
+}
+const icon = (k, s = 18, w = 2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`
+document.querySelectorAll('[data-icon]').forEach((el) => (el.innerHTML = icon(el.dataset.icon, el.classList.contains('x') ? 20 : 17)))
+
+const C = {
+  indigo: { sky: '#eef0ff', sky2: '#d3d8ff', ground: '#a3acf5', accent: '#4f46e5' },
+  mint: { sky: '#eaf7e4', sky2: '#c8ecb8', ground: '#8fcf72', accent: '#3e9b3a' },
+  peach: { sky: '#fff1dc', sky2: '#ffd9b0', ground: '#f4b183', accent: '#e8743b' },
+  gold: { sky: '#fff7e0', sky2: '#ffe8a8', ground: '#f2cf6a', accent: '#c58a06' },
+  red: { sky: '#ffeceb', sky2: '#ffcdca', ground: '#f59c95', accent: '#d64541' },
+  violet: { sky: '#f3ecff', sky2: '#ddcdff', ground: '#b79cf5', accent: '#7c3aed' },
+  sky: { sky: '#e3f2ff', sky2: '#b9ddff', ground: '#7fc0f2', accent: '#2f80d1' },
+}
+// The QT idea art (as IdeaArt.jsx).
+function art(a, ic, flip) {
+  const g = `a${uid++}`
+  const rows = [74, 90, 106].map((y, i) => `<circle cx="51" cy="${y + 3}" r="4.5" fill="none" stroke="${a.accent}" stroke-width="1.6" opacity=".7"/>${i === 1 ? `<circle cx="51" cy="${y + 3}" r="2.3" fill="${a.accent}"/>` : ''}<rect x="61" y="${y}" width="${i === 1 ? 64 : 52}" height="6" rx="3" fill="#d9dbe3"/>`).join('')
+  return `<span class="art${flip ? ' flip' : ''}" aria-hidden="true"><svg viewBox="0 0 300 150" preserveAspectRatio="xMidYMid slice">
+    <defs><linearGradient id="${g}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a.sky}"/><stop offset="1" stop-color="${a.sky2}"/></linearGradient></defs>
+    <rect width="300" height="150" fill="url(#${g})"/><circle cx="248" cy="34" r="20" fill="${a.accent}" opacity=".22"/><circle cx="248" cy="34" r="11" fill="#fff" opacity=".7"/>
+    <g fill="#fff" opacity=".85"><ellipse cx="62" cy="30" rx="22" ry="7"/><ellipse cx="76" cy="25" rx="13" ry="8"/><ellipse cx="186" cy="20" rx="16" ry="5"/></g>
+    <path d="M0 116 C 60 92, 120 104, 170 112 S 260 98, 300 108 V150 H0Z" fill="${a.ground}" opacity=".55"/><path d="M0 132 C 70 112, 150 126, 210 128 S 280 118, 300 124 V150 H0Z" fill="${a.ground}"/>
+    <g fill="${a.accent}" opacity=".55"><path d="M150 34l2.2 5.8 5.8 2.2-5.8 2.2-2.2 5.8-2.2-5.8-5.8-2.2 5.8-2.2z"/><path d="M276 84l1.4 3.6 3.6 1.4-3.6 1.4-1.4 3.6-1.4-3.6-3.6-1.4 3.6-1.4z"/></g>
+    <g class="form"><rect x="34" y="40" width="118" height="92" rx="10" fill="#fff"/><rect x="34" y="40" width="118" height="9" rx="4" fill="${a.accent}"/><rect x="46" y="58" width="70" height="6" rx="3" fill="${a.accent}" opacity=".35"/>${rows}</g>
+  </svg><span class="badge" style="color:${a.accent}">${icon(ic, 30, 1.75)}</span></span>`
+}
+// Dawn's small orb, for the one card that hands over to Dawn.
+function orbMini(size) {
+  const id = `o${uid++}`
+  return `<svg width="${size}" height="${size}" viewBox="0 0 128 128" aria-hidden="true"><defs>
+    <radialGradient id="${id}g" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#cfefff" stop-opacity=".05"/><stop offset=".78" stop-color="#5f86ff" stop-opacity=".3"/><stop offset="1" stop-color="#ff8fcf" stop-opacity=".75"/></radialGradient>
+    <radialGradient id="${id}c" cx=".5" cy=".62" r=".5"><stop offset="0" stop-color="#fff1c2"/><stop offset=".35" stop-color="#ffa47a" stop-opacity=".9"/><stop offset=".7" stop-color="#ff6fa0" stop-opacity=".5"/><stop offset="1" stop-color="#9d7bf5" stop-opacity="0"/></radialGradient>
+    <linearGradient id="${id}r" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e9fdff"/><stop offset=".35" stop-color="#6fe3ff"/><stop offset=".65" stop-color="#8b7bff"/><stop offset="1" stop-color="#ff86c8"/></linearGradient></defs>
+    <circle cx="64" cy="64" r="58" fill="url(#${id}g)"/><ellipse cx="64" cy="70" rx="44" ry="38" fill="url(#${id}c)"/>
+    <g stroke="#ffd9b8" stroke-width="7" stroke-linecap="round">${[0, 1, 2, 3, 4, 5, 6].map((i) => { const a = Math.PI + (i + 1) * (Math.PI / 8), l = i % 2 ? 22 : 31; return `<line x1="${64 + Math.cos(a) * 12}" y1="${74 + Math.sin(a) * 12}" x2="${64 + Math.cos(a) * (12 + l)}" y2="${74 + Math.sin(a) * (12 + l)}"/>` }).join('')}</g>
+    <rect x="30" y="78" width="68" height="4" rx="2" fill="#fff"/><circle cx="64" cy="64" r="57" fill="none" stroke="url(#${id}r)" stroke-width="4"/></svg>`
+}
+
+let toastTimer
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), 1900) }
+function confirmDelete(title, head, text) {
+  return new Promise((resolve) => {
+    const d = $('#confirm'); $('#cTitle').textContent = title; $('#cHead').textContent = head; $('#cText').textContent = text
+    d.returnValue = ''; d.showModal(); d.addEventListener('close', () => resolve(d.returnValue === 'ok'), { once: true })
+  })
+}
+
+// ── Tabs ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach((t) => (t.onclick = () => {
+  document.querySelectorAll('.tab').forEach((x) => x.setAttribute('aria-selected', x === t))
+  document.querySelectorAll('[data-panel]').forEach((p) => {
+    p.hidden = p.dataset.panel !== t.dataset.tab
+    if (!p.hidden) { p.classList.remove('arrive'); void p.offsetWidth; p.classList.add('arrive') }
+  })
+}))
+
+// ── Import ───────────────────────────────────────────────────────────
+$('#importCards').innerHTML = [
+  { t: 'PeraForm file from your computer', s: 'A form saved with “Download as PeraForm file”. Questions, sections, actions, quiz answers, theme and screen designs all come back.', a: C.indigo, i: 'json' },
+  { t: 'Google Form from Google Drive', s: 'Pick it in Google’s file picker; PeraForm only sees the form you pick. Images don’t come across, because Google’s image links expire.', a: C.mint, i: 'drive' },
+  { t: 'A printout or PDF', s: 'Paste its text and Dawn builds the form for you. Uses AI credits.', a: C.peach, i: 'paper', dawn: true },
+].map((c, n) => `<button class="cardbtn" type="button" data-imp="${n}">${art(c.a, c.i, n % 2 === 1)}<b>${c.t}</b><small>${c.s}</small>${c.dawn ? `<span class="tag">${orbMini(20)} with Dawn</span>` : ''}</button>`).join('')
+document.querySelectorAll('[data-imp]').forEach((b) => (b.onclick = () => toast(['Choose a .json file… (mockup)', 'Google’s file picker would open here (mockup)', 'Dawn’s Create window would open here (mockup)'][b.dataset.imp])))
+
+// ── Keep ─────────────────────────────────────────────────────────────
+const KINDS = { field: ['Question', '#4f46e5', 'checks'], block: ['Design block', '#7c3aed', 'layout'], text: ['Text', '#c58a06', 'type'], link: ['Link', '#2f80d1', 'link'] }
+let items = [
+  { id: 1, kind: 'field', text: 'How satisfied are you with our service? (1–5)', when: 'Yesterday' },
+  { id: 2, kind: 'link', text: 'quality-toolsx.web.app/pricing', when: '2 days ago' },
+  { id: 3, kind: 'text', text: 'Thank you! Your answers go straight to the quality office.', when: 'Last week' },
+  { id: 4, kind: 'block', text: 'Glassy welcome card: big heading, two buttons', when: 'Last week' },
+  { id: 5, kind: 'field', text: 'Your department (dropdown, 12 options)', when: 'Last week' },
+]
+let kv = 'full', filter = 'all', nextId = 6
+function renderKeep(placed) {
+  const body = $('#keepBody'), chips = $('#keepChips'); chips.innerHTML = ''
+  if (kv === 'loading') { body.innerHTML = '<div class="notes" role="status" aria-label="Loading your Keep"><div class="ghostcard"></div><div class="ghostcard"></div><div class="ghostcard"></div></div>'; return }
+  const list = kv === 'empty' ? [] : items
+  if (!list.length) {
+    body.innerHTML = `<div class="empty">${art(C.gold, 'bookmark', false)}<h3>Nothing kept yet</h3><p>Keep a question, a design block or a link here, then paste it into any form. Your Keep follows you across Quality Tools.</p></div>`
+    return
+  }
+  const have = [...new Set(list.map((n) => n.kind))]
+  if (have.length > 1) {
+    ;[['all', 'All'], ...have.map((k) => [k, KINDS[k][0]])].forEach(([k, l]) => {
+      const c = document.createElement('button'); c.type = 'button'; c.className = 'chip'
+      c.textContent = k === 'all' ? l : `${l} · ${list.filter((n) => n.kind === k).length}`
+      c.setAttribute('aria-pressed', filter === k); c.onclick = () => { filter = k; renderKeep() }; chips.append(c)
+    })
+  }
+  body.innerHTML = '<div class="notes"></div>'
+  list.filter((n) => filter === 'all' || n.kind === filter).forEach((n) => {
+    const [label, colour, ic] = KINDS[n.kind]
+    const el = document.createElement('article')
+    el.className = 'kept' + (n.id === placed ? ' placed' : ''); el.style.setProperty('--k', colour)
+    el.innerHTML = `<div class="kind"><span>${icon(ic, 16)}</span>${label}</div><p></p><div class="row"><span>${n.when}</span><button class="mini" title="Copy" aria-label="Copy">${icon('copy', 16)}</button><button class="mini" title="Delete" aria-label="Delete">${icon('trash', 16)}</button></div>`
+    el.querySelector('p').textContent = n.text
+    const [copy, del] = el.querySelectorAll('.mini')
+    copy.onclick = () => toast('Copied. Paste it into any form.')
+    del.onclick = async () => {
+      if (!(await confirmDelete('Delete from Keep', 'Delete this item?', 'It leaves your Keep in every Quality Tools app. This can’t be undone.'))) return
+      items = items.filter((x) => x.id !== n.id); renderKeep(); toast('Deleted from your Keep')
+    }
+    body.firstChild.append(el)
+  })
+}
+const keepText = $('#keepText'), keepBtn = $('#keepBtn')
+keepText.oninput = () => { keepBtn.disabled = !keepText.value.trim(); keepText.style.height = 'auto'; keepText.style.height = Math.min(keepText.scrollHeight, 140) + 'px' }
+$('#keepForm').onsubmit = (e) => {
+  e.preventDefault(); const t = keepText.value.trim(); if (!t) return
+  const id = nextId++
+  items = [{ id, kind: /^(https?:\/\/|www\.)|\.\w{2,}\//.test(t) ? 'link' : 'text', text: t, when: 'Just now' }, ...items]
+  keepText.value = ''; keepText.oninput(); kv = 'full'; filter = 'all'
+  document.querySelectorAll('[data-kv]').forEach((x) => x.setAttribute('aria-pressed', x.dataset.kv === 'full'))
+  renderKeep(id)
+}
+document.querySelectorAll('[data-kv]').forEach((b) => (b.onclick = () => { kv = b.dataset.kv; document.querySelectorAll('[data-kv]').forEach((x) => x.setAttribute('aria-pressed', x === b)); renderKeep() }))
+renderKeep()
+
+// ── Share ────────────────────────────────────────────────────────────
+let people = [
+  { name: 'Adedamola (you)', email: 'you@example.com', role: 'owner', col: '#8b8ff0' },
+  { name: 'Chioma Okafor', email: 'chioma@school.edu', role: 'editor', col: '#ff7fa0' },
+  { name: 'tunde@school.edu', email: 'Invited, hasn’t joined yet', role: 'invited', col: '#c0c3d8' },
+]
+function renderPeople() {
+  const ul = $('#people'); ul.innerHTML = ''
+  people.forEach((p) => {
+    const li = document.createElement('li'); li.className = 'person'
+    li.innerHTML = `<span class="avatar" style="background:${p.col}">${p.name[0].toUpperCase()}</span><div><b></b><small></small></div>
+      <span class="role ${p.role === 'owner' ? 'owner' : ''}">${p.role === 'owner' ? 'Owner' : p.role === 'editor' ? 'Editor' : 'Invited'}</span>
+      ${p.role === 'owner' ? '' : `<button class="mini" aria-label="Remove" title="${p.role === 'invited' ? 'Cancel invite' : 'Remove'}">${icon('x', 16)}</button>`}`
+    li.querySelector('b').textContent = p.name; li.querySelector('small').textContent = p.email
+    const rm = li.querySelector('.mini')
+    if (rm) rm.onclick = async () => {
+      const invited = p.role === 'invited'
+      if (!(await confirmDelete(invited ? 'Cancel invite' : 'Remove editor', invited ? `Cancel the invite to ${p.name}?` : `Remove ${p.name}?`, invited ? 'The link in their email will stop working.' : 'They lose access to this form and its responses straight away.'))) return
+      people = people.filter((x) => x !== p); renderPeople(); toast(invited ? 'Invite cancelled' : 'Removed')
+    }
+    ul.append(li)
+  })
+}
+renderPeople()
+const shareEmail = $('#shareEmail'), shareBtn = $('#shareBtn')
+shareEmail.oninput = () => (shareBtn.disabled = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shareEmail.value))
+$('#shareForm').onsubmit = (e) => {
+  e.preventDefault(); const em = shareEmail.value.trim()
+  people.push({ name: em, email: 'Invited just now. We’ve emailed them a link.', role: 'invited', col: '#c0c3d8' })
+  shareEmail.value = ''; shareBtn.disabled = true; renderPeople(); toast(`Invite sent to ${em}`)
+}
+$('#copyLink').onclick = () => toast('Link copied')
+
+// ── Confirm ──────────────────────────────────────────────────────────
+$('#confirmArt').innerHTML = art(C.red, 'trash', false)
+$('#cancelDel').onclick = () => toast('Nothing was deleted')
+$('#doDel').onclick = () => toast('In the app, the form would now be deleted')
+
+// ── Toggles ──────────────────────────────────────────────────────────
+const themeBtn = $('#themeBtn'), stillBtn = $('#stillBtn')
+function sync() { themeBtn.setAttribute('aria-pressed', root.dataset.theme === 'dark'); stillBtn.setAttribute('aria-pressed', still()) }
+themeBtn.onclick = () => { root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark'; sync() }
+stillBtn.onclick = () => { root.classList.toggle('still'); root.classList.toggle('motion'); sync() }
+sync()
+</script>
+</body>
+</html>
