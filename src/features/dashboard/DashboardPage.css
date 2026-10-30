@@ -66,8 +66,9 @@
   transform: translateY(-2px);
 }
 
+/* "Create with Dawn": the orb on first light, warm to cool (as in HyperCBT). */
 .start-visual-ai {
-  background: linear-gradient(135deg, var(--accent-soft), var(--fill));
+  background: linear-gradient(135deg, rgb(255 191 140 / 0.24), rgb(201 138 224 / 0.12) 55%, var(--fill));
 }
 
 .start-visual-icon {

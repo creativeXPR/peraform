@@ -190,7 +190,7 @@ export default function DesignScreensDialog({ open, onClose, screenKey, device =
       }}
       short={short}
       onCancel={ai.cancel}
-      error={ai.error || (tooBig ? 'This screen has too many blocks to change with AI in one go.' : '')}
+      error={ai.error || (tooBig ? 'This screen has too many blocks to change with Dawn in one go.' : '')}
       optionsSummary={`Options · ${tier[0].toUpperCase() + tier.slice(1)} quality · up to ${formatCredits(range.max)} credits`}
       options={
         <>

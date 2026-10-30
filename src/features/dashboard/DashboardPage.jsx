@@ -10,7 +10,6 @@ import {
   List,
   MoreVertical,
   Plus,
-  Sparkles,
   Star,
   Upload,
 } from 'lucide-react'
@@ -39,6 +38,7 @@ import { saveRecentTemplateKey, TEMPLATES } from './templates.js'
 import TemplateGallery from './TemplateGallery.jsx'
 import { useMyForms } from './useMyForms.js'
 import './DashboardPage.css'
+import DawnOrb from '../ai/DawnOrb.jsx'
 
 const VIEW_KEY = 'peraform-dashboard-view'
 
@@ -212,9 +212,9 @@ export default function DashboardPage() {
           disabled={creating}
         >
           <span className="start-visual start-visual-icon start-visual-ai">
-            <Sparkles size={32} strokeWidth={1.5} />
+            <DawnOrb size={56} />
           </span>
-          <span className="start-label">Create with AI</span>
+          <span className="start-label">Create with Dawn</span>
         </button>
         <button
           type="button"

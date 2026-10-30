@@ -109,7 +109,7 @@ export default function EditFormDialog({ open, onClose }) {
       onCancel={ai.cancel}
       error={
         ai.error ||
-        (tooLong ? 'This form is too long to edit with AI in one go. Try it on a copy with fewer questions.' : '')
+        (tooLong ? 'This form is too long to edit with Dawn in one go. Try it on a copy with fewer questions.' : '')
       }
       optionsSummary={`Options · ${tier[0].toUpperCase() + tier.slice(1)} quality · up to ${formatCredits(range.max)} credits`}
       options={

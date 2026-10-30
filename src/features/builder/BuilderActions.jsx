@@ -13,7 +13,6 @@ import {
   Palette,
   Printer,
   Redo2,
-  Sparkles,
   Trash2,
   Undo2,
   UserPlus,
@@ -30,6 +29,7 @@ import ShareDialog from './ShareDialog.jsx'
 import ShortcutsDialog from './ShortcutsDialog.jsx'
 import ThemePanel from './ThemePanel.jsx'
 import { useFormEditor } from './editorContext.js'
+import DawnOrb from '../ai/DawnOrb.jsx'
 
 // Text fields have their own native undo; only take Ctrl+Z when focus is
 // elsewhere, so we never fight the browser over a half-typed word.
@@ -170,7 +170,7 @@ export default function BuilderActions() {
     { label: 'Copy link', icon: Link2, onSelect: copyLink },
     { label: 'Share', icon: UserPlus, onSelect: () => setCollabOpen(true) },
     { label: 'Theme', icon: Palette, onSelect: () => setThemeOpen(true) },
-    { label: 'Edit with AI', icon: Sparkles, onSelect: () => setAiOpen(true) },
+    { label: 'Edit with Dawn', icon: DawnOrb, onSelect: () => setAiOpen(true) },
     { label: 'Make a copy', icon: Copy, onSelect: makeCopy },
     { label: 'Download as PeraForm file', icon: Download, onSelect: downloadFile },
     {
@@ -198,10 +198,10 @@ export default function BuilderActions() {
           type="button"
           className="icon-btn desktop-only builder-ai"
           onClick={() => setAiOpen(true)}
-          aria-label="Edit with AI"
-          title="Edit with AI"
+          aria-label="Edit with Dawn"
+          title="Edit with Dawn"
         >
-          <Sparkles size={18} />
+          <DawnOrb size={24} />
         </button>
         <button
           type="button"

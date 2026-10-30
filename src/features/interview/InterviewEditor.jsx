@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { Monitor, RotateCcw, Smartphone, Sparkles } from 'lucide-react'
+import { Monitor, RotateCcw, Smartphone } from 'lucide-react'
 import ColorPicker from '../../lib/ColorPicker.jsx'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { isQuestion } from '../../lib/formLogic.js'
@@ -54,6 +54,7 @@ import LayersPanel from './LayersPanel.jsx'
 import MoveBlockDialog from './MoveBlockDialog.jsx'
 import StylePicker from './StylePicker.jsx'
 import DesignScreensDialog from '../ai/DesignScreensDialog.jsx'
+import DawnOrb from '../ai/DawnOrb.jsx'
 
 const SCREEN_BG_PRESETS = [
   { value: 'bg', label: 'Page (theme)', swatch: COLOR_TOKENS.bg.css },
@@ -300,8 +301,8 @@ export default function InterviewEditor({ viewSwitch }) {
       <div className="ie-toolbar">
         {viewSwitch}
         <button type="button" className="btn btn-outline ie-ai" onClick={() => setDesigning(true)}>
-          <Sparkles size={15} />
-          Design with AI
+          <DawnOrb size={22} />
+          Design with Dawn
         </button>
         <div className="segmented" role="radiogroup" aria-label="Device">
           {Object.entries(DEVICES).map(([key, d]) => (
