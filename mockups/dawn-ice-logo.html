@@ -46,8 +46,9 @@ h2 { font-size: 21px; margin: 46px 0 6px; }
 .opt[aria-checked="true"] .pick { background: var(--lav); color: #fff; }
 .tiles { display: grid; grid-template-columns: 1fr 1fr; }
 .tiles div { display: grid; place-items: center; height: 170px; }
-.tiles div:first-child { background: linear-gradient(180deg, #f7f9ff, #eaf1fb); }
-.tiles div:last-child { background: radial-gradient(120% 100% at 50% 100%, #1b2350, #0b0c18); }
+/* Faint diagonal lines behind the marks, so you can see through the glass. */
+.tiles div:first-child { background: repeating-linear-gradient(135deg, rgb(110 120 200 / 0.09) 0 2px, transparent 2px 13px), linear-gradient(180deg, #f7f9ff, #eaf1fb); }
+.tiles div:last-child { background: repeating-linear-gradient(135deg, rgb(255 255 255 / 0.05) 0 2px, transparent 2px 13px), #000; }
 .body { padding: 12px 14px 14px; }
 .body b { display: block; }
 .body p { margin: 2px 0 10px; color: var(--muted); font-size: 13px; line-height: 1.4; min-height: 54px; }
@@ -96,6 +97,7 @@ h2 { font-size: 21px; margin: 46px 0 6px; }
 <div class="bar">
   <p>Mockup · Dawn’s Sunburst set in ice. Nothing in the apps has changed.</p>
   <div class="toggles">
+    <button class="toggle" id="modeBtn" aria-pressed="true">◌ Semi-clear ice</button>
     <button class="toggle" id="themeBtn">☾ Dark mode</button>
     <button class="toggle" id="stillBtn">⏸ Reduced motion</button>
   </div>
@@ -159,10 +161,21 @@ function defs(id) {
     <linearGradient id="${id}-ray" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#c9ccff"/><stop offset=".5" stop-color="#ffb3c6"/><stop offset="1" stop-color="#ffe39a"/>
     </linearGradient>
-    <linearGradient id="${id}-rim" x1="0" y1="0" x2="1" y2="1">
+    <radialGradient id="${id}-glass" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#cfefff" stop-opacity=".04"/><stop offset=".55" stop-color="#8fdcff" stop-opacity=".1"/>
+      <stop offset=".78" stop-color="#5f86ff" stop-opacity=".28"/><stop offset=".92" stop-color="#9b78ff" stop-opacity=".5"/>
+      <stop offset="1" stop-color="#ff8fcf" stop-opacity=".7"/>
+    </radialGradient>
+    ${mode === 'clear'
+      ? `<linearGradient id="${id}-rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e9fdff" stop-opacity=".95"/><stop offset=".3" stop-color="#6fe3ff" stop-opacity=".8"/>
+      <stop offset=".55" stop-color="#8b7bff" stop-opacity=".55"/><stop offset=".8" stop-color="#ff86c8" stop-opacity=".75"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity=".6"/>
+    </linearGradient>`
+      : `<linearGradient id="${id}-rim" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".45" stop-color="#bff4ff" stop-opacity=".35"/>
       <stop offset=".7" stop-color="#fff" stop-opacity=".1"/><stop offset="1" stop-color="#9fe7ff" stop-opacity=".7"/>
-    </linearGradient>
+    </linearGradient>`}
     <linearGradient id="${id}-glintg" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
     </linearGradient>
@@ -180,8 +193,8 @@ function defs(id) {
 function insides(id, shape, cy, scale, rim) {
   return `<clipPath id="${id}-clip">${shape}</clipPath>
     <g clip-path="url(#${id}-clip)">
-      <g fill="url(#${id}-ice)">${shape}</g>
-      <rect width="128" height="128" filter="url(#${id}-frost)"/>
+      <g fill="url(#${id}-${mode === 'clear' ? 'glass' : 'ice'})">${shape}</g>
+      <rect width="128" height="128" filter="url(#${id}-frost)" opacity="${mode === 'clear' ? 0.45 : 1}"/>
       <ellipse class="core" cx="64" cy="${cy - 4}" rx="${46 * scale}" ry="${40 * scale}" fill="url(#${id}-core)"/>
       ${sunburst(id, cy, scale)}
       <path d="M8 34 Q 40 6 82 10" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".55" filter="url(#${id}-soft)"/>
@@ -237,6 +250,9 @@ function ice(shape, size) {
 }
 
 let chosen = SHAPES[0]
+// 'clear': semi-transparent glass, clear in the middle with colour gathering
+// at the rim (like a bubble). 'solid': the first, frosted-ice version.
+let mode = 'clear'
 function render() {
   const box = $('#opts'); box.innerHTML = ''
   SHAPES.forEach((s) => {
@@ -256,6 +272,13 @@ function render() {
 
 const themeBtn = $('#themeBtn'), stillBtn = $('#stillBtn')
 function sync() { themeBtn.setAttribute('aria-pressed', root.dataset.theme === 'dark'); stillBtn.setAttribute('aria-pressed', still()) }
+const modeBtn = $('#modeBtn')
+modeBtn.onclick = () => {
+  mode = mode === 'clear' ? 'solid' : 'clear'
+  modeBtn.setAttribute('aria-pressed', mode === 'clear')
+  modeBtn.textContent = mode === 'clear' ? '◌ Semi-clear ice' : '● Solid ice'
+  render()
+}
 themeBtn.onclick = () => { root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark'; sync() }
 stillBtn.onclick = () => { root.classList.toggle('still'); root.classList.toggle('motion'); sync() }
 sync(); render()
