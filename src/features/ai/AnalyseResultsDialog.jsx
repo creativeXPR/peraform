@@ -44,7 +44,7 @@ export default function AnalyseResultsDialog({ open, onClose, formId, statsChars
       open={open}
       onClose={close}
       running={ai.running}
-      label="Analyse results with AI"
+      label="Analyse results"
       sub="What should the report look at?"
       ideas={ANALYSE_IDEAS}
       onIdea={(idea) => setFocus(idea.prompt)}
@@ -57,7 +57,7 @@ export default function AnalyseResultsDialog({ open, onClose, formId, statsChars
         placeholder: 'Anything to focus on? (optional) Or just press Analyse',
         maxChars: spec.maxChars.analyse,
         onSubmit: run,
-        submitLabel: 'Analyse',
+        submitLabel: undefined,
         optional: true,
       }}
       short={short}
@@ -70,7 +70,7 @@ export default function AnalyseResultsDialog({ open, onClose, formId, statsChars
           <HoldLine range={range} spendable={spendable} loaded={loaded} hidden={ai.running} />
         </>
       }
-      note="A plain-language report: what went well, questions that were too easy or too hard, and ones that may need a second look. Only totals go to the AI — never anyone’s individual answers or emails. Nothing in your form changes."
+      note="A plain-language report: what went well, questions that were too easy or too hard, and ones that may need a second look. Only totals go to Dawn — never anyone’s individual answers or emails. Nothing in your form changes."
     />
   )
 }

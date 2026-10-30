@@ -1,21 +1,26 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowUp, ChevronDown, Shuffle, Sparkles, X } from 'lucide-react'
+import { ChevronDown, FileText, Shuffle, X } from 'lucide-react'
 import { useAuth } from '../auth/useAuth.js'
+import DawnOrb from './DawnOrb.jsx'
 import IdeaArt from './IdeaArt.jsx'
+import { dawnGreeting } from './dawn.js'
 import './ai.css'
 
 const SHOWN = 3
 
-// The frame every AI window shares (Create, Edit, Design with AI, Analyse
-// results): a greeting, illustrated ideas (Shuffle for more), a chat-style
-// prompt bar, a quiet "Options" line (quality and credits) and a note.
-// Each window supplies its words, ideas and what happens; while it runs or
-// once it's done, `middle` replaces the ideas.
+// The frame every AI window shares (Create, Edit, Design, Analyse): Dawn,
+// Quality Tools' AI. Its orb and what it's doing on top, the form it's
+// working on, a time-of-day greeting with the question, illustrated ideas
+// (Shuffle for more), a clean field with the "Ask Dawn" button, a quiet
+// Options line (quality and credits) and a note. A warm glow sits at the
+// horizon; while Dawn works it rises and Dawn's colours circle the edge.
+// While it runs or once it's done, `middle` replaces the ideas.
 //
 //   open, onClose, running          the dialog, and whether a run is going
-//   label                           top-left, e.g. "Edit with AI"
-//   sub                             under "Hello, <name>"
+//   label                           what Dawn is doing, e.g. "Edit this form"
+//   context                         the quiet line under it (form, size, saved)
+//   sub                             the question under the greeting
 //   tabs                            optional switch under the greeting
 //   ideas [{ key, title, prompt, art, icon }], onIdea(idea)
 //   middle                          progress or the result, instead of ideas
@@ -32,6 +37,7 @@ export default function AiStudio({
   onClose,
   running,
   label,
+  context,
   sub,
   tabs,
   ideas = [],
@@ -43,21 +49,30 @@ export default function AiStudio({
   options,
   optionsSummary,
   error,
-  note = 'AI can make mistakes, so check the result before you share it. Uses your Quality Tools AI credits; cancelling is free.',
+  note = 'Dawn can make mistakes, so check the result before you share it. Uses your Quality Tools AI credits; cancelling is free.',
   actions,
 }) {
   const ref = useRef(null)
   const inputRef = useRef(null)
   const { user } = useAuth()
   const [first, setFirst] = useState(() => Math.floor(Math.random() * Math.max(1, ideas.length)))
+  const done = Boolean(actions)
 
+  // Opening: the edge glows once. Done: the horizon brightens once.
+  // (Classes on the dialog itself, so nothing re-renders for them.)
   useEffect(() => {
     const dialog = ref.current
-    if (open && !dialog.open) dialog.showModal()
+    if (open && !dialog.open) {
+      dialog.showModal()
+      flash(dialog, 'is-opening', 1900)
+    }
     if (!open && dialog.open) dialog.close()
   }, [open])
+  useEffect(() => {
+    if (done) flash(ref.current, 'is-landed', 1200)
+  }, [done])
 
-  // The prompt bar grows with what's typed (up to a few lines, then scrolls).
+  // The field grows with what's typed (up to a few lines, then scrolls).
   useEffect(() => {
     const el = inputRef.current
     if (!el) return
@@ -77,14 +92,17 @@ export default function AiStudio({
   return (
     <dialog
       ref={ref}
-      className="ai-create"
-      aria-label={label}
+      className={`ai-create is-dawn${running ? ' is-thinking' : ''}`}
+      aria-label={`Dawn · ${label}`}
       onCancel={(e) => {
         e.preventDefault()
         close()
       }}
       onClick={(e) => e.target === ref.current && close()}
     >
+      <div className="dawn-glow" aria-hidden="true" />
+      <div className="dawn-edge is-soft" aria-hidden="true" />
+      <div className="dawn-edge" aria-hidden="true" />
       <form
         className="ai-create-body"
         onSubmit={(e) => {
@@ -92,18 +110,25 @@ export default function AiStudio({
           if (!running && canSend) prompt.onSubmit()
         }}
       >
-        <header className="ai-create-top">
-          <span className="ai-create-brand">
-            <Sparkles size={16} aria-hidden="true" /> {label}
+        <header className="ai-create-top dawn-top">
+          <span className="dawn-brand">
+            <DawnOrb size={30} />
+            <b>Dawn</b>
+            <span className="dawn-what">· {label}</span>
           </span>
           <button type="button" className="icon-btn" onClick={close} aria-label="Close" disabled={running}>
             <X size={20} />
           </button>
         </header>
+        {context && (
+          <p className="dawn-context">
+            <FileText size={15} aria-hidden="true" /> {context}
+          </p>
+        )}
 
-        <h2 className="ai-hello">
-          <span className="ai-hello-name">{name ? `Hello, ${name}` : 'Hello'}</span>
-          <span className="ai-hello-sub">{sub}</span>
+        <h2 className="dawn-hello">
+          <span className="dawn-greet">{dawnGreeting(name)}</span>
+          <span className="dawn-ask">{sub}</span>
         </h2>
 
         {tabs}
@@ -117,7 +142,7 @@ export default function AiStudio({
                 <button
                   key={idea.key}
                   type="button"
-                  className="ai-idea"
+                  className={`ai-idea${idea.prompt === prompt?.value ? ' is-picked' : ''}`}
                   onClick={() => {
                     onIdea(idea)
                     requestAnimationFrame(() => inputRef.current?.focus())
@@ -168,16 +193,17 @@ export default function AiStudio({
                 placeholder={prompt.placeholder}
               />
               {running ? (
-                <button type="button" className="ai-prompt-go is-cancel" onClick={onCancel}>
+                <button type="button" className="dawn-go is-cancel" onClick={onCancel}>
                   Cancel
                 </button>
               ) : short ? (
-                <Link to="/credits" className="ai-prompt-go">
+                <Link to="/credits" className="dawn-go">
                   Top up
                 </Link>
               ) : (
-                <button type="submit" className="ai-prompt-go" disabled={!canSend} title={prompt.title}>
-                  <ArrowUp size={16} aria-hidden="true" /> {prompt.submitLabel ?? 'Go'}
+                <button type="submit" className="dawn-go" disabled={!canSend} title={prompt.title}>
+                  <DawnOrb size={32} />
+                  {prompt.submitLabel ?? 'Ask Dawn'}
                 </button>
               )}
             </div>
@@ -204,4 +230,12 @@ export default function AiStudio({
       </form>
     </dialog>
   )
+}
+
+// Adds a class for one animation, then takes it off again.
+function flash(el, cls, ms) {
+  el.classList.remove(cls)
+  void el.offsetWidth
+  el.classList.add(cls)
+  setTimeout(() => el.classList.remove(cls), ms)
 }

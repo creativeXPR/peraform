@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { CheckCircle2, Undo2 } from 'lucide-react'
 import { AI_FEATURES, compactForm, holdRange } from '../../../functions/ai/catalog.js'
 import { formatCredits } from '../../../functions/billing/pricing.js'
+import { isQuestion } from '../../lib/formLogic.js'
 import { useFormEditor } from '../builder/editorContext.js'
 import { useWallet } from '../credits/walletContext.js'
 import { HoldLine, Progress, TierPicker } from './AiParts.jsx'
@@ -25,6 +26,7 @@ export default function EditFormDialog({ open, onClose }) {
   const ai = useAiRun()
 
   const formChars = JSON.stringify(compactForm(draft)).length
+  const questionCount = draft.questions.filter(isQuestion).length
   const range = holdRange(billing, FEATURE, tier, 'edit', formChars + Math.max(instruction.trim().length, 1))
   const short = loaded && spendable < range.min
   const tooLong = formChars > spec.maxFormChars
@@ -53,8 +55,9 @@ export default function EditFormDialog({ open, onClose }) {
       open={open}
       onClose={close}
       running={ai.running}
-      label="Edit with AI"
-      sub="What should change in this form?"
+      label="Edit this form"
+      context={`${form.title || 'Untitled form'} · ${questionCount} ${questionCount === 1 ? 'question' : 'questions'} · ${unsaved ? 'saving…' : 'saved'}`}
+      sub="What should we change?"
       ideas={EDIT_IDEAS}
       onIdea={(idea) => setInstruction(idea.prompt)}
       middle={
@@ -98,7 +101,7 @@ export default function EditFormDialog({ open, onClose }) {
         placeholder: 'Describe the change, e.g. Add a phone number question after the email',
         maxChars: spec.maxChars.edit,
         onSubmit: run,
-        submitLabel: unsaved ? 'Saving…' : 'Change',
+        submitLabel: unsaved ? 'Saving…' : undefined,
         disabled: unsaved || tooLong,
         title: unsaved ? 'Saving your latest changes first…' : undefined,
       }}
@@ -115,7 +118,7 @@ export default function EditFormDialog({ open, onClose }) {
           <HoldLine range={range} spendable={spendable} loaded={loaded} hidden={ai.running} />
         </>
       }
-      note="AI can make mistakes, so check the changes. One Undo takes the whole change back. Cancelling is free."
+      note="Dawn can make mistakes, so check the changes. One Undo takes the whole change back. Cancelling is free."
     />
   )
 }

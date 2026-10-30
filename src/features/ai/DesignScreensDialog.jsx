@@ -28,7 +28,6 @@ const MODES = {
     ideas: SCREEN_IDEAS,
     unit: 'change',
     doing: 'Changing your screen…',
-    submit: 'Change',
   },
   all: {
     feature: 'design-screens',
@@ -38,7 +37,6 @@ const MODES = {
     ideas: STYLE_IDEAS,
     unit: 'screen',
     doing: 'Restyling your screens…',
-    submit: 'Design',
   },
 }
 
@@ -135,7 +133,8 @@ export default function DesignScreensDialog({ open, onClose, screenKey, device =
       open={open}
       onClose={close}
       running={ai.running}
-      label="Design with AI"
+      label="Design your screens"
+      context={`${form.title || 'Untitled form'} · ${screens.length} ${screens.length === 1 ? 'screen' : 'screens'} · ${deviceName} design`}
       sub={m.sub}
       tabs={tabs}
       ideas={m.ideas}
@@ -185,7 +184,7 @@ export default function DesignScreensDialog({ open, onClose, screenKey, device =
         placeholder: m.placeholder,
         maxChars: spec.maxChars[mode === 'screen' ? 'screen' : 'design'],
         onSubmit: run,
-        submitLabel: unsaved ? 'Saving…' : m.submit,
+        submitLabel: unsaved ? 'Saving…' : undefined,
         disabled: unsaved || tooBig,
         title: unsaved ? 'Saving your latest changes first…' : undefined,
       }}
@@ -207,7 +206,7 @@ export default function DesignScreensDialog({ open, onClose, screenKey, device =
       }
       note={
         mode === 'screen'
-          ? `Layout changes apply to the ${deviceName} design; questions stay as they are. AI can make mistakes, so check the result. One Undo takes it back; cancelling is free.`
+          ? `Layout changes apply to the ${deviceName} design; questions stay as they are. Dawn can make mistakes, so check the result. One Undo takes it back; cancelling is free.`
           : 'The AI picks a style and colours and writes each screen’s heading; your layout, questions and actions stay as they are. One Undo takes it back; cancelling is free.'
       }
     />
