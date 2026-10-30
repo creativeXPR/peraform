@@ -1,5 +1,25 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { DocumentError, filesFrom, readDocument } from '../../src/lib/readDocument.js'
+
+// A stand-in for pdf.js 6 with its real shape: the loading task has
+// destroy(); the document doesn't (calling pdf.destroy() broke every PDF).
+const pdfPages = vi.hoisted(() => ({ list: [] }))
+const destroyed = vi.hoisted(() => ({ count: 0 }))
+vi.mock('pdfjs-dist', () => ({
+  GlobalWorkerOptions: {},
+  getDocument: () => ({
+    promise: Promise.resolve({
+      numPages: pdfPages.list.length,
+      getPage: async (n) => ({
+        getTextContent: async () => ({ items: pdfPages.list[n - 1].map((str) => ({ str, hasEOL: true })) }),
+      }),
+    }),
+    destroy: async () => {
+      destroyed.count++
+    },
+  }),
+}))
+vi.mock('pdfjs-dist/build/pdf.worker.min.mjs?url', () => ({ default: 'pdf.worker.js' }))
 
 const file = (body, name, type = '') => new File([body], name, { type })
 
@@ -19,6 +39,19 @@ describe('readDocument', () => {
     await expect(readDocument(file('x', 'photo.png', 'image/png'))).rejects.toThrow(/Pictures can’t be read yet/)
     await expect(readDocument(file('x', 'data.zip', 'application/zip'))).rejects.toThrow(DocumentError)
     await expect(readDocument(file('   \n ', 'blank.txt'))).rejects.toThrow(/is empty/)
+  })
+
+  it('reads a PDF’s text, page by page, and cleans up afterwards', async () => {
+    pdfPages.list = [['Q1. Your name?'], ['Q2. Your age?']]
+    destroyed.count = 0
+    const read = await readDocument(file('%PDF', 'quiz.pdf', 'application/pdf'))
+    expect(read).toEqual({ name: 'quiz.pdf', kind: 'pdf', text: 'Q1. Your name?\n\nQ2. Your age?', pages: 2 })
+    expect(destroyed.count).toBe(1)
+  })
+
+  it('says plainly when a PDF is a scan with no text', async () => {
+    pdfPages.list = [[], []]
+    await expect(readDocument(file('%PDF', 'scan.pdf', 'application/pdf'))).rejects.toThrow(/looks like a scan/)
   })
 
   it('refuses very large files before reading them', async () => {

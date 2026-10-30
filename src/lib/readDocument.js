@@ -85,9 +85,12 @@ async function readPdf(file) {
   const pdfjs = await import('pdfjs-dist')
   const { default: workerUrl } = await import('pdfjs-dist/build/pdf.worker.min.mjs?url')
   pdfjs.GlobalWorkerOptions.workerSrc = workerUrl
+  // The loading task is what gets cleaned up afterwards (the document has
+  // no destroy() in this pdf.js).
+  const task = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) })
   let pdf
   try {
-    pdf = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise
+    pdf = await task.promise
   } catch (err) {
     throw new DocumentError(
       err?.name === 'PasswordException'
@@ -102,6 +105,6 @@ async function readPdf(file) {
     const { items } = await page.getTextContent()
     out.push(items.map((it) => (it.str ?? '') + (it.hasEOL ? '\n' : ' ')).join(''))
   }
-  await pdf.destroy()
+  await task.destroy()
   return { text: out.join('\n\n'), pages }
 }
