@@ -99,8 +99,18 @@ async function recordActive(uid) {
 }
 
 // ── Top-ups (Paystack) ──────────────────────────────────────
+// The Quality Tools apps that sell credits; each has its own /credits
+// pages. Payment returns to the app it started in. Only these, so a
+// payment can never be sent back to someone else's site.
+const CREDIT_APPS = ['https://peraform-qt.web.app', 'https://hypercbt-qt.web.app']
+function returnOrigin(request) {
+  const origin = request.rawRequest?.headers?.origin
+  return CREDIT_APPS.includes(origin) ? origin : APP_URL.value()
+}
+
 // Starts a payment for a pack. The price comes from config, never the app.
-// Checkout happens on Paystack's page; it returns to /credits/return.
+// Checkout happens on Paystack's page; it returns to /credits/return in
+// the app the payment started in.
 export const createTopup = onCall({ region: REGION, secrets: [PAYSTACK_SECRET_KEY] }, async (request) => {
   const uid = requireAccount(request)
   requireVerified(request, 'buy credits')
@@ -125,16 +135,16 @@ export const createTopup = onCall({ region: REGION, secrets: [PAYSTACK_SECRET_KE
     createdAt: new Date(),
   })
 
+  const back = PAYSTACK_FAKE ? request.rawRequest?.headers?.origin ?? APP_URL.value() : returnOrigin(request)
   if (PAYSTACK_FAKE) {
-    const origin = request.rawRequest?.headers?.origin ?? APP_URL.value()
-    return { url: `${origin}/credits/return?reference=${reference}`, reference }
+    return { url: `${back}/credits/return?reference=${reference}`, reference }
   }
   try {
     const tx = await paystack.initializeTransaction(PAYSTACK_SECRET_KEY.value(), {
       email,
       amountKobo: pack.priceKobo,
       reference,
-      callbackUrl: `${APP_URL.value()}/credits/return`,
+      callbackUrl: `${back}/credits/return`,
       metadata: { uid, packId: pack.id },
     })
     return { url: tx.authorization_url, reference }
