@@ -90,6 +90,35 @@ const ANALYSE_SCHEMA = {
   },
 }
 
+// Edit: the whole test back, each question keeping its id ("new-1"… for
+// added ones), plus a plain summary of what changed.
+const EDIT_TEST_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['title', 'minutes', 'questions', 'summary'],
+  properties: {
+    title: { type: 'string' },
+    minutes: { type: 'integer' },
+    summary: { type: 'string' },
+    questions: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['id', 'question', 'options', 'answerIndex', 'explanation', 'difficulty'],
+        properties: {
+          id: { type: 'string' },
+          question: { type: 'string' },
+          options: { type: 'array', items: { type: 'string' } },
+          answerIndex: { type: 'integer' },
+          explanation: { type: 'string' },
+          difficulty: { type: 'string', enum: DIFFICULTIES },
+        },
+      },
+    },
+  },
+}
+
 const QUESTION_RULES = `Every question is multiple choice with exactly one correct answer:
 - 4 options (3 to 5 only if the subject really calls for it); "answerIndex" is the 0-based position of the correct one.
 - Wrong options are plausible: common mistakes and misconceptions, similar in length and style to the right one. No "all of the above", "none of the above" or joke options.
@@ -131,6 +160,16 @@ Write for a busy teacher, in plain words, no jargon, no formulas:
 - "nextSteps": two to four short, practical suggestions (what to reteach, which questions to fix or replace).
 With few results (under 10), say the numbers are too small to be sure. Don't invent anything the statistics don't show.
 Write in the language of the test.`
+
+const EDIT_TEST_SYSTEM = `You edit an existing multiple-choice test in HyperCBT, a computer-based test app.
+You get the test as JSON ("answerIndex" is the 0-based correct option) and the teacher's instruction. Return the whole test after making the change, in the same shape:
+- Copy each existing question's "id" exactly, even when you change it. Give questions you add "new-1", "new-2" and so on.
+- Keep everything you weren't asked to change exactly as it is: order, wording, options, answers, explanations and difficulty.
+- Remove a question only when the instruction asks for it. Change "title" or "minutes" only when asked.
+- Put one or two plain sentences on what you changed in "summary" (for the teacher).
+When you add or rewrite questions:
+${QUESTION_RULES}
+Write in the language of the test unless the instruction asks for another.`
 
 function cleanText(value, max, InputError, empty = 'Tell us what the test is about.') {
   if (typeof value !== 'string') throw new InputError(empty)
@@ -251,6 +290,62 @@ export function hypercbtFeatures({ InputError, unescapeJson }) {
       },
     },
 
+    'edit-test': {
+      ...HYPERCBT_AI_FEATURES['edit-test'],
+      system: EDIT_TEST_SYSTEM,
+      schema: EDIT_TEST_SCHEMA,
+      effort: 'low',
+      // input: { testId, instruction }. The test and its answer key are read
+      // here (the owner only); the app applies the result as one undo step.
+      async prepare(input, ctx) {
+        const instruction = cleanText(input?.instruction, this.maxChars.edit, InputError, 'Tell Dawn what to change.')
+        const testId = typeof input?.testId === 'string' ? input.testId : ''
+        const email = ctx?.email ?? (ctx?.uid ? (await getAuth().getUser(ctx.uid)).email : null)
+        const hdb = getFirestore('hypercbt')
+        const [testSnap, keySnap] = testId
+          ? await Promise.all([hdb.doc(`tests/${testId}`).get(), hdb.doc(`tests/${testId}/answerKey/data`).get()])
+          : [null, null]
+        const test = testSnap?.data()
+        if (!test || !email || test.createdBy !== email) throw new InputError('Test not found.')
+        const key = keySnap?.data() ?? {}
+        const questions = (test.questions ?? []).map((q, i) => {
+          const answer = String(key.answers?.[i] ?? '').trim().toLowerCase()
+          return {
+            id: q.id || `q${i + 1}`,
+            question: q.question,
+            options: q.options,
+            answerIndex: answer ? q.options.findIndex((o) => o.trim().toLowerCase() === answer) : -1,
+            explanation: key.explanations?.[i] ?? '',
+            difficulty: DIFFICULTIES.includes(key.difficulty?.[i]) ? key.difficulty[i] : 'medium',
+          }
+        })
+        const json = JSON.stringify({ title: test.displayName ?? '', minutes: test.minutes ?? 15, questions })
+        if (json.length > this.maxTestChars) {
+          throw new InputError('This test is too long to edit with Dawn in one go. Try it on a copy with fewer questions.')
+        }
+        return { prompt: `Current test:\n${json}\n\nInstruction:\n${instruction}`, mode: 'edit', chars: json.length + instruction.length }
+      },
+      result(json) {
+        if (!json || !Array.isArray(json.questions)) return null
+        const questions = json.questions
+          .map((q) => {
+            const clean = cleanQuestion(q)
+            return clean && { id: String(q.id ?? ''), ...clean }
+          })
+          .filter(Boolean)
+        const minutes = Number.isInteger(json.minutes) ? Math.min(180, Math.max(1, json.minutes)) : null
+        return {
+          test: { title: String(json.title ?? '').trim(), minutes, questions },
+          summary: String(json.summary ?? '').trim(),
+        }
+      },
+      // Progress: the questions written so far.
+      progress(text) {
+        const written = [...text.matchAll(/"question"\s*:\s*"((?:[^"\\]|\\.)*)"/g)].map((m) => unescapeJson(m[1]))
+        return { title: null, questions: written.length, written }
+      },
+    },
+
     'review-test': {
       ...HYPERCBT_AI_FEATURES['review-test'],
       system: REVIEW_SYSTEM,
@@ -313,6 +408,21 @@ export function hypercbtFeatures({ InputError, unescapeJson }) {
 
 // Emulator stand-ins (AI_FAKE=1), merged into FAKE_OUTPUT.
 export const HYPERCBT_FAKE_OUTPUT = {
+  'edit-test': {
+    title: 'Quick quiz',
+    minutes: 5,
+    summary: 'Added one harder question at the end.',
+    questions: [
+      {
+        id: 'new-1',
+        question: 'Which gas makes up most of the air we breathe?',
+        options: ['Oxygen', 'Nitrogen', 'Carbon dioxide', 'Argon'],
+        answerIndex: 1,
+        explanation: 'Air is about 78% nitrogen.',
+        difficulty: 'hard',
+      },
+    ],
+  },
   'create-test': {
     title: 'The water cycle',
     minutes: 5,

@@ -57,4 +57,20 @@ export const HYPERCBT_AI_FEATURES = {
     overheadTokens: 1300,
     typical: { inputTokens: 3000, outputTokens: 1200 },
   },
+  // Edit with Dawn: change the open test by asking ("add 5 harder
+  // questions", "simplify the English", "translate to French"). The saved
+  // test (questions, options, marked answers, explanations) goes in; the
+  // whole test comes back, and the app applies it as one undo step.
+  'edit-test': {
+    app: 'hypercbt',
+    label: 'Edit a test with AI',
+    tiers: ['quick', 'standard', 'best'],
+    defaultTier: 'standard',
+    maxChars: { edit: 2000 }, // the instruction
+    maxTestChars: 40000, // the test, as compact JSON
+    maxTokens: { edit: 8000 },
+    minTokens: { edit: 3000 },
+    overheadTokens: 1200,
+    typical: { inputTokens: 2500, outputTokens: 2200 },
+  },
 }
