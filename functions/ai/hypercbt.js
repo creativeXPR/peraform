@@ -163,7 +163,7 @@ Write in the language of the test.`
 
 const EDIT_TEST_SYSTEM = `You edit an existing multiple-choice test in HyperCBT, a computer-based test app.
 You get the test as JSON ("answerIndex" is the 0-based correct option) and the teacher's instruction. Return the whole test after making the change, in the same shape:
-- Copy each existing question's "id" exactly, even when you change it. Give questions you add "new-1", "new-2" and so on.
+- Copy each existing question's "id" exactly, even when you change it. Keep "answerIndex": -1 on a question with no marked answer unless asked to mark it. Give questions you add "new-1", "new-2" and so on.
 - Keep everything you weren't asked to change exactly as it is: order, wording, options, answers, explanations and difficulty.
 - Remove a question only when the instruction asks for it. Change "title" or "minutes" only when asked.
 - Put one or two plain sentences on what you changed in "summary" (for the teacher).
@@ -180,11 +180,14 @@ function cleanText(value, max, InputError, empty = 'Tell us what the test is abo
 }
 
 // A question the AI wrote → one HyperCBT can use (or null).
-function cleanQuestion(q) {
+// allowUnmarked (Edit with Dawn): keep a question with no marked answer
+// (answerIndex -1), so the teacher's unfinished questions aren't dropped.
+function cleanQuestion(q, { allowUnmarked = false } = {}) {
   const question = String(q?.question ?? '').trim()
   const options = (Array.isArray(q?.options) ? q.options : []).map((o) => String(o).trim()).filter(Boolean).slice(0, 8)
-  const answerIndex = Number.isInteger(q?.answerIndex) ? q.answerIndex : -1
-  if (!question || options.length < 2 || answerIndex < 0 || answerIndex >= options.length) return null
+  let answerIndex = Number.isInteger(q?.answerIndex) ? q.answerIndex : -1
+  if (answerIndex >= options.length) answerIndex = -1
+  if (!question || options.length < 2 || (answerIndex < 0 && !allowUnmarked)) return null
   return {
     question,
     options,
@@ -329,7 +332,7 @@ export function hypercbtFeatures({ InputError, unescapeJson }) {
         if (!json || !Array.isArray(json.questions)) return null
         const questions = json.questions
           .map((q) => {
-            const clean = cleanQuestion(q)
+            const clean = cleanQuestion(q, { allowUnmarked: true })
             return clean && { id: String(q.id ?? ''), ...clean }
           })
           .filter(Boolean)
