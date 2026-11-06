@@ -64,7 +64,7 @@ export default function QrCodeDialog({ open, onClose, formId, formTitle, status 
         <h2 className="win-q">Scan to open the form</h2>
         <p className="win-hint">Project this on a slide or screen so people can scan it with their phone camera.</p>
 
-        {status === 'draft' && (
+        {status !== 'published' && (
           <div
             role="note"
             className="form-notice"
@@ -76,7 +76,11 @@ export default function QrCodeDialog({ open, onClose, formId, formTitle, status 
             }}
           >
             <AlertCircle size={16} style={{ flexShrink: 0 }} />
-            <span>Publish the form so people can open it.</span>
+            <span>
+              {status === 'closed'
+                ? 'This form is closed, so people who scan it can’t respond. Accept responses again from the status menu.'
+                : 'Publish the form so people can open it.'}
+            </span>
           </div>
         )}
 
