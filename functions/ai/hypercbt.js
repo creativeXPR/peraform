@@ -182,6 +182,11 @@ function cleanText(value, max, InputError, empty = 'Tell us what the test is abo
 // A question the AI wrote → one HyperCBT can use (or null).
 // allowUnmarked (Edit with Dawn): keep a question with no marked answer
 // (answerIndex -1), so the teacher's unfinished questions aren't dropped.
+// The test's owner or one of its editors (HyperCBT's Share window:
+// editorIds holds the editors' uids).
+const canEditTest = (test, email, uid) =>
+  Boolean(test && email && (test.createdBy === email || (uid && (test.editorIds ?? []).includes(uid))))
+
 function cleanQuestion(q, { allowUnmarked = false } = {}) {
   const question = String(q?.question ?? '').trim()
   const options = (Array.isArray(q?.options) ? q.options : []).map((o) => String(o).trim()).filter(Boolean).slice(0, 8)
@@ -242,7 +247,7 @@ export function hypercbtFeatures({ InputError, unescapeJson }) {
         const hdb = getFirestore('hypercbt')
         const testSnap = testId ? await hdb.doc(`tests/${testId}`).get() : null
         const test = testSnap?.data()
-        if (!test || !email || test.createdBy !== email) throw new InputError('Test not found.')
+        if (!canEditTest(test, email, ctx?.uid)) throw new InputError('Test not found.')
         const [keySnap, subsSnap] = await Promise.all([
           hdb.doc(`tests/${testId}/answerKey/data`).get(),
           hdb.collection(`tests/${testId}/submissions`).where('testTaken', '==', true).get(),
@@ -309,7 +314,7 @@ export function hypercbtFeatures({ InputError, unescapeJson }) {
           ? await Promise.all([hdb.doc(`tests/${testId}`).get(), hdb.doc(`tests/${testId}/answerKey/data`).get()])
           : [null, null]
         const test = testSnap?.data()
-        if (!test || !email || test.createdBy !== email) throw new InputError('Test not found.')
+        if (!canEditTest(test, email, ctx?.uid)) throw new InputError('Test not found.')
         const key = keySnap?.data() ?? {}
         const questions = (test.questions ?? []).map((q, i) => {
           const answer = String(key.answers?.[i] ?? '').trim().toLowerCase()
@@ -365,7 +370,7 @@ export function hypercbtFeatures({ InputError, unescapeJson }) {
           ? await Promise.all([hdb.doc(`tests/${testId}`).get(), hdb.doc(`tests/${testId}/answerKey/data`).get()])
           : [null, null]
         const test = testSnap?.data()
-        if (!test || !email || test.createdBy !== email) throw new InputError('Test not found.')
+        if (!canEditTest(test, email, ctx?.uid)) throw new InputError('Test not found.')
         const answers = keySnap?.data()?.answers ?? []
         const questions = (test.questions ?? []).map((q, i) => {
           const answer = String(answers[i] ?? '').trim().toLowerCase()
