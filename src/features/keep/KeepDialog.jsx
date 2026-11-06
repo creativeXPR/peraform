@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Bookmark, ClipboardPaste, Copy, FileText, LayoutTemplate, Link2, ListChecks, Pencil, Trash2, X } from 'lucide-react'
+import { Bookmark, ClipboardPaste, Copy, FileText, LayoutTemplate, Link2, ListChecks, Palette, Pencil, Smartphone, Trash2, X } from 'lucide-react'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { KEEP_KINDS, keepSummary, keepText, readPayload, visibleHere } from '../../lib/keep.js'
 import { TYPE_INFO } from '../builder/questionTypes.js'
@@ -8,9 +8,9 @@ import { deleteKeep, renameKeep, saveKeep, watchKeeps } from './keepStore.js'
 import IdeaArt from '../ai/IdeaArt.jsx'
 import './keep.css'
 
-const ICONS = { field: ListChecks, block: LayoutTemplate, text: FileText, link: Link2 }
+const ICONS = { field: ListChecks, block: LayoutTemplate, screen: Smartphone, look: Palette, text: FileText, link: Link2 }
 // Each kind's colour, on its badge.
-const KIND_COLOURS = { field: '#4f46e5', block: '#7c3aed', text: '#c58a06', link: '#2f80d1' }
+const KIND_COLOURS = { field: '#4f46e5', block: '#7c3aed', screen: '#0f9d8a', look: '#d6457a', text: '#c58a06', link: '#2f80d1' }
 const EMPTY_ART = { sky: '#fff7e0', sky2: '#ffe8a8', ground: '#f2cf6a', accent: '#c58a06' }
 const typeLabel = (t) => TYPE_INFO[t]?.label ?? { section: 'Section', text: 'Title and description', image: 'Image', video: 'Video' }[t] ?? t
 

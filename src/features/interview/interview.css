@@ -1267,3 +1267,10 @@ textarea.insp-input {
   left: 32%;
   right: 32%;
 }
+
+.insp-keep {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}

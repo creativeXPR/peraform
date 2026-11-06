@@ -13,12 +13,16 @@ import { isSection } from './formLogic.js'
 //   field  { items: [form item], answerKey? } — PeraForm, Edit questions
 //          (answerKey: a quiz question's correct answers, by item id)
 //   block  { rootId, nodes, questions }      — PeraForm, Design screens
+//   screen { design, questions: [titles] }   — PeraForm, a whole screen (lib/keptScreens.js)
+//   look   { bg, style, roles, entrance }    — PeraForm, a screen's look (designStyles.js → captureLook)
 
 export const APP = 'peraform'
 
 export const KEEP_KINDS = {
   field: { label: 'Form fields', app: APP, where: 'Paste in “Edit questions”, below the selected question.' },
   block: { label: 'Design blocks', app: APP, where: 'Paste in “Design screens”, into the selected card.' },
+  screen: { label: 'Screens', app: APP, where: 'Paste in “Design screens”: it replaces the screen you’re on, with that screen’s own questions.' },
+  look: { label: 'Looks', app: APP, where: 'Paste in “Design screens”: every screen of the form takes this look.' },
   text: { label: 'Text', app: null, where: 'Paste as a text block (design) or a title and description (questions), or copy it.' },
   link: { label: 'Links', app: null, where: 'Paste as a text block or a title and description, or copy it.' },
 }
@@ -74,6 +78,11 @@ export function keepSummary(item, typeLabel = (t) => t) {
     const count = Object.keys(data.nodes ?? {}).length
     return `${root?.type ?? 'block'}${count > 1 ? ` with ${count - 1} inside` : ''}${data.questions?.length ? ` · ${data.questions.length} question${data.questions.length > 1 ? 's' : ''}` : ''}`
   }
+  if (item.kind === 'screen') {
+    const n = data.questions?.length ?? 0
+    return `Screen${data.design?.layout ? ` · ${data.design.layout} layout` : ''} · ${n} question${n === 1 ? '' : 's'}`
+  }
+  if (item.kind === 'look') return `Colours, fonts and entrance${data.style ? ` · ${data.style} style` : ''}`
   return ''
 }
 

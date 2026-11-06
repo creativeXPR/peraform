@@ -9,7 +9,7 @@ import { showIfProps } from '../../lib/showIf.js'
 import ShowIf from '../builder/ShowIf.jsx'
 import TargetSelect from '../builder/TargetSelect.jsx'
 import { buildTargets } from '../builder/questionTypes.js'
-import { applyStyle, restoreOriginal } from '../../lib/designStyles.js'
+import { applyLook, applyStyle, captureLook, restoreOriginal } from '../../lib/designStyles.js'
 import { GRADIENT_PRESETS } from '../../lib/gradient.js'
 import {
   COLOR_TOKENS,
@@ -59,6 +59,7 @@ import LayersPanel from './LayersPanel.jsx'
 import MoveBlockDialog from './MoveBlockDialog.jsx'
 import StylePicker from './StylePicker.jsx'
 import LayoutPicker from './LayoutPicker.jsx'
+import { keepScreenData, pasteScreen } from '../../lib/keptScreens.js'
 import { LAYOUTS, SAMPLE_PHOTOS, applyLayout } from '../../lib/screenLayouts.js'
 import DesignScreensDialog from '../ai/DesignScreensDialog.jsx'
 import DawnOrb from '../ai/DawnOrb.jsx'
@@ -322,7 +323,13 @@ export default function InterviewEditor({ viewSwitch, viewHint }) {
     change(`paste-text:${node.id}`, (dsn) => addNode(dsn, node))
     setSelection([node.id])
   }
-  useKeepTargets({ block: pasteKeptBlock, text: pasteKeptText })
+  // A kept screen or look replaces what's here, so it asks first.
+  useKeepTargets({
+    block: pasteKeptBlock,
+    text: pasteKeptText,
+    screen: (data) => setPending({ kind: 'keep-screen', data }),
+    look: (data) => setPending({ kind: 'keep-look', data }),
+  })
 
   const renderQuestion = (q) => (
     <QuestionField question={q} formId={draft.id} value={undefined} onChange={() => {}} />
@@ -583,6 +590,26 @@ export default function InterviewEditor({ viewSwitch, viewHint }) {
                   to resize and the round knob to rotate. Ctrl + scroll zooms; hold Space (or press
                   H) and drag to move around.
                 </p>
+                <div className="insp-keep">
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() =>
+                      keepStore?.keep(makeKeep('screen', keepScreenData(design, draft.questions), `Screen · ${screen.title}`))
+                    }
+                    title="Save this screen's design to your Keep, to use on a screen of any form"
+                  >
+                    Keep this screen
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => keepStore?.keep(makeKeep('look', captureLook(design), `Look · ${draft.title || 'Untitled form'}`))}
+                    title="Save this screen's colours, fonts and entrance to your Keep, to give another form the same look"
+                  >
+                    Keep this look
+                  </button>
+                </div>
                 <button type="button" className="btn btn-outline" onClick={() => setPending({ kind: 'reset' })}>
                   <RotateCcw size={15} />
                   Start this screen over
@@ -615,7 +642,11 @@ export default function InterviewEditor({ viewSwitch, viewHint }) {
       <ConfirmModal
         open={Boolean(pending)}
         title={
-          pending?.kind === 'layout'
+          pending?.kind === 'keep-screen'
+            ? 'Use the kept screen here?'
+            : pending?.kind === 'keep-look'
+            ? 'Give every screen the kept look?'
+            : pending?.kind === 'layout'
             ? `Use the “${LAYOUTS[pending.key].label}” layout?`
             : pending?.kind === 'reset'
             ? 'Start this screen over?'
@@ -626,7 +657,11 @@ export default function InterviewEditor({ viewSwitch, viewHint }) {
               : `Delete this ${design.nodes[pending?.ids?.[0]]?.type === 'card' ? 'card' : 'block'}?`
         }
         message={
-          pending?.kind === 'layout'
+          pending?.kind === 'keep-screen'
+            ? 'This screen’s design is replaced by the kept one, on both devices. Its question blocks show this screen’s questions in order, and its heading takes this screen’s title. You can undo this.'
+            : pending?.kind === 'keep-look'
+            ? 'Every screen takes its colours, fonts and entrance. Your layouts, words and questions stay. You can undo this.'
+            : pending?.kind === 'layout'
             ? `This screen’s blocks are rearranged into it on both devices; their words, questions, actions and animations stay. Extra cards are merged into one.${['side', 'photo'].includes(pending.key) && !Object.values(design.nodes).some((n) => ['image', 'video', 'embed'].includes(n.type)) ? ' A sample photo is added: click it to choose your own.' : ''} You can undo this.`
             : pending?.kind === 'reset'
             ? 'Its design is replaced by a fresh starter layout on both devices. You can undo this.'
@@ -637,11 +672,23 @@ export default function InterviewEditor({ viewSwitch, viewHint }) {
               : 'Removed from this screen on both devices. You can undo this.'
         }
         confirmLabel={
-          pending?.kind === 'layout' ? 'Use this layout' : pending?.kind === 'reset' ? 'Start over' : pending?.kind === 'share' ? 'Share' : 'Delete'
+          pending?.kind === 'keep-screen' || pending?.kind === 'keep-look' ? 'Use it' : pending?.kind === 'layout' ? 'Use this layout' : pending?.kind === 'reset' ? 'Start over' : pending?.kind === 'share' ? 'Share' : 'Delete'
         }
-        tone={pending?.kind === 'share' || pending?.kind === 'layout' ? 'neutral' : 'danger'}
+        tone={['share', 'layout', 'keep-screen', 'keep-look'].includes(pending?.kind) ? 'neutral' : 'danger'}
         onConfirm={() => {
-          if (pending.kind === 'layout') {
+          if (pending.kind === 'keep-screen') {
+            const key = screen.key
+            edit(`interview:${key}:kept-screen:${Date.now()}`, (d) => pasteScreen(d, key, pending.data))
+            setSelection([])
+          } else if (pending.kind === 'keep-look') {
+            edit(`interview:kept-look:${Date.now()}`, (d) => {
+              const all = screensOf(d)
+              const iv = interviewOf(d)
+              const next = { ...iv.screens }
+              for (const s of all) next[s.key] = applyLook(screenDesign(d, s, all), pending.data)
+              return { ...d, interview: { ...iv, screens: next } }
+            })
+          } else if (pending.kind === 'layout') {
             const photo = SAMPLE_PHOTOS[pending.key === 'photo' ? 1 : 0].url
             change(`layout:${pending.key}`, (dsn) => applyLayout(dsn, pending.key, { questions, photo }))
             setSelection([])

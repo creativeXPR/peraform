@@ -216,3 +216,51 @@ export function screenWords(design, { heading, subtitle }) {
   }
   return { ...design, nodes }
 }
+
+// ── Kept looks (Keep → "Keep this look") ─────────────────────────────
+// A screen's look by role: what its main card, heading, other words,
+// questions, buttons, Back button and pictures look like, its background
+// and its entrance. Sizes and alignment stay with each form.
+const LOOK_SKIP = ['size', 'align', 'valign']
+const lookOf = (n) => (n ? Object.fromEntries(Object.entries(n.style ?? {}).filter(([k]) => !LOOK_SKIP.includes(k))) : null)
+
+function roleOf(n, headings) {
+  if (n.type === 'card') return n.parentId ? 'inner' : 'card'
+  if (n.type === 'text') return headings.has(n.id) ? 'title' : 'text'
+  if (n.type === 'question') return 'question'
+  if (n.type === 'button') return isBack(n) ? 'back' : 'button'
+  return ['image', 'video', 'embed'].includes(n.type) ? 'media' : null
+}
+
+export function captureLook(design) {
+  const headings = headingIds(design)
+  const roles = {}
+  const nodes = Object.values(design.nodes).sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0))
+  for (const n of nodes) {
+    const role = roleOf(n, headings)
+    if (role && !roles[role]) roles[role] = lookOf(n)
+  }
+  const top = nodes.find((n) => n.type === 'card' && !n.parentId)
+  const entrance = (top?.animations ?? []).filter((a) => a.fromStyle)
+  return { bg: design.bg ?? null, style: design.style ?? null, roles, entrance }
+}
+
+// A kept look on a screen: each block takes its role's look (a role the
+// look doesn't have leaves those blocks as they are). Like applyStyle, the
+// look before is kept for "Back to original look".
+export function applyLook(design, look) {
+  const headings = headingIds(design)
+  const nodes = {}
+  for (const n of Object.values(design.nodes)) {
+    const role = roleOf(n, headings)
+    const patch = role && (look.roles?.[role] ?? (role === 'inner' ? look.roles?.card : null))
+    let next = patch ? mapStyle(n, (st) => ({ ...st, ...patch })) : n
+    if (n.type === 'card' && !n.parentId) {
+      const own = (n.animations ?? []).filter((a) => !a.fromStyle)
+      next = { ...next, animations: [...own, ...(look.entrance ?? []).map((a) => ({ ...a, id: Math.random().toString(36).slice(2, 10) }))] }
+    }
+    nodes[n.id] = next
+  }
+  const original = design.original ?? snapshot(design)
+  return { ...design, bg: look.bg ?? null, ...(look.style ? { style: look.style } : {}), original, nodes }
+}
