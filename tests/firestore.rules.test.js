@@ -5,6 +5,7 @@ import {
   initializeTestEnvironment,
 } from '@firebase/rules-unit-testing'
 import {
+  arrayUnion,
   collection,
   deleteDoc,
   doc,
@@ -521,5 +522,42 @@ describe('answers in progress', () => {
         updatedAt: serverTimestamp(),
       }),
     )
+  })
+})
+
+describe('how far people got (reach)', () => {
+  const on = { requireSignIn: false, limitOneResponse: false, trackReach: true }
+  beforeEach(() => seed('forms/f1', form({ settings: on })))
+
+  const reach = (db, key, uid = ANON) =>
+    setDoc(doc(db, `forms/f1/reach/${uid}`), { screens: arrayUnion(key), updatedAt: serverTimestamp() }, { merge: true })
+
+  it('lets a respondent add the screens they reach, to their own doc only', async () => {
+    await assertSucceeds(reach(anon(), 'start'))
+    await assertSucceeds(reach(anon(), 's1'))
+    await assertFails(reach(anon('someone'), 'start', ANON))
+    await assertFails(getDoc(doc(anon(), `forms/f1/reach/${ANON}`)))
+  })
+
+  it('never takes screens away or accepts other fields', async () => {
+    await assertSucceeds(reach(anon(), 'start'))
+    await assertFails(setDoc(doc(anon(), `forms/f1/reach/${ANON}`), { screens: [], updatedAt: serverTimestamp() }))
+    await assertFails(
+      setDoc(doc(anon(), `forms/f1/reach/${ANON}`), { screens: ['start'], answers: { q1: 'x' }, updatedAt: serverTimestamp() }),
+    )
+  })
+
+  it('only counts while the form is published with counting on', async () => {
+    await seed('forms/f2', form())
+    await assertFails(setDoc(doc(anon(), `forms/f2/reach/${ANON}`), { screens: ['start'], updatedAt: serverTimestamp() }))
+    await seed('forms/f3', form({ status: 'draft', settings: on }))
+    await assertFails(setDoc(doc(anon(), `forms/f3/reach/${ANON}`), { screens: ['start'], updatedAt: serverTimestamp() }))
+  })
+
+  it('lets members read and clear the counts', async () => {
+    await assertSucceeds(reach(anon(), 'start'))
+    await assertSucceeds(getDocs(collection(real(EDITOR), 'forms/f1/reach')))
+    await assertFails(getDocs(collection(real(STRANGER), 'forms/f1/reach')))
+    await assertSucceeds(deleteDoc(doc(real(OWNER), `forms/f1/reach/${ANON}`)))
   })
 })
