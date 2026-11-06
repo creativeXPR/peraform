@@ -20,12 +20,16 @@ export async function createImportedForm(uid, { content, answerKey }) {
 }
 
 // Batched in 500s, Firestore's per-batch write limit.
+// Also clears the reach counts ("How far people got"), which describe the
+// same people.
 export async function deleteAllResponses(formId) {
-  const responses = await getDocs(collection(db, 'forms', formId, 'responses'))
-  for (let i = 0; i < responses.docs.length; i += 500) {
-    const batch = writeBatch(db)
-    responses.docs.slice(i, i + 500).forEach((d) => batch.delete(d.ref))
-    await batch.commit()
+  for (const sub of ['responses', 'reach']) {
+    const snap = await getDocs(collection(db, 'forms', formId, sub))
+    for (let i = 0; i < snap.docs.length; i += 500) {
+      const batch = writeBatch(db)
+      snap.docs.slice(i, i + 500).forEach((d) => batch.delete(d.ref))
+      await batch.commit()
+    }
   }
 }
 

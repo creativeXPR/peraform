@@ -1,3 +1,4 @@
+import { screensOf } from '../../lib/interview.js'
 // Turns raw responses into per-question summaries and CSV.
 import { responseTable } from '../../../functions/responseTable.js'
 import { GRID_TYPES, hasAnswer } from '../../lib/formLogic.js'
@@ -86,4 +87,13 @@ export function downloadCsv(filename, csv) {
   a.download = filename
   a.click()
   URL.revokeObjectURL(url)
+}
+
+// "How far people got" (ReachReport): people who reached each section or
+// screen, from forms/{id}/reach docs ({ screens: [key] }).
+export function reachRows(form, docs) {
+  const counts = new Map()
+  for (const d of docs) for (const key of d.screens ?? []) counts.set(key, (counts.get(key) ?? 0) + 1)
+  const noun = form.mode === 'interview' ? 'Screen' : 'Section'
+  return screensOf(form).map((s) => ({ label: `${noun} ${s.index + 1}: ${s.title}`, count: counts.get(s.key) ?? 0 }))
 }

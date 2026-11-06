@@ -1328,3 +1328,14 @@ textarea.insp-input {
   gap: 8px;
   margin-bottom: 8px;
 }
+
+/* In the toolbar row, so it takes no height of its own (the editor fits
+   the window). Cut short, with the full line on hover, when tight. */
+.ie-toolbar .view-hint {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-align: left;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

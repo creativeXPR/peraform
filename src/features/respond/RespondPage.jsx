@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { doc, getDoc, getDocFromServer, serverTimestamp, setDoc } from 'firebase/firestore'
+import { arrayUnion, doc, getDoc, getDocFromServer, serverTimestamp, setDoc } from 'firebase/firestore'
 import { CheckCircle2, Moon, Sun, Timer } from 'lucide-react'
 import { callFormGate, callSubmitResponse, db } from '../../lib/firebase.js'
 import {
@@ -17,7 +17,7 @@ import {
 import { needsSignIn, quizSettings, settingsOf, topBarIcon, topBarTitle, fieldPaddingStyle } from '../../lib/formModel.js'
 import { usePageTitle } from '../../lib/usePageTitle.js'
 import { applyClick, isHiddenNow, resolveActions, shownByActions } from '../../lib/actions.js'
-import { frameOf, nextAsSubmit, screenDesign, screensOf, visibleQuestionIds, withoutStrays } from '../../lib/interview.js'
+import { frameOf, nextAsSubmit, screenDesign, screenKey, screensOf, visibleQuestionIds, withoutStrays } from '../../lib/interview.js'
 import { interviewProgress, toggleChoiceOption } from '../../lib/interviewKeys.js'
 import { useViewportDevice } from '../../lib/useViewportDevice.js'
 import { parsePrefill } from '../../lib/prefill.js'
@@ -266,6 +266,33 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
   const consent = emailAsked && (
     <EmailConsent email={user.email} checked={shareEmail} onChange={setShareEmail} asked={emailWanted} />
   )
+  // "Count how far people get" (settings.trackReach): each section or
+  // screen this respondent reaches is added to forms/{id}/reach/{uid}
+  // (keys only, never answers), so Responses can show where people stop.
+  // Members trying their own form aren't counted.
+  const trackReach = Boolean(form.settings?.trackReach) && form.status === 'published' && pages.length > 1 && !isMember
+  const reachNote = trackReach && (
+    <p className="respond-reach-note">
+      This form counts which {form.mode === 'interview' ? 'screens' : 'sections'} people reach, to see where they stop.
+      Your answers aren’t kept until you submit.
+    </p>
+  )
+  const reached = useRef(new Set())
+  useEffect(() => {
+    if (!trackReach || !pages[pageIndex]) return
+    const key = screenKey(pages[pageIndex])
+    if (reached.current.has(key)) return
+    reached.current.add(key)
+    ensureSignedIn()
+      .then((u) =>
+        setDoc(
+          doc(db, 'forms', form.id, 'reach', u.uid),
+          { screens: arrayUnion(key), updatedAt: serverTimestamp() },
+          { merge: true },
+        ),
+      )
+      .catch(() => reached.current.delete(key))
+  }, [trackReach, pages, pageIndex, form.id])
   const hasUserEmail = Boolean(user?.email && !user.isAnonymous)
   const canSendCopy = Boolean(sendCopySetting && sendCopySetting !== 'off' && hasUserEmail)
   const [sendCopyRequested, setSendCopyRequested] = useState(sendCopySetting === 'always')
@@ -850,6 +877,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
         overlay={
           (prefillMode ||
             (emailAsked && pageIndex === 0) ||
+            (trackReach && pageIndex === 0) ||
             (next === 'submit' && canSendCopy) ||
             saved.restored ||
             preview ||
@@ -859,6 +887,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
             <div className="interview-overlay">
               {prefillMode && <PrefillBar form={form} answers={answers} />}
               {pageIndex === 0 && consent}
+              {pageIndex === 0 && reachNote}
               {next === 'submit' && canSendCopy && (
                 <label className="respond-copy-check respond-copy-overlay">
                   <input
@@ -943,6 +972,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
           </>
         )}
         {consent}
+        {reachNote}
       </header>
 
       {page.section && (

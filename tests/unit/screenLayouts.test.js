@@ -66,3 +66,15 @@ describe('screen layouts', () => {
     )
   })
 })
+
+describe('how far people got (reachRows)', async () => {
+  const { reachRows } = await import('../../src/features/responses/summarize.js')
+  it('counts people per section, in order, with zeros', () => {
+    const rows = reachRows(form, [{ screens: ['start', 's1'] }, { screens: ['start'] }, { screens: [] }])
+    expect(rows).toEqual([
+      { label: 'Section 1: Welcome', count: 2 },
+      { label: 'Section 2: More', count: 1 },
+    ])
+    expect(reachRows({ ...form, mode: 'interview' }, [])[0]).toEqual({ label: 'Screen 1: Welcome', count: 0 })
+  })
+})

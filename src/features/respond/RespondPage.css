@@ -1071,6 +1071,13 @@ textarea.respond-input {
 }
 
 /* The respondent's choice to include their email (EmailConsent.jsx). */
+/* "Count how far people get" is on (RespondPage → reachNote). */
+.respond-reach-note {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
 .email-consent {
   display: flex;
   align-items: center;

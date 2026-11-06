@@ -232,6 +232,12 @@ export default function SettingsPage() {
           onChange={(v) => set('showProgressBar', v)}
         />
         <Toggle
+          title="Count how far people get"
+          text="Responses shows how many people reached each section (or screen), so you can see where they stop. Respondents see a short note; their answers aren’t kept until they submit."
+          checked={Boolean(draft.settings?.trackReach)}
+          onChange={(v) => set('trackReach', v)}
+        />
+        <Toggle
           title="Shuffle question order"
           text="Each respondent sees the questions within each section in a different order."
           checked={shuffleQuestions}

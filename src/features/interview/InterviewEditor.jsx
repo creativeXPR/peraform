@@ -342,6 +342,7 @@ export default function InterviewEditor({ viewSwitch, viewHint }) {
     <div className="interview-editor" style={fieldPaddingStyle(draft)}>
       <div className="ie-toolbar">
         {viewSwitch}
+        {viewHint}
         <button type="button" className="btn btn-outline ie-ai" onClick={() => setDesigning(true)}>
           <DawnOrb size={22} />
           Design with Dawn
@@ -362,7 +363,6 @@ export default function InterviewEditor({ viewSwitch, viewHint }) {
           ))}
         </div>
       </div>
-      {viewHint}
 
       <ScreenIssues
         issues={issues}

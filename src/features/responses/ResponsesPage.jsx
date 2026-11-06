@@ -33,6 +33,7 @@ import { useFormEditor } from '../builder/editorContext.js'
 import { deleteAllResponses } from '../dashboard/formActions.js'
 import BarList from './BarList.jsx'
 import InviteTracker from './InviteTracker.jsx'
+import ReachReport from './ReachReport.jsx'
 import { downloadCsv, responsesToCsv, summarizeQuestion } from './summarize.js'
 import { resultStats } from '../../../functions/resultStats.js'
 import AnalyseResultsDialog from '../ai/AnalyseResultsDialog.jsx'
@@ -182,6 +183,7 @@ export default function ResponsesPage() {
       {draft.settings?.restricted && !loading && !error && (
         <InviteTracker form={form} formId={form.id} responses={responses} showToast={showToast} />
       )}
+      {!loading && !error && <ReachReport form={form} submitted={responses.length} />}
 
       {loading ? (
         <Spinner />
@@ -290,7 +292,7 @@ export default function ResponsesPage() {
         title={confirm?.kind === 'all' ? 'Delete all responses?' : 'Delete this response?'}
         message={
           confirm?.kind === 'all'
-            ? `All ${count} responses will be permanently deleted. This can’t be undone.`
+            ? `All ${count} responses (and the “How far people got” counts) will be permanently deleted. This can’t be undone.`
             : 'This response will be permanently deleted. This can’t be undone.'
         }
         busy={busy}

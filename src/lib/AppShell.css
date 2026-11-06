@@ -24,7 +24,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 20px var(--gutter);
+  padding: 12px var(--gutter);
 }
 
 /* Partial-width hairline — the wireframe's signature divider. */

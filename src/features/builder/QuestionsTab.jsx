@@ -71,11 +71,13 @@ export default function QuestionsTab() {
       ))}
     </div>
   )
+  const hint =
+    view === 'design'
+      ? 'Looks and movement only: words, answers and rules are in Edit questions.'
+      : 'Words and rules, shared by Normal and Interview mode. How screens look is in Design screens.'
   const viewHint = (
-    <p className="view-hint">
-      {view === 'design'
-        ? 'Looks and movement, for Interview mode. The words, answers and rules are in Edit questions.'
-        : 'Words and rules, shared by Normal and Interview mode. How screens look is in Design screens.'}
+    <p className="view-hint" title={hint}>
+      {hint}
     </p>
   )
 

@@ -142,6 +142,24 @@ service cloud.firestore {
           && request.resource.data.updatedAt == request.time;
       }
 
+      // "Count how far people get" (settings.trackReach): the sections or
+      // screens (keys) each respondent reached, never answers. Only added
+      // to; members read them for Responses.
+      match /reach/{uid} {
+        allow read: if isFormMember();
+        allow create, update: if isSignedIn()
+          && request.auth.uid == uid
+          && form().status == 'published'
+          && form().get('settings', {}).get('trackReach', false) == true
+          && (form().settings.get('restricted', false) != true || isAllowedResponder())
+          && request.resource.data.keys().hasOnly(['screens', 'updatedAt'])
+          && request.resource.data.screens is list
+          && request.resource.data.screens.size() <= 100
+          && (resource == null || request.resource.data.screens.hasAll(resource.data.screens))
+          && request.resource.data.updatedAt == request.time;
+        allow delete: if isFormMember();
+      }
+
       match /responses/{responseId} {
         // Respondents can read their own response once its quiz score has
         // been released; members can always read.
