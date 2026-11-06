@@ -13,27 +13,43 @@ export const DOC_ACCEPT =
 
 const MAX_BYTES = 20 * 1024 * 1024
 
+const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif', 'tiff', 'heic']
+
 export class DocumentError extends Error {}
 
 export function filesFrom(dataTransfer) {
-  return dataTransfer?.files?.length ? [...dataTransfer.files] : []
+  if (dataTransfer?.files?.length) {
+    return [...dataTransfer.files]
+  }
+  if (dataTransfer?.items?.length) {
+    const files = []
+    for (const item of dataTransfer.items) {
+      if (item.kind === 'file') {
+        const f = item.getAsFile?.()
+        if (f) files.push(f)
+      }
+    }
+    if (files.length) return files
+  }
+  return []
 }
 
 function kindOf(file) {
-  const name = file.name.toLowerCase()
+  const name = (file?.name || '').toLowerCase()
   const ext = name.includes('.') ? name.split('.').pop() : ''
   if (ext === 'pdf' || file.type === 'application/pdf') return 'pdf'
   if (ext === 'docx' || file.type.includes('wordprocessingml')) return 'word'
-  if (ext === 'doc') return 'old-word'
+  if (ext === 'doc' || file.type === 'application/msword') return 'old-word'
   if (['html', 'htm'].includes(ext) || file.type === 'text/html') return 'html'
   if (['txt', 'md', 'csv', 'tsv'].includes(ext) || file.type.startsWith('text/')) return 'text'
-  if (file.type.startsWith('image/')) return 'image'
+  if (IMAGE_EXTENSIONS.includes(ext) || file.type.startsWith('image/')) return 'image'
   return 'unknown'
 }
 
 // Tidy whitespace: no trailing spaces, at most one blank line in a row.
 function tidy(text) {
   return text
+    .replace(/^\uFEFF/, '')
     .replace(/\r\n?/g, '\n')
     .replace(/[ \t\u00a0]+\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
@@ -41,6 +57,9 @@ function tidy(text) {
 }
 
 export async function readDocument(file) {
+  if (!file) {
+    throw new DocumentError('No file provided.')
+  }
   if (file.size > MAX_BYTES) {
     throw new DocumentError(`“${file.name}” is too large (20 MB at most). Try a shorter document, or paste just the part you need.`)
   }
@@ -90,21 +109,28 @@ async function readPdf(file) {
   const task = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) })
   let pdf
   try {
-    pdf = await task.promise
-  } catch (err) {
-    throw new DocumentError(
-      err?.name === 'PasswordException'
-        ? `“${file.name}” is password-protected. Remove the password and add it again.`
-        : `“${file.name}” couldn’t be opened. It may be damaged; try saving it again as PDF.`,
-    )
+    try {
+      pdf = await task.promise
+    } catch (err) {
+      throw new DocumentError(
+        err?.name === 'PasswordException' || /password/i.test(err?.message || '')
+          ? `“${file.name}” is password-protected. Remove the password and add it again.`
+          : `“${file.name}” couldn’t be opened. It may be damaged; try saving it again as PDF.`,
+      )
+    }
+    const pages = pdf.numPages
+    const out = []
+    for (let n = 1; n <= pages; n++) {
+      const page = await pdf.getPage(n)
+      const { items } = await page.getTextContent()
+      out.push(items.map((it) => (it.str ?? '') + (it.hasEOL ? '\n' : ' ')).join(''))
+    }
+    return { text: out.join('\n\n'), pages }
+  } finally {
+    try {
+      await task.destroy()
+    } catch {
+      // ignore
+    }
   }
-  const pages = pdf.numPages
-  const out = []
-  for (let n = 1; n <= pages; n++) {
-    const page = await pdf.getPage(n)
-    const { items } = await page.getTextContent()
-    out.push(items.map((it) => (it.str ?? '') + (it.hasEOL ? '\n' : ' ')).join(''))
-  }
-  await task.destroy()
-  return { text: out.join('\n\n'), pages }
 }
