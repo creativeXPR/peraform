@@ -80,6 +80,8 @@
 
 .win-head > .icon-btn,
 .collab-head > .icon-btn {
+  width: 40px;
+  height: 40px;
   margin-left: auto;
 }
 
@@ -271,5 +273,29 @@
 .idea-art.is-flipped .idea-badge {
   right: auto;
   left: 14%;
+}
+
+@media (max-width: 480px) {
+  .confirm {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+    border-radius: 20px;
+  }
+
+  .confirm-body {
+    padding: 18px 16px;
+  }
+
+  .win-head,
+  .collab-head {
+    flex-wrap: wrap;
+  }
+
+  .win-chips button {
+    min-height: 40px;
+    height: auto;
+    padding: 8px 14px;
+    font-size: 13.5px;
+  }
 }
 

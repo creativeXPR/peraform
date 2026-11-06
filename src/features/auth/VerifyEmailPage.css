@@ -50,6 +50,28 @@
 }
 
 .verify-switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 14px;
   margin-top: 4px;
   font-size: 14px;
+}
+
+@media (max-width: 480px) {
+  .verify-card {
+    padding: 24px 16px;
+    border-radius: 20px;
+  }
+
+  .verify-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .verify-actions .btn {
+    width: 100%;
+    min-height: 42px;
+  }
 }

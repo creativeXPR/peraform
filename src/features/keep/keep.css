@@ -53,7 +53,7 @@
   width: 30px;
   height: 30px;
   border-radius: 10px;
-  background: #fff;
+  background: var(--surface, #fff);
   box-shadow: 0 4px 10px rgb(0 0 0 / 0.08);
 }
 
@@ -134,5 +134,27 @@
 @media (prefers-reduced-motion: reduce) {
   .keep-ghost {
     animation: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .keep-grid {
+    grid-template-columns: 1fr;
+    max-height: min(60dvh, 480px);
+  }
+
+  .keep-paste {
+    height: 40px;
+    padding: 0 14px;
+    font-size: 14px;
+  }
+
+  .keep-actions {
+    gap: 4px;
+  }
+
+  .keep-actions .icon-btn {
+    width: 40px;
+    height: 40px;
   }
 }

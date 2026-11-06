@@ -316,6 +316,11 @@
   justify-content: space-between;
 }
 
+.ai-create-top > .icon-btn {
+  width: 40px;
+  height: 40px;
+}
+
 .ai-create-brand {
   display: inline-flex;
   align-items: center;
@@ -1107,6 +1112,11 @@ a.dawn-go {
   font-size: 12.5px;
 }
 
+.dawn-doc-chip .icon-btn {
+  width: 40px;
+  height: 40px;
+}
+
 .dawn-doc-pick {
   display: flex;
   flex-wrap: wrap;
@@ -1114,4 +1124,29 @@ a.dawn-go {
   gap: 8px 14px;
   color: var(--text-muted);
   font-size: 14px;
+}
+
+@media (max-width: 480px) {
+  .ai-create {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+    border-radius: 20px;
+  }
+
+  .ai-create-body {
+    padding: 18px 14px;
+    gap: 16px;
+  }
+
+  .dawn-doc-chip {
+    padding: 10px 12px;
+  }
+
+  .dawn-doc-pick {
+    gap: 8px 10px;
+  }
+
+  .dawn-doc-pick .btn {
+    min-height: 40px;
+  }
 }

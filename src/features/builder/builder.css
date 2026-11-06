@@ -1112,14 +1112,14 @@
 }
 
 .share-select {
-  height: 34px;
-  padding: 0 8px;
+  height: 40px;
+  padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
   background: var(--bg);
   color: var(--text);
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .share-status {
@@ -1145,7 +1145,7 @@
 }
 
 .share-foot .btn {
-  height: 38px;
+  height: 40px;
 }
 
 .share-email-toggle {
@@ -1351,6 +1351,11 @@
 
   .share-select {
     width: 100%;
+  }
+
+  .shortcuts-group dl > div {
+    flex-wrap: wrap;
+    gap: 6px;
   }
 }
 
@@ -1941,7 +1946,7 @@
 
 .embed-size input {
   width: 84px;
-  height: 32px;
+  height: 40px;
   padding: 0 8px;
   border: 1px solid var(--line);
   border-radius: 8px;
