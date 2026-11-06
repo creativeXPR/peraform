@@ -805,14 +805,14 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
       interview && screens && screens[pageIndex]
         ? interviewProgress(screens, screens[pageIndex].key, screenOverrides, screenStartsHidden)
         : null
+    // Enter presses the screen's Next (or Submit) button, so its own effects
+    // run too, exactly as a click. No such button shown: Enter does nothing.
     const onEnter = () => {
-      if (state === 'sending' || leavingRef.current) return
-      const after = nextFor(clickState)
-      if (after === 'submit') {
-        finish()
-      } else if (pageIsValid()) {
-        leave(() => goNext(after))
-      }
+      const main = Object.values(finalShown.nodes)
+        .filter((n) => n.type === 'button' && ['next', 'submit'].includes(n.action?.type ?? 'next'))
+        .filter((n) => !(overrides[n.id]?.hidden ?? frameOf(n, device).hidden))
+        .sort((a, b) => frameOf(a, device).y - frameOf(b, device).y || frameOf(b, device).x - frameOf(a, device).x)[0]
+      if (main) onButton(main.action ?? { type: 'next' }, main)
     }
     const onChoiceKey = (choiceQ, optIndex) => {
       const options = choiceQ.shuffleOptions
@@ -855,8 +855,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
             preview ||
             deadline ||
             error ||
-            state === 'sending'
-) && (
+            state === 'sending') && (
             <div className="interview-overlay">
               {prefillMode && <PrefillBar form={form} answers={answers} />}
               {pageIndex === 0 && consent}
