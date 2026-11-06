@@ -1,6 +1,5 @@
-import { deleteObject, getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage'
 import { compressImage } from './compressImage.js'
-import { storage } from './firebase.js'
+import { loadStorage } from './firebase.js'
 
 // Paths match storage.rules:
 //   creators/{uid}/images/…        images on forms (public)
@@ -15,8 +14,10 @@ function safeName(name) {
   return name.replace(/[^\w.-]+/g, '_').slice(-80) || 'file'
 }
 
-function upload(path, file, onProgress) {
+async function upload(path, file, onProgress) {
+  const { sdk, storage } = await loadStorage()
   return new Promise((resolve, reject) => {
+    const { getDownloadURL, ref, uploadBytesResumable } = sdk
     const task = uploadBytesResumable(ref(storage, path), file, { contentType: file.type })
     task.on(
       'state_changed',
@@ -49,7 +50,9 @@ export async function uploadResponseFile(file, formId, uid, onProgress) {
 
 // Best effort: a leftover file is harmless, so failures are ignored.
 export function deleteStored(path) {
-  return deleteObject(ref(storage, path)).catch(() => {})
+  return loadStorage()
+    .then(({ sdk, storage }) => sdk.deleteObject(sdk.ref(storage, path)))
+    .catch(() => {})
 }
 
 export function formatBytes(bytes) {

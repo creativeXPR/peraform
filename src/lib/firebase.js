@@ -3,7 +3,6 @@ import { ReCaptchaEnterpriseProvider, initializeAppCheck } from 'firebase/app-ch
 import { connectAuthEmulator, getAuth, GoogleAuthProvider } from 'firebase/auth'
 import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore'
 import { connectFunctionsEmulator, getFunctions, httpsCallable } from 'firebase/functions'
-import { connectStorageEmulator, getStorage } from 'firebase/storage'
 
 // Values come from Vite's VITE_-prefixed env vars — see .env.example.
 // PeraForm lives in the "Quality Tools" Firebase project (quality-toolsx),
@@ -61,9 +60,18 @@ export const suiteDb = getFirestore(firebaseApp, 'suite')
 if (useEmulators) connectFirestoreEmulator(suiteDb, '127.0.0.1', port(8080))
 
 // Points at PeraForm's own bucket (VITE_FIREBASE_STORAGE_BUCKET), so its
-// storage rules stay separate from other Quality Tools apps.
-export const storage = getStorage(firebaseApp)
-if (useEmulators) connectStorageEmulator(storage, '127.0.0.1', port(9199))
+// storage rules stay separate from other Quality Tools apps. Loaded only
+// when something is uploaded (lib/upload.js), so the Storage SDK stays out
+// of the first download.
+let storagePromise
+export function loadStorage() {
+  storagePromise ??= import('firebase/storage').then((sdk) => {
+    const storage = sdk.getStorage(firebaseApp)
+    if (useEmulators) sdk.connectStorageEmulator(storage, '127.0.0.1', port(9199))
+    return { sdk, storage }
+  })
+  return storagePromise
+}
 
 // Same region as the database and the functions (functions/index.js).
 export const functions = getFunctions(firebaseApp, 'europe-west1')
