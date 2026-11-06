@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { AlertTriangle } from 'lucide-react'
 import { screenDesign, screenIssues, screensOf } from '../../lib/interview.js'
@@ -5,18 +6,36 @@ import InterviewEditor from '../interview/InterviewEditor.jsx'
 import BuilderPage from './BuilderPage.jsx'
 import { useFormEditor } from './editorContext.js'
 import Spinner from '../../lib/Spinner.jsx'
+import { useToast } from '../../lib/useToast.jsx'
 
 // The Questions tab. Normal forms: the question list. Interview mode: the
 // screen designer, with a switch back to the list to edit the questions
-// themselves (they're shared by both modes).
+// themselves (they're shared by both modes). The line between them: words
+// and rules live in Edit questions; looks and movement in Design screens.
+// ?screen= keeps the screen being designed across the switch.
 export default function QuestionsTab() {
-  const { draft } = useFormEditor()
+  const { draft, notice } = useFormEditor()
   const [params, setParams] = useSearchParams()
+  const [toast, showToast] = useToast(5000)
+
+  // Designed screens followed a question-list edit (editorReducer): say so.
+  useEffect(() => {
+    if (!notice) return
+    const [first] = notice.placed
+    showToast(
+      notice.placed.length === 1
+        ? `Put “${first.title}” on screen ${first.screen} of your design. Ctrl+Z undoes it.`
+        : `Put ${notice.placed.length} questions on their screens in your design. Ctrl+Z undoes it.`,
+    )
+  }, [notice, showToast])
+
   if (!draft) return <Spinner />
   if (draft.mode !== 'interview') return <BuilderPage />
 
   const view = params.get('view') === 'questions' ? 'questions' : 'design'
-  const go = (key) => setParams(key === 'design' ? {} : { view: key }, { replace: true })
+  const screenParam = params.get('screen')
+  const go = (key) =>
+    setParams({ ...(key !== 'design' && { view: key }), ...(screenParam && { screen: screenParam }) }, { replace: true })
 
   // Screens out of step with the question list (never fixed by themselves:
   // see lib/interview.js → screenIssues). Counted on the Design tab, and
@@ -30,13 +49,14 @@ export default function QuestionsTab() {
   const viewSwitch = (
     <div className="segmented" role="tablist" aria-label="Questions view">
       {[
-        ['design', 'Design screens'],
-        ['questions', 'Edit questions'],
-      ].map(([key, label]) => (
+        ['design', 'Design screens', 'How each screen looks and moves (Interview mode only)'],
+        ['questions', 'Edit questions', 'The words and rules: questions, answers, sections, “Show only if” and where each section leads (shared by both modes)'],
+      ].map(([key, label, hint]) => (
         <button
           key={key}
           type="button"
           role="tab"
+          title={hint}
           aria-selected={view === key}
           className={view === key ? 'active' : ''}
           onClick={() => go(key)}
@@ -51,11 +71,27 @@ export default function QuestionsTab() {
       ))}
     </div>
   )
+  const viewHint = (
+    <p className="view-hint">
+      {view === 'design'
+        ? 'Looks and movement, for Interview mode. The words, answers and rules are in Edit questions.'
+        : 'Words and rules, shared by Normal and Interview mode. How screens look is in Design screens.'}
+    </p>
+  )
 
-  if (view === 'design') return <InterviewEditor viewSwitch={viewSwitch} />
+  if (view === 'design')
+    return (
+      <>
+        <InterviewEditor viewSwitch={viewSwitch} viewHint={viewHint} />
+        {toast}
+      </>
+    )
   return (
     <>
-      <div className="questions-switch">{viewSwitch}</div>
+      <div className="questions-switch">
+        {viewSwitch}
+        {viewHint}
+      </div>
       {all.length > 0 && (
         <div className="ie-issue questions-issues" role="status">
           <AlertTriangle size={16} aria-hidden="true" />
@@ -69,8 +105,8 @@ export default function QuestionsTab() {
             ]
               .filter(Boolean)
               .join('; ')}
-            . PeraForm doesn’t change your designs for you, so nothing is broken: open Design screens and use the buttons
-            there to place or fix them.
+            . Most changes are followed for you, but not these. Nothing is broken: open Design screens and use the
+            buttons there to place or fix them.
           </p>
           <button type="button" className="btn btn-outline" onClick={() => go('design')}>
             Go to Design screens
@@ -78,6 +114,7 @@ export default function QuestionsTab() {
         </div>
       )}
       <BuilderPage />
+      {toast}
     </>
   )
 }

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { newAction, renameTriggerOption, triggerKindFor } from '../../lib/actions.js'
+import { useSearchParams } from 'react-router-dom'
+import { renameTriggerOption } from '../../lib/actions.js'
+import { showIfProps } from '../../lib/showIf.js'
 import {
   DndContext,
   KeyboardSensor,
@@ -37,7 +39,10 @@ import Spinner from '../../lib/Spinner.jsx'
 // section cards, and the floating toolbar (add question / add section).
 export default function BuilderPage() {
   const { draft, edit } = useFormEditor()
-  const [activeId, setActiveId] = useState(null)
+  // ?q=id ("Edit this question" on Design screens): opens on that item.
+  const [params] = useSearchParams()
+  const focusId = params.get('q')
+  const [activeId, setActiveId] = useState(focusId)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [importing, setImporting] = useState(false)
   const keepStore = useKeep()
@@ -49,6 +54,10 @@ export default function BuilderPage() {
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
+
+  useEffect(() => {
+    if (focusId) document.querySelector(`[data-item-id="${CSS.escape(focusId)}"]`)?.scrollIntoView({ block: 'center' })
+  }, [focusId])
 
   // Kept fields, text and links paste below the selected card (pasteKept).
   useKeepTargets(draft ? { field: pasteKept, text: (data) => pasteKept(textAsField(data)) } : null)
@@ -108,32 +117,8 @@ export default function BuilderPage() {
       answerKey: { ...d.answerKey, [id]: update(d.answerKey?.[id] ?? {}) },
     }))
 
-  // "Show only if…": an item's rules are the show-actions that target it,
-  // stored on the questions above it that they read.
-  const showIfFor = (item, index) => {
-    const sources = questions.slice(0, index).filter((q) => isQuestion(q) && triggerKindFor(q))
-    const rules = []
-    for (const q of questions) {
-      for (const a of q.actions ?? []) {
-        if (a.target === item.id && a.effect?.type === 'show' && a.trigger?.type !== 'click') {
-          rules.push({ sourceId: q.id, actionId: a.id, trigger: a.trigger })
-        }
-      }
-    }
-    return {
-      rules,
-      sources,
-      noun: isSection(item) ? 'section' : isQuestion(item) ? 'question' : 'block',
-      onAdd: (sourceId, trigger) =>
-        setQuestions(`showif:${item.id}:add`, (qs) =>
-          qs.map((q) => (q.id === sourceId ? { ...q, actions: [...(q.actions ?? []), newAction(trigger, item.id)] } : q)),
-        ),
-      onRemove: (sourceId, actionId) =>
-        setQuestions(`showif:${item.id}:remove`, (qs) =>
-          qs.map((q) => (q.id === sourceId ? { ...q, actions: (q.actions ?? []).filter((a) => a.id !== actionId) } : q)),
-        ),
-    }
-  }
+  // "Show only if…" (lib/showIf.js), the same rules Design screens edits.
+  const showIfFor = (item) => showIfProps(questions, item, setQuestions)
 
   const changeQuestion = (id) => (field, update) =>
     setQuestions(`q:${id}:${field}`, (qs) => qs.map((q) => (q.id === id ? update(q) : q)))
@@ -274,7 +259,7 @@ export default function BuilderPage() {
             items={questions.map((q) => q.id)}
             strategy={verticalListSortingStrategy}
           >
-            {questions.map((item, index) =>
+            {questions.map((item) =>
               isSection(item) ? (
                 <SectionCard
                   key={item.id}
@@ -287,7 +272,7 @@ export default function BuilderPage() {
                   change={changeQuestion(item.id)}
                   onDelete={() => setPendingDelete(item.id)}
                   onKeep={() => keepItem(item)}
-                  showIf={showIfFor(item, index)}
+                  showIf={showIfFor(item)}
                 />
               ) : CONTENT_TYPES.includes(item.type) ? (
                 <ContentCard
@@ -299,7 +284,7 @@ export default function BuilderPage() {
                   onDuplicate={() => duplicateQuestion(item.id)}
                   onDelete={() => setPendingDelete(item.id)}
                   onKeep={() => keepItem(item)}
-                  showIf={showIfFor(item, index)}
+                  showIf={showIfFor(item)}
                 />
               ) : (
                 <QuestionCard
@@ -316,7 +301,7 @@ export default function BuilderPage() {
                   quiz={quiz}
                   keyEntry={draft.answerKey?.[item.id]}
                   changeKey={changeKey(item.id)}
-                  showIf={showIfFor(item, index)}
+                  showIf={showIfFor(item)}
                   actionTargets={questions
                     .filter((x) => x.id !== item.id)
                     .map((x) => ({

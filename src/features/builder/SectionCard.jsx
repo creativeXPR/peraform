@@ -32,6 +32,7 @@ export default function SectionCard({
   return (
     <section
       ref={setNodeRef}
+      data-item-id={section.id}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       className={`s-card${active ? ' q-card-active' : ''}${isDragging ? ' q-card-dragging' : ''}`}
       onClick={() => !active && onActivate()}

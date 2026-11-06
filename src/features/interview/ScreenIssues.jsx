@@ -12,8 +12,9 @@ export default function ScreenIssues({ issues, questions, design, onPlace, onMov
   return (
     <section className="ie-issues" aria-label="This screen needs your attention">
       <p className="ie-issues-head">
-        <strong>This screen needs your attention.</strong> You changed the questions under Edit questions, and PeraForm
-        doesn’t change your designs for you. Choose what to do below; until then the screen stays exactly as you left it.
+        <strong>This screen needs your attention.</strong> Most question changes are followed here for you, but
+        not these (for example, a screen with no card to put a question in). Choose what to do below; until then the screen
+        stays as it is.
       </p>
       {issues.map((issue) => {
         if (issue.kind === 'unplaced') {

@@ -513,3 +513,48 @@ describe('choices the creator made are never flagged', () => {
     expect(screenIssues(f, screens[0], auto, screens).map((i) => i.kind)).toEqual(['button'])
   })
 })
+
+describe('designed screens follow the question list (syncScreens)', () => {
+  const base = {
+    mode: 'interview',
+    title: 'Trip',
+    questions: [
+      { id: 'q1', type: 'shortText', title: 'Name' },
+      { id: 's1', type: 'section', title: 'Details' },
+      { id: 'q3', type: 'longText', title: 'Notes' },
+    ],
+  }
+  const designed = (form) => ({
+    ...form,
+    interview: { screens: Object.fromEntries(screensOf(form).map((s) => [s.key, screenDesign(form, s)])) },
+  })
+
+  it('puts a new question on its designed screen and says so', async () => {
+    const { syncScreens } = await import('../../src/lib/interview.js')
+    const form = designed(base)
+    const added = { ...form, questions: [form.questions[0], { id: 'q2', type: 'shortText', title: 'Age' }, ...form.questions.slice(1)] }
+    const { form: out, placed } = syncScreens(added)
+    expect(placedQuestionIds(out.interview.screens.start).has('q2')).toBe(true)
+    expect(placed).toEqual([{ title: 'Age', screen: 1 }])
+  })
+
+  it('moves a block with its question to the other screen, once', async () => {
+    const { syncScreens } = await import('../../src/lib/interview.js')
+    const form = designed(base)
+    const moved = { ...form, questions: [form.questions[1], form.questions[0], form.questions[2]] }
+    const { form: out } = syncScreens(moved)
+    expect(placedQuestionIds(out.interview.screens.start).has('q1')).toBe(false)
+    const onS1 = Object.values(out.interview.screens.s1.nodes).filter((n) => n.questionId === 'q1')
+    expect(onS1).toHaveLength(1)
+    expect(screenIssues(out, screensOf(out)[1], out.interview.screens.s1)).toEqual([])
+  })
+
+  it('leaves questions taken off on purpose, and forms never designed', async () => {
+    const { syncScreens } = await import('../../src/lib/interview.js')
+    const form = designed(base)
+    const off = { ...form, interview: { screens: { ...form.interview.screens, start: { ...form.interview.screens.start, nodes: {}, removed: ['q1'] } } } }
+    expect(syncScreens(off).placed).toEqual([])
+    const plain = { ...base, questions: [...base.questions, { id: 'q9', type: 'shortText', title: 'X' }] }
+    expect(syncScreens(plain).form).toBe(plain)
+  })
+})

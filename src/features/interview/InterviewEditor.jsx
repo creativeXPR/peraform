@@ -1,9 +1,14 @@
 import { useLayoutEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Monitor, RotateCcw, Smartphone } from 'lucide-react'
 import ColorPicker from '../../lib/ColorPicker.jsx'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
-import { isQuestion } from '../../lib/formLogic.js'
-import { fieldPaddingStyle } from '../../lib/formModel.js'
+import { isQuestion, isSection } from '../../lib/formLogic.js'
+import { fieldPaddingStyle, newSection } from '../../lib/formModel.js'
+import { showIfProps } from '../../lib/showIf.js'
+import ShowIf from '../builder/ShowIf.jsx'
+import TargetSelect from '../builder/TargetSelect.jsx'
+import { buildTargets } from '../builder/questionTypes.js'
 import { applyStyle, restoreOriginal } from '../../lib/designStyles.js'
 import { GRADIENT_PRESETS } from '../../lib/gradient.js'
 import {
@@ -68,13 +73,17 @@ const SCREEN_BG_PRESETS = [
 // Questions tab in interview mode: design each screen (section) on a canvas.
 // Every change goes through the editor (autosave + undo); a screen that was
 // never edited shows its starter design until the first change saves it.
-export default function InterviewEditor({ viewSwitch }) {
+export default function InterviewEditor({ viewSwitch, viewHint }) {
   const { draft, edit } = useFormEditor()
   // The editor fits the space below its toolbar (screens, canvas and panel
   // scroll on their own), so nothing needs the page scrolled to reach it.
   const bodyRef = useRef(null)
   useFitBelow(bodyRef)
-  const [screenKey, setScreenKey] = useState(null)
+  // The screen being designed is in the address (?screen=), so it's kept
+  // across Edit questions and back.
+  const [params, setParams] = useSearchParams()
+  const screenKey = params.get('screen')
+  const setScreenKey = (key) => setParams({ screen: key }, { replace: true })
   const [device, setDevice] = useState('phone')
   // Selected blocks, in the order picked; the last one is shown in the
   // Inspector (and gets the resize handles when it's the only one).
@@ -99,6 +108,27 @@ export default function InterviewEditor({ viewSwitch }) {
   const selectedIds = selection.filter((id) => design.nodes[id])
   const selectedId = selectedIds.at(-1) ?? null
   const selected = selectedId ? design.nodes[selectedId] : null
+  const setQuestions = (key, update) => edit(key, (d) => ({ ...d, questions: update(d.questions) }))
+  // Where this screen leads: its section's "After section N" (the same
+  // setting as in Edit questions), and any answers that branch from it.
+  const section = screen.page.section
+  const sections = draft.questions.filter(isSection)
+  const branching = pageQuestions.filter((q) => q.branching)
+  // Answer conditions that show questions or screens are "Show only if…"
+  // (one store, lib/showIf.js), so a question block's actions only reach
+  // the other blocks, plus anything an older action already points at.
+  const answerBlock = selected?.type === 'question'
+  const keepTarget = (id) => (selected?.actions ?? []).some((a) => a.target === id)
+
+  function addScreen() {
+    const s = newSection()
+    setQuestions('add-screen', (qs) => [...qs, s])
+    setScreenKey(s.id)
+    setSelection([])
+  }
+
+  // "Edit this question": to it in Edit questions, keeping this screen.
+  const editQuestion = (id) => setParams({ view: 'questions', q: id, screen: screen.key }, { replace: true })
 
   // id → select just it; add → toggle it in the selection; null → none.
   function select(id, add = false) {
@@ -320,6 +350,7 @@ export default function InterviewEditor({ viewSwitch }) {
           ))}
         </div>
       </div>
+      {viewHint}
 
       <ScreenIssues
         issues={issues}
@@ -345,6 +376,7 @@ export default function InterviewEditor({ viewSwitch }) {
             setScreenKey(key)
             setSelection([])
           }}
+          onAddScreen={addScreen}
           design={design}
           device={device}
           questions={questions}
@@ -402,9 +434,15 @@ export default function InterviewEditor({ viewSwitch }) {
               screens={screens}
               pageQuestions={pageQuestions}
               questions={questions}
+              onEditQuestion={editQuestion}
+              showIf={
+                selected.type === 'question' && draft.questions.some((q) => q.id === selected.questionId)
+                  ? showIfProps(draft.questions, draft.questions.find((q) => q.id === selected.questionId), setQuestions)
+                  : null
+              }
               actionTargets={[
                 // Whole screens (every one but the first): show, hide, recolour.
-                ...screens.slice(1).map((s) => ({
+                ...screens.slice(1).filter((s) => !answerBlock || keepTarget(s.key)).map((s) => ({
                   id: s.key,
                   label: `Screen ${s.index + 1}: ${s.title}`,
                   screen: true,
@@ -412,6 +450,7 @@ export default function InterviewEditor({ viewSwitch }) {
                 })),
                 ...Object.values(design.nodes)
                 .filter((n) => n.id !== selected.id)
+                .filter((n) => !answerBlock || n.type !== 'question' || keepTarget(n.id))
                 .map((n) => ({
                   id: n.id,
                   label: nodeLabel(n, questions),
@@ -487,12 +526,38 @@ export default function InterviewEditor({ viewSwitch }) {
                     />
                     Skip this screen until an action shows it
                   </label>
+                  <ShowIf {...showIfProps(draft.questions, section, setQuestions)} noun="screen" />
                   <p className="insp-note">
                     A button or an answer on any screen can show it (or hide it, or change its background): pick
                     “Screen {screen.index + 1}” as the action’s target.
                   </p>
                 </section>
               )}
+              <section className="insp-group">
+                <h3>After this screen</h3>
+                {section ? (
+                  <TargetSelect
+                    value={section.next}
+                    targets={buildTargets(sections).filter((t) => t.value !== section.id)}
+                    onChange={(next) =>
+                      setQuestions(`q:${section.id}:next`, (qs) => qs.map((q) => (q.id === section.id ? { ...q, next } : q)))
+                    }
+                    label="After this screen"
+                  />
+                ) : (
+                  <p className="insp-note">{screens.length > 1 ? 'Goes on to the next screen.' : 'The only screen: Next submits.'}</p>
+                )}
+                {branching.length > 0 && (
+                  <p className="insp-note">
+                    Answers to {branching.map((q) => `“${q.title || 'Untitled question'}”`).join(', ')} can send people
+                    elsewhere (set on the question in Edit questions).
+                  </p>
+                )}
+                <p className="insp-note">
+                  {section ? `The same setting as “After section ${screen.index + 1}” in Edit questions. ` : ''}Next buttons
+                  follow it; a button set to “Jump to a screen…” goes straight there.
+                </p>
+              </section>
               <section className="insp-group">
                 <h3>Background</h3>
                 <ColorPicker

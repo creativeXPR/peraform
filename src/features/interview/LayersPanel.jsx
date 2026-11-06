@@ -85,6 +85,7 @@ export default function LayersPanel({
   screens,
   screenKey,
   onScreen,
+  onAddScreen, // adds a section at the end (a screen is a section)
   design,
   device,
   questions,
@@ -132,6 +133,9 @@ export default function LayersPanel({
             </li>
           ))}
         </ol>
+        <button type="button" className="link-btn screens-add" onClick={onAddScreen}>
+          + Add screen
+        </button>
       </section>
 
       <section className="layers-section">

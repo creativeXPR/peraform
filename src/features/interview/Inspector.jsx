@@ -37,6 +37,7 @@ import {
 import { THEME_FONTS } from '../../lib/theme.js'
 import ImagePicker from '../builder/ImagePicker.jsx'
 import { triggerKindFor } from '../../lib/actions.js'
+import ShowIf from '../builder/ShowIf.jsx'
 import ActionsEditor from './ActionsEditor.jsx'
 import AnimationsEditor from './AnimationsEditor.jsx'
 import Select from '../../lib/Select.jsx'
@@ -214,6 +215,8 @@ export default function Inspector({
   pageQuestions,
   questions,
   actionTargets, // [{ id, label }] other blocks on this screen
+  onEditQuestion, // (questionId) opens it in Edit questions
+  showIf, // question blocks: the question's "Show only if…" (lib/showIf.js)
   onFrame,
   onStyle,
   onContent,
@@ -578,11 +581,28 @@ export default function Inspector({
                 </Select>
               </label>
             )}
+            {node.type === 'question' && node.questionId && (
+              <button type="button" className="link-btn" onClick={() => onEditQuestion(node.questionId)}>
+                Edit this question (words, answers, rules)
+              </button>
+            )}
             {node.type === 'card' && <FitCard key={node.id} pad={s.fitPad ?? 16} device={device} onFit={onFit} />}
           </Group>
 
+          {showIf && (
+            <Group title="Show only if">
+              <ShowIf {...showIf} />
+              <p className="insp-note">The same rule as on the question in Edit questions.</p>
+            </Group>
+          )}
+
           {(node.type === 'button' || trigger) && (
             <Group title="Actions">
+              {node.type === 'question' && (
+                <p className="insp-note">
+                  To show a question or a whole screen only for some answers, use “Show only if…” on it.
+                </p>
+              )}
               <ActionsEditor
                 actions={node.actions}
                 onChange={(actions) => onContent({ actions })}

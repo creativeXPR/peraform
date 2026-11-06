@@ -140,6 +140,7 @@ export default function FormEditorProvider({ formId, children }) {
       canRedo: state.future.length > 0,
       saveState,
       setStatus,
+      notice: state.notice,
     }),
     [
       form,
@@ -152,6 +153,7 @@ export default function FormEditorProvider({ formId, children }) {
       redo,
       saveState,
       setStatus,
+      state.notice,
     ],
   )
 

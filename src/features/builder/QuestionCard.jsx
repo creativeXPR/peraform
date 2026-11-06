@@ -139,6 +139,7 @@ export default function QuestionCard({
   return (
     <section
       ref={setNodeRef}
+      data-item-id={question.id}
       style={style}
       className={`q-card${active ? ' q-card-active' : ''}${isDragging ? ' q-card-dragging' : ''}`}
       onClick={() => !active && onActivate()}

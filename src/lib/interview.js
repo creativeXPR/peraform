@@ -41,11 +41,11 @@ export const canHoldChildren = (node) => node?.type === 'card'
 export const canBeRoot = (type) => type === 'card'
 
 export const BUTTON_ACTIONS = {
-  next: 'Next screen',
+  next: 'Next (as set in “After this screen”)',
   none: 'Stay on this screen (effects only)',
   back: 'Previous screen',
   submit: 'Submit',
-  goto: 'Go to screen…',
+  goto: 'Jump to a screen…',
   url: 'Open link or redirect…',
 }
 
@@ -998,6 +998,55 @@ export function withoutStrays(design, page) {
   const onPage = new Set(page.items.filter(isQuestion).map((q) => q.id))
   const strays = Object.values(design.nodes).filter((n) => n.type === 'question' && !onPage.has(n.questionId))
   return strays.length ? strays.reduce((d, n) => (d.nodes[n.id] ? deleteNode(d, n.id) : d), design) : design
+}
+
+// After a question-list edit: designed screens follow it (the one place
+// PeraForm changes a design by itself, agreed 2026-11-06 — it's in the same
+// undo step, and the editor says what it did). A question moved to another
+// section takes its block along (look kept); a new one gets a block on its
+// screen. Questions taken off a screen on purpose (design.removed) stay off,
+// and screens never designed already follow the list (starterScreen).
+// Returns { form, placed: [{ title, screen }] } — placed: what was added or
+// moved, for the notice.
+export function syncScreens(form) {
+  const saved = form.interview?.screens
+  if (form.mode !== 'interview' || !saved) return { form, placed: [] }
+  const screens = screensOf(form)
+  const placed = []
+  const note = (q, s) => placed.push({ title: q?.title || 'Untitled question', screen: s.index + 1 })
+  const byId = new Map((form.questions ?? []).filter(isQuestion).map((q) => [q.id, q]))
+  let next = form
+  // Blocks whose question now lives on another screen.
+  for (const s of screens) {
+    if (!saved[s.key]) continue
+    const onPage = new Set(s.page.items.filter(isQuestion).map((q) => q.id))
+    for (const n of Object.values(designFor(next, s.key).nodes)) {
+      if (n.type !== 'question' || onPage.has(n.questionId) || !byId.has(n.questionId)) continue
+      const to = screens.find((x) => x.page.items.some((q) => q.id === n.questionId))
+      const there = next.interview?.screens?.[to.key]
+      if (there && !placedQuestionIds(there).has(n.questionId)) {
+        next = moveStrayBlock(next, s.key, n.id, to.key)
+        note(byId.get(n.questionId), to)
+      } else {
+        // Its screen shows it already (or will: a starter screen does).
+        next = withDesign(next, s.key, deleteNode(designFor(next, s.key), n.id))
+      }
+    }
+  }
+  // Questions with no block on their (designed) screen.
+  for (const s of screens) {
+    const design = next.interview?.screens?.[s.key]
+    if (!design) continue
+    const have = placedQuestionIds(design)
+    const missing = s.page.items.filter(isQuestion).filter((q) => !have.has(q.id) && !design.removed?.includes(q.id))
+    if (!missing.length) continue
+    const after = placeQuestions(design, missing)
+    // No card to put them in: left for the creator (ScreenIssues).
+    if (after === design) continue
+    next = withDesign(next, s.key, after)
+    missing.forEach((q) => note(q, s))
+  }
+  return { form: next, placed }
 }
 
 // Adds a question's block to a design's main card (the first card), just
