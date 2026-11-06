@@ -270,6 +270,11 @@
   font-size: 12px;
 }
 
+.footerbar a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 /* ── Drawer (phones) ─────────────────────────────────────── */
 .drawer-btn,
 .drawer-backdrop {

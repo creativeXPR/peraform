@@ -166,7 +166,9 @@ export default function AppShell({
         </main>
       </div>
 
-      <footer className="footerbar">PeraForm</footer>
+      <footer className="footerbar">
+        PeraForm · by <a href="https://quality-toolsx.web.app/">Quality Tools</a>
+      </footer>
 
       {sidebar && <div className="drawer-backdrop" onClick={() => setDrawerOpen(false)} />}
     </div>
