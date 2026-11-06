@@ -3,6 +3,7 @@ import { CheckCircle2, Undo2 } from 'lucide-react'
 import { AI_FEATURES, holdRange } from '../../../functions/ai/catalog.js'
 import { formatCredits } from '../../../functions/billing/pricing.js'
 import { DESIGN_STYLES, applyStyle, paletteFor, screenWords } from '../../lib/designStyles.js'
+import { LAYOUTS, SAMPLE_PHOTOS, applyLayout } from '../../lib/screenLayouts.js'
 import { DEVICES, interviewOf, screenDesign, screensOf } from '../../lib/interview.js'
 import { isQuestion } from '../../lib/formLogic.js'
 import { applyScreenEdit, screenForAi } from '../../lib/screenEdit.js'
@@ -99,7 +100,12 @@ export default function DesignScreensDialog({ open, onClose, screenKey, device =
         const colours = paletteFor(style, palette)
         for (const s of all) {
           const w = words.find((x) => x.key === s.key)
-          const styled = applyStyle(screenDesign(d, s, all), style, colours)
+          // Dawn's layout for the screen (lib/screenLayouts.js), then the style.
+          const base = screenDesign(d, s, all)
+          const laid = LAYOUTS[w?.layout]
+            ? applyLayout(base, w.layout, { questions: d.questions.filter(isQuestion), photo: SAMPLE_PHOTOS[s.index % 2].url })
+            : base
+          const styled = applyStyle(laid, style, colours)
           next[s.key] = w ? screenWords(styled, w) : styled
         }
         return { ...d, interview: { ...iv, screens: next } }

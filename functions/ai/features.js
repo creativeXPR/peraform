@@ -191,7 +191,13 @@ Styles:
 - midnight: dark and bold with a glowing accent. Tech, gaming, night events.
 
 Colours (6-digit hex): "from" and "to" make the screen background gradient; "accent" is the main button colour. Keep text readable: light backgrounds for playful, classroom, official and flow; vivid for glass; dark for midnight. Follow any colours or brand the instruction mentions.
-Screens: return every screen you were given, by its key. Heading: at most 40 characters, may start with one fitting emoji (not for official). Subtitle: one short, warm sentence (at most 90 characters) saying what this screen is about.
+Screens: return every screen you were given, by its key, each with a layout:
+- card: everything in one card (a safe default; many questions).
+- focus: no card, big centred words (one or two questions).
+- side: a picture beside the questions (on top on phones); warm, visual forms.
+- photo: a full-screen photo behind frosted glass (events, travel, launches; few questions).
+- cover: big title and a Start button, centred (a first screen with no or one question).
+Vary layouts where it helps (for example cover for the first screen), but keep forms with many questions on card or focus. Heading: at most 40 characters, may start with one fitting emoji (not for official). Subtitle: one short, warm sentence (at most 90 characters) saying what this screen is about.
 Write in the language of the form.
 Put one or two plain sentences on what you chose and why in "summary".`
 
@@ -212,8 +218,14 @@ const DESIGN_SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['key', 'heading', 'subtitle'],
-        properties: { key: { type: 'string' }, heading: { type: 'string' }, subtitle: { type: 'string' } },
+        required: ['key', 'layout', 'heading', 'subtitle'],
+        properties: {
+          key: { type: 'string' },
+          // The screen layouts in src/lib/screenLayouts.js (LAYOUTS).
+          layout: { type: 'string', enum: ['card', 'focus', 'side', 'photo', 'cover'] },
+          heading: { type: 'string' },
+          subtitle: { type: 'string' },
+        },
       },
     },
     summary: { type: 'string' },
@@ -463,7 +475,7 @@ export const FAKE_OUTPUT = {
   'design-screens': {
     style: 'playful',
     palette: { from: '#ffd166', to: '#ef476f', accent: '#7c3aed' },
-    screens: [{ key: 'start', heading: '🎉 Let’s plan lunch', subtitle: 'It only takes a minute.' }],
+    screens: [{ key: 'start', layout: 'cover', heading: '🎉 Let’s plan lunch', subtitle: 'It only takes a minute.' }],
     summary: 'Playful, warm colours for a friendly team lunch.',
   },
   'edit-form': {
