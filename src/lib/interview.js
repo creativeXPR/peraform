@@ -74,6 +74,8 @@ export function frameOf(node, device) {
   return node.frames?.[device] ?? node.frames?.phone ?? { x: 0, y: 0, w: 100, h: 40, r: 0, z: 0 }
 }
 
+export { readingOrder, flatReadingOrder } from './interviewKeys.js'
+
 // Children of a parent (null = the screen), bottom to top: by level, then
 // by creation order.
 export function childrenOf(nodes, parentId, device) {

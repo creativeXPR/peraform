@@ -755,9 +755,63 @@ textarea.insp-input {
   transition: height 320ms var(--ease);
 }
 
+.interview-frame.interview-slide-forward {
+  animation: interview-slide-forward 220ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+.interview-frame.interview-slide-backward {
+  animation: interview-slide-backward 220ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+@keyframes interview-slide-forward {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes interview-slide-backward {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Thin progress bar pinned at the very top of interview screens */
+.interview-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--line);
+  z-index: 90;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.interview-progress span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 220ms var(--ease);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .interview-frame {
     transition: none;
+  }
+  .interview-frame.interview-slide-forward,
+  .interview-frame.interview-slide-backward {
+    animation: none !important;
   }
 }
 

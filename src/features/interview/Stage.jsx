@@ -11,6 +11,7 @@ import {
   frameOf,
   liveLayout,
   overflowOf,
+  readingOrder,
   resolveNode,
   stageHeight,
 } from '../../lib/interview.js'
@@ -227,7 +228,7 @@ export function StageNode({ node: raw, ctx }) {
     // card's own selection handles (edit mode) are never clipped away.
     content = (
       <div className={`stage-card-inner ov-${overflow}`}>
-        {childrenOf(design.nodes, node.id, device).map((child) => (
+        {(editing ? childrenOf : readingOrder)(design.nodes, node.id, device).map((child) => (
           <StageNode key={child.id} node={child} ctx={ctx} />
         ))}
         {renderGuides?.(node.id)}
@@ -309,6 +310,7 @@ export function StageNode({ node: raw, ctx }) {
       ref={elRef}
       className={className}
       data-node-id={node.id}
+      data-question-id={node.type === 'question' ? node.questionId : undefined}
       style={nodeStyle(node, frame, editing, override)}
       onPointerDown={editing ? (e) => onNodePointerDown?.(e, node) : undefined}
     >
@@ -355,7 +357,7 @@ export default function Stage({ design, device, children, ...ctx }) {
         background: ctx.transparentBg ? 'transparent' : (backgroundCss(design.bg) ?? 'var(--bg)'),
       }}
     >
-      {childrenOf(design.nodes, null, device).map((node) => (
+      {(ctx.mode === 'live' ? readingOrder : childrenOf)(design.nodes, null, device).map((node) => (
         <StageNode key={node.id} node={node} ctx={full} />
       ))}
       {ctx.renderGuides?.(null)}

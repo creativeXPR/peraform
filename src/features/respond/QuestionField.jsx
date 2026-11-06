@@ -10,7 +10,7 @@ export default function QuestionField({ question: q, formId, value, onChange, er
   const labelId = `${name}-label`
 
   return (
-    <section id={name} className={`respond-card respond-q${error ? ' respond-q-missing' : ''}`}>
+    <section id={name} data-question-id={q.id} className={`respond-card respond-q${error ? ' respond-q-missing' : ''}`}>
       <p id={labelId} className="respond-q-title">
         {q.title || 'Untitled question'}
         {q.required && <span className="q-required"> *</span>}

@@ -18,6 +18,7 @@ import { needsSignIn, quizSettings, settingsOf, topBarIcon, topBarTitle, fieldPa
 import { usePageTitle } from '../../lib/usePageTitle.js'
 import { applyClick, isHiddenNow, resolveActions, shownByActions } from '../../lib/actions.js'
 import { frameOf, nextAsSubmit, screenDesign, screensOf, visibleQuestionIds, withoutStrays } from '../../lib/interview.js'
+import { interviewProgress, toggleChoiceOption } from '../../lib/interviewKeys.js'
 import { useViewportDevice } from '../../lib/useViewportDevice.js'
 import { parsePrefill } from '../../lib/prefill.js'
 import { shuffled } from '../../lib/shuffle.js'
@@ -240,6 +241,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
   // Back retraces skip logic and only visited pages' answers are submitted.
   const [pageIndex, setPageIndex] = useState(0)
   const [history, setHistory] = useState([])
+  const [direction, setDirection] = useState(null)
   const pages = useMemo(() => splitPages(form.questions), [form.questions])
   // Interview mode: which design (phone/desktop) fits this screen.
   const device = useViewportDevice()
@@ -313,6 +315,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
     setErrors({})
     setPageIndex(0)
     setHistory([])
+    setDirection(null)
   }
 
   // Answers in progress survive a refresh (and, signed in, a change of
@@ -639,11 +642,13 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
 
   function goNext(to = next) {
     if (!pageIsValid()) return
+    setDirection('forward')
     setHistory((h) => [...h, pageIndex])
     setPageIndex(to)
   }
 
   function goBack() {
+    setDirection('backward')
     setPageIndex(history[history.length - 1])
     setHistory((h) => h.slice(0, -1))
   }
@@ -786,6 +791,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
         const target = screens.findIndex((s) => s.key === action.screen)
         if (target < 0 || target === pageIndex || !pageIsValid()) return
         leave(() => {
+          setDirection(target > pageIndex ? 'forward' : 'backward')
           setHistory((h) => [...h, pageIndex])
           setPageIndex(target)
         })
@@ -795,9 +801,36 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
         leave(() => goNext(after))
       }
     }
+    const progress =
+      interview && screens && screens[pageIndex]
+        ? interviewProgress(screens, screens[pageIndex].key, screenOverrides, screenStartsHidden)
+        : null
+    const onEnter = () => {
+      if (state === 'sending' || leavingRef.current) return
+      const after = nextFor(clickState)
+      if (after === 'submit') {
+        finish()
+      } else if (pageIsValid()) {
+        leave(() => goNext(after))
+      }
+    }
+    const onChoiceKey = (choiceQ, optIndex) => {
+      const options = choiceQ.shuffleOptions
+        ? shuffled(choiceQ.options, choiceQ.id)
+        : choiceQ.options
+      if (optIndex < 0 || optIndex >= options.length) return
+      const option = options[optIndex]
+      const currentVal = answers[choiceQ.id]
+      const nextVal = toggleChoiceOption(choiceQ, option, currentVal)
+      setAnswer(choiceQ.id, nextVal)
+    }
     return (
       <InterviewView
         key={pageIndex}
+        direction={direction}
+        progress={showProgressBar && progress?.total > 1 ? progress : null}
+        onEnter={onEnter}
+        onChoiceKey={onChoiceKey}
         design={finalShown}
         device={device}
         questions={questionsOnly(form.questions)}
@@ -822,8 +855,8 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
             preview ||
             deadline ||
             error ||
-            state === 'sending' ||
-            (showProgressBar && pages.length > 1)) && (
+            state === 'sending'
+) && (
             <div className="interview-overlay">
               {prefillMode && <PrefillBar form={form} answers={answers} />}
               {pageIndex === 0 && consent}
@@ -843,22 +876,7 @@ function FormView({ form, user, initialAnswers = {}, prefillMode = false, dark =
                   Preview — publish this form to start collecting responses.
                 </p>
               )}
-              {showProgressBar && pages.length > 1 && (
-                <div
-                  className="respond-progress"
-                  role="progressbar"
-                  aria-label="Progress"
-                  aria-valuemin={1}
-                  aria-valuemax={pages.length}
-                  aria-valuenow={pageIndex + 1}
-                >
-                  <span
-                    style={{
-                      width: `${((pageIndex + 1) / pages.length) * 100}%`,
-                    }}
-                  />
-                </div>
-              )}
+
               {deadline && (
                 <div
                   className={`quiz-timer${secondsLeft <= lowAt ? ' quiz-timer-low' : ''}`}
