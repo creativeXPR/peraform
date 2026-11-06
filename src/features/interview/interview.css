@@ -1132,3 +1132,138 @@ textarea.insp-input {
     height: 100%;
   }
 }
+
+/* ── Layout picker (LayoutPicker.jsx) ───────────────────────── */
+.layout-picker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.layout-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.layout-tile:hover {
+  border-color: var(--accent);
+}
+
+.layout-tile.is-current {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.layout-name {
+  line-height: 1.25;
+}
+
+/* A tiny screen: i = picture, b = card, em = words. */
+.layout-thumb {
+  position: relative;
+  display: block;
+  height: 54px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.layout-thumb i,
+.layout-thumb b,
+.layout-thumb em {
+  position: absolute;
+  display: block;
+}
+
+.layout-thumb i {
+  display: none;
+  background: linear-gradient(160deg, #f4a261, #c2185b 55%, #6a4c93);
+}
+
+.layout-thumb b {
+  inset: 10px 22%;
+  border-radius: 5px;
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+}
+
+.layout-thumb em {
+  left: 30%;
+  right: 30%;
+  top: 18px;
+  height: 14px;
+  background: repeating-linear-gradient(var(--text-muted) 0 3px, transparent 3px 7px);
+  opacity: 0.6;
+}
+
+.layout-thumb-focus b,
+.layout-thumb-cover b {
+  background: transparent;
+  box-shadow: none;
+}
+
+.layout-thumb-focus em {
+  top: 14px;
+  left: 20%;
+  right: 20%;
+  height: 24px;
+  background: repeating-linear-gradient(var(--text) 0 6px, transparent 6px 11px);
+}
+
+.layout-thumb-cover em {
+  top: 16px;
+  left: 25%;
+  right: 25%;
+  height: 8px;
+  background: var(--text);
+  opacity: 0.7;
+}
+
+.layout-thumb-cover b {
+  inset: auto 38% 10px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.layout-thumb-side i {
+  display: block;
+  inset: 0 55% 0 0;
+}
+
+.layout-thumb-side b {
+  inset: 10px 8% 10px 52%;
+  background: transparent;
+  box-shadow: none;
+}
+
+.layout-thumb-side em {
+  left: 52%;
+  right: 10%;
+}
+
+.layout-thumb-photo i {
+  display: block;
+  inset: 0;
+}
+
+.layout-thumb-photo b {
+  inset: 10px 26%;
+  background: rgb(255 255 255 / 0.55);
+  backdrop-filter: blur(2px);
+}
+
+.layout-thumb-photo em {
+  left: 32%;
+  right: 32%;
+}

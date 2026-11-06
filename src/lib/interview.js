@@ -250,8 +250,10 @@ export function fitText(design) {
       if (node.type !== 'text') continue
       const current = d.nodes[node.id]
       const f = frameOf(current, device)
-      const pad = (current.style?.padding ?? 0) * 2
-      const needed = textHeight(current.text, current.style?.size ?? 16, f.w - pad) + pad
+      // As this device shows it (its own words and size, when split).
+      const shown = resolveNode(current, device)
+      const pad = (shown.style?.padding ?? 0) * 2
+      const needed = textHeight(shown.text, shown.style?.size ?? 16, f.w - pad) + pad
       if (needed <= f.h) continue
       const grow = needed - f.h
       const bottom = f.y + f.h

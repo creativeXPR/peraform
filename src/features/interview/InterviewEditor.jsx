@@ -58,6 +58,8 @@ import Inspector from './Inspector.jsx'
 import LayersPanel from './LayersPanel.jsx'
 import MoveBlockDialog from './MoveBlockDialog.jsx'
 import StylePicker from './StylePicker.jsx'
+import LayoutPicker from './LayoutPicker.jsx'
+import { LAYOUTS, SAMPLE_PHOTOS, applyLayout } from '../../lib/screenLayouts.js'
 import DesignScreensDialog from '../ai/DesignScreensDialog.jsx'
 import DawnOrb from '../ai/DawnOrb.jsx'
 
@@ -88,7 +90,7 @@ export default function InterviewEditor({ viewSwitch, viewHint }) {
   // Selected blocks, in the order picked; the last one is shown in the
   // Inspector (and gets the resize handles when it's the only one).
   const [selection, setSelection] = useState([])
-  const [pending, setPending] = useState(null) // { kind: 'delete' | 'share', ids } | { kind: 'reset' }
+  const [pending, setPending] = useState(null) // { kind: 'delete' | 'share', ids } | { kind: 'reset' } | { kind: 'layout', key }
   // Inspector → Preview: { nodeId, anim, nonce } plays it on the canvas.
   const [preview, setPreview] = useState(null)
   const [moving, setMoving] = useState(null) // block id for "Move to…"
@@ -506,6 +508,10 @@ export default function InterviewEditor({ viewSwitch, viewHint }) {
                 <strong>Screen {screen.index + 1}</strong>
               </div>
               <section className="insp-group">
+                <h3>Layout</h3>
+                <LayoutPicker current={design.layout} onPick={(key) => setPending({ kind: 'layout', key })} />
+              </section>
+              <section className="insp-group">
                 <h3>Style</h3>
                 <StylePicker
                   key={screen.key}
@@ -609,7 +615,9 @@ export default function InterviewEditor({ viewSwitch, viewHint }) {
       <ConfirmModal
         open={Boolean(pending)}
         title={
-          pending?.kind === 'reset'
+          pending?.kind === 'layout'
+            ? `Use the “${LAYOUTS[pending.key].label}” layout?`
+            : pending?.kind === 'reset'
             ? 'Start this screen over?'
             : pending?.kind === 'share'
               ? `Use the ${DEVICES[device].label.toLowerCase()} look on both devices?`
@@ -618,7 +626,9 @@ export default function InterviewEditor({ viewSwitch, viewHint }) {
               : `Delete this ${design.nodes[pending?.ids?.[0]]?.type === 'card' ? 'card' : 'block'}?`
         }
         message={
-          pending?.kind === 'reset'
+          pending?.kind === 'layout'
+            ? `This screen’s blocks are rearranged into it on both devices; their words, questions, actions and animations stay. Extra cards are merged into one.${['side', 'photo'].includes(pending.key) && !Object.values(design.nodes).some((n) => ['image', 'video', 'embed'].includes(n.type)) ? ' A sample photo is added: click it to choose your own.' : ''} You can undo this.`
+            : pending?.kind === 'reset'
             ? 'Its design is replaced by a fresh starter layout on both devices. You can undo this.'
             : pending?.kind === 'share'
               ? `The ${DEVICES[device === 'phone' ? 'desktop' : 'phone'].label.toLowerCase()} design’s own colours, fonts and words for this block are replaced by the ${DEVICES[device].label.toLowerCase()} ones. Position and size stay per device. You can undo this.`
@@ -626,10 +636,16 @@ export default function InterviewEditor({ viewSwitch, viewHint }) {
               ? 'Cards go with everything inside them. They’re removed from this screen on both devices. You can undo this.'
               : 'Removed from this screen on both devices. You can undo this.'
         }
-        confirmLabel={pending?.kind === 'reset' ? 'Start over' : pending?.kind === 'share' ? 'Share' : 'Delete'}
-        tone={pending?.kind === 'share' ? 'neutral' : 'danger'}
+        confirmLabel={
+          pending?.kind === 'layout' ? 'Use this layout' : pending?.kind === 'reset' ? 'Start over' : pending?.kind === 'share' ? 'Share' : 'Delete'
+        }
+        tone={pending?.kind === 'share' || pending?.kind === 'layout' ? 'neutral' : 'danger'}
         onConfirm={() => {
-          if (pending.kind === 'reset') {
+          if (pending.kind === 'layout') {
+            const photo = SAMPLE_PHOTOS[pending.key === 'photo' ? 1 : 0].url
+            change(`layout:${pending.key}`, (dsn) => applyLayout(dsn, pending.key, { questions, photo }))
+            setSelection([])
+          } else if (pending.kind === 'reset') {
             const isLast = screen.index === screens.length - 1
             change('reset', () => starterScreen(draft, screen, isLast))
             setSelection([])
