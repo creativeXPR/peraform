@@ -24,6 +24,8 @@ import {
   withoutStrays,
   textHeight,
   visibleQuestionIds,
+  copyPhoneToDesktop,
+  isDesktopUntouched,
 } from '../../src/lib/interview.js'
 
 const form = {
@@ -556,5 +558,145 @@ describe('designed screens follow the question list (syncScreens)', () => {
     expect(syncScreens(off).placed).toEqual([])
     const plain = { ...base, questions: [...base.questions, { id: 'q9', type: 'shortText', title: 'X' }] }
     expect(syncScreens(plain).form).toBe(plain)
+  })
+})
+
+describe('copyPhoneToDesktop', () => {
+  it('scales node frames from phone to desktop width, keeps y/h, and centres top-level card', () => {
+    const scale = DEVICES.desktop.width / DEVICES.phone.width
+    const design = {
+      bg: null,
+      nodes: {
+        card1: {
+          id: 'card1',
+          type: 'card',
+          parentId: null,
+          frames: {
+            phone: { x: 16, y: 48, w: 358, h: 400, r: 0, z: 0 },
+            desktop: { x: 320, y: 64, w: 640, h: 500, r: 0, z: 0 },
+          },
+        },
+        text1: {
+          id: 'text1',
+          type: 'text',
+          parentId: 'card1',
+          text: 'Hello',
+          frames: {
+            phone: { x: 20, y: 20, w: 318, h: 40, r: 0, z: 0 },
+            desktop: { x: 32, y: 32, w: 576, h: 40, r: 0, z: 0 },
+          },
+        },
+      },
+    }
+
+    const copied = copyPhoneToDesktop(design)
+    const cardF = copied.nodes.card1.frames.desktop
+    const textF = copied.nodes.text1.frames.desktop
+
+    const expectedCardW = Math.round(358 * scale)
+    expect(cardF.w).toBe(expectedCardW)
+    expect(cardF.x).toBe(Math.round((DEVICES.desktop.width - expectedCardW) / 2))
+    expect(cardF.y).toBe(48)
+    expect(cardF.h).toBe(400)
+
+    expect(textF.y).toBe(20)
+    expect(textF.h).toBe(40)
+    expect(textF.x).toBe(Math.round(20 * scale))
+    expect(textF.w).toBe(Math.round(318 * scale))
+    expect(textF.x + textF.w).toBeLessThanOrEqual(cardF.w)
+  })
+
+  it('keeps children inside their parent card', () => {
+    const design = {
+      nodes: {
+        card1: {
+          id: 'card1',
+          type: 'card',
+          parentId: null,
+          frames: {
+            phone: { x: 0, y: 0, w: 300, h: 400, r: 0, z: 0 },
+          },
+        },
+        child1: {
+          id: 'child1',
+          type: 'button',
+          parentId: 'card1',
+          frames: {
+            phone: { x: 250, y: 50, w: 100, h: 40, r: 0, z: 0 }, // slightly overflows parent on phone
+          },
+        },
+      },
+    }
+
+    const copied = copyPhoneToDesktop(design)
+    const cardF = copied.nodes.card1.frames.desktop
+    const childF = copied.nodes.child1.frames.desktop
+    expect(childF.x + childF.w).toBeLessThanOrEqual(cardF.w)
+  })
+
+  it('drops desktop-only words and looks so desktop shares phone version', () => {
+    const design = {
+      nodes: {
+        card1: {
+          id: 'card1',
+          type: 'card',
+          parentId: null,
+          frames: { phone: { x: 0, y: 0, w: 300, h: 300 } },
+        },
+        btn1: {
+          id: 'btn1',
+          type: 'button',
+          parentId: 'card1',
+          label: 'Submit (Phone)',
+          split: true,
+          byDevice: {
+            phone: { label: 'Submit (Phone)' },
+            desktop: { label: 'Submit (Desktop)' },
+          },
+          frames: { phone: { x: 10, y: 10, w: 100, h: 40 } },
+        },
+      },
+    }
+
+    const copied = copyPhoneToDesktop(design)
+    expect(copied.nodes.btn1.byDevice?.desktop).toBeUndefined()
+  })
+})
+
+describe('isDesktopUntouched', () => {
+  it('returns true when every desktop frame matches starterScreen', () => {
+    const screens = screensOf(form)
+    const starter = starterScreen(form, screens[0], false)
+    expect(isDesktopUntouched(starter, starter)).toBe(true)
+  })
+
+  it('returns false when a desktop frame has been moved or resized', () => {
+    const screens = screensOf(form)
+    const starter = starterScreen(form, screens[0], false)
+    const [cardId] = Object.keys(starter.nodes)
+    const modified = {
+      ...starter,
+      nodes: {
+        ...starter.nodes,
+        [cardId]: {
+          ...starter.nodes[cardId],
+          frames: {
+            ...starter.nodes[cardId].frames,
+            desktop: { ...starter.nodes[cardId].frames.desktop, x: 999 },
+          },
+        },
+      },
+    }
+    expect(isDesktopUntouched(modified, starter)).toBe(false)
+  })
+
+  it('returns false when nodes were added or removed', () => {
+    const screens = screensOf(form)
+    const starter = starterScreen(form, screens[0], false)
+    const withoutOne = {
+      ...starter,
+      nodes: Object.fromEntries(Object.entries(starter.nodes).slice(1)),
+    }
+    expect(isDesktopUntouched(withoutOne, starter)).toBe(false)
   })
 })

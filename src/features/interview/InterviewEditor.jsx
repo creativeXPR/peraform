@@ -17,6 +17,7 @@ import {
   addNode,
   alignFrames,
   canHoldChildren,
+  copyPhoneToDesktop,
   duplicateBlock,
   fitBlockHeight,
   fitCard,
@@ -24,6 +25,7 @@ import {
   moveBlock,
   moveTargets,
   interviewOf,
+  isDesktopUntouched,
   keepBlockData,
   pasteBlock,
   fixButton,
@@ -92,6 +94,7 @@ export default function InterviewEditor({ viewSwitch, viewHint }) {
   // Inspector (and gets the resize handles when it's the only one).
   const [selection, setSelection] = useState([])
   const [pending, setPending] = useState(null) // { kind: 'delete' | 'share', ids } | { kind: 'reset' } | { kind: 'layout', key }
+  const [applyAll, setApplyAll] = useState(false)
   // Inspector → Preview: { nodeId, anim, nonce } plays it on the canvas.
   const [preview, setPreview] = useState(null)
   const [moving, setMoving] = useState(null) // block id for "Move to…"
@@ -614,6 +617,22 @@ export default function InterviewEditor({ viewSwitch, viewHint }) {
                   <RotateCcw size={15} />
                   Start this screen over
                 </button>
+                {device === 'desktop' &&
+                  isDesktopUntouched(design, starterScreen(draft, screen, screen.index === screens.length - 1)) && (
+                    <p className="insp-note">
+                      Desktop hasn't been designed yet: people on computers see the starter layout.
+                    </p>
+                  )}
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => {
+                    setApplyAll(false)
+                    setPending({ kind: 'copy-phone' })
+                  }}
+                >
+                  Copy phone design to desktop
+                </button>
               </section>
             </div>
           )}
@@ -650,6 +669,8 @@ export default function InterviewEditor({ viewSwitch, viewHint }) {
             ? `Use the “${LAYOUTS[pending.key].label}” layout?`
             : pending?.kind === 'reset'
             ? 'Start this screen over?'
+            : pending?.kind === 'copy-phone'
+            ? 'Copy phone design to desktop?'
             : pending?.kind === 'share'
               ? `Use the ${DEVICES[device].label.toLowerCase()} look on both devices?`
               : pending?.ids?.length > 1
@@ -665,6 +686,8 @@ export default function InterviewEditor({ viewSwitch, viewHint }) {
             ? `This screen’s blocks are rearranged into it on both devices; their words, questions, actions and animations stay. Extra cards are merged into one.${['side', 'photo'].includes(pending.key) && !Object.values(design.nodes).some((n) => ['image', 'video', 'embed'].includes(n.type)) ? ' A sample photo is added: click it to choose your own.' : ''} You can undo this.`
             : pending?.kind === 'reset'
             ? 'Its design is replaced by a fresh starter layout on both devices. You can undo this.'
+            : pending?.kind === 'copy-phone'
+            ? "Desktop's own layout for this screen is replaced. You can undo this."
             : pending?.kind === 'share'
               ? `The ${DEVICES[device === 'phone' ? 'desktop' : 'phone'].label.toLowerCase()} design’s own colours, fonts and words for this block are replaced by the ${DEVICES[device].label.toLowerCase()} ones. Position and size stay per device. You can undo this.`
               : pending?.ids?.some((id) => design.nodes[id]?.type === 'card')
@@ -672,9 +695,21 @@ export default function InterviewEditor({ viewSwitch, viewHint }) {
               : 'Removed from this screen on both devices. You can undo this.'
         }
         confirmLabel={
-          pending?.kind === 'keep-screen' || pending?.kind === 'keep-look' ? 'Use it' : pending?.kind === 'layout' ? 'Use this layout' : pending?.kind === 'reset' ? 'Start over' : pending?.kind === 'share' ? 'Share' : 'Delete'
+          pending?.kind === 'keep-screen' || pending?.kind === 'keep-look' ? 'Use it' : pending?.kind === 'layout' ? 'Use this layout' : pending?.kind === 'reset' ? 'Start over' : pending?.kind === 'copy-phone' ? 'Copy to desktop' : pending?.kind === 'share' ? 'Share' : 'Delete'
         }
-        tone={['share', 'layout', 'keep-screen', 'keep-look'].includes(pending?.kind) ? 'neutral' : 'danger'}
+        tone={['share', 'layout', 'keep-screen', 'keep-look', 'copy-phone'].includes(pending?.kind) ? 'neutral' : 'danger'}
+        extra={
+          pending?.kind === 'copy-phone' && (
+            <label className="insp-check">
+              <input
+                type="checkbox"
+                checked={applyAll}
+                onChange={(e) => setApplyAll(e.target.checked)}
+              />
+              Apply to every screen
+            </label>
+          )
+        }
         onConfirm={() => {
           if (pending.kind === 'keep-screen') {
             const key = screen.key
@@ -695,6 +730,19 @@ export default function InterviewEditor({ viewSwitch, viewHint }) {
           } else if (pending.kind === 'reset') {
             const isLast = screen.index === screens.length - 1
             change('reset', () => starterScreen(draft, screen, isLast))
+            setSelection([])
+          } else if (pending.kind === 'copy-phone') {
+            if (applyAll) {
+              edit(`interview:copy-phone-all:${Date.now()}`, (d) => {
+                const all = screensOf(d)
+                const iv = interviewOf(d)
+                const next = { ...iv.screens }
+                for (const s of all) next[s.key] = copyPhoneToDesktop(screenDesign(d, s, all))
+                return { ...d, interview: { ...iv, screens: next } }
+              })
+            } else {
+              change(`copy-phone:${Date.now()}`, (dsn) => copyPhoneToDesktop(dsn))
+            }
             setSelection([])
           } else if (pending.kind === 'share') {
             change(`split:${pending.ids.join()}:false`, (dsn) => pending.ids.reduce((d, id) => setSplit(d, id, false, device), dsn))

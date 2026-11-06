@@ -1216,3 +1216,111 @@ export function moveBlock(form, fromKey, id, toKey, parentId) {
   }
   return next
 }
+
+// Every node's desktop frame becomes its phone frame scaled to the desktop
+// width (x and w by DEVICES.desktop.width / DEVICES.phone.width; y and h
+// unchanged; top-level cards stay centred; children stay inside their card).
+// Desktop-only words/looks (node.byDevice.desktop) are dropped so desktop shares phone's.
+export function copyPhoneToDesktop(design) {
+  if (!design?.nodes) return design
+
+  const scale = DEVICES.desktop.width / DEVICES.phone.width
+  const desktopFrames = {}
+
+  function getDesktopFrame(id) {
+    if (desktopFrames[id]) return desktopFrames[id]
+    const node = design.nodes[id]
+    if (!node) return { x: 0, y: 0, w: 100, h: 40, r: 0, z: 0 }
+
+    const pf = frameOf(node, 'phone')
+    let x = Math.round(pf.x * scale)
+    let w = Math.round(pf.w * scale)
+
+    if (!node.parentId) {
+      // Top-level cards stay centred.
+      w = Math.min(DEVICES.desktop.width, Math.max(MIN_SIZE, w))
+      x = Math.max(0, Math.round((DEVICES.desktop.width - w) / 2))
+    } else {
+      // Children stay inside their card.
+      const parentFrame = getDesktopFrame(node.parentId)
+      const parentW = parentFrame.w
+      if (x < 0) x = 0
+      if (x >= parentW) x = Math.max(0, parentW - MIN_SIZE)
+      if (x + w > parentW) w = Math.max(MIN_SIZE, parentW - x)
+    }
+
+    const df = {
+      ...pf,
+      x,
+      y: pf.y,
+      w,
+      h: pf.h,
+    }
+    desktopFrames[id] = df
+    return df
+  }
+
+  for (const id of Object.keys(design.nodes)) {
+    getDesktopFrame(id)
+  }
+
+  const nextNodes = {}
+  for (const [id, node] of Object.entries(design.nodes)) {
+    const nodeCopy = { ...node }
+
+    if (nodeCopy.byDevice) {
+      const restByDevice = { ...nodeCopy.byDevice }
+      delete restByDevice.desktop
+      if (Object.keys(restByDevice).length > 0) {
+        nodeCopy.byDevice = restByDevice
+      } else {
+        delete nodeCopy.byDevice
+        delete nodeCopy.split
+      }
+    }
+
+    nodeCopy.frames = {
+      ...nodeCopy.frames,
+      desktop: desktopFrames[id],
+    }
+
+    nextNodes[id] = nodeCopy
+  }
+
+  return {
+    ...design,
+    nodes: nextNodes,
+  }
+}
+
+// Checks whether a screen's desktop frames have ever been modified from the starter layout.
+export function isDesktopUntouched(design, starter) {
+  if (!design?.nodes || !starter?.nodes) return false
+  const dKeys = Object.keys(design.nodes)
+  const sKeys = Object.keys(starter.nodes)
+  if (dKeys.length !== sKeys.length) return false
+
+  for (const id of dKeys) {
+    const dNode = design.nodes[id]
+    const sNode = starter.nodes[id]
+    if (!sNode) return false
+
+    const df = frameOf(dNode, 'desktop')
+    const sf = frameOf(sNode, 'desktop')
+
+    if (
+      df.x !== sf.x ||
+      df.y !== sf.y ||
+      df.w !== sf.w ||
+      df.h !== sf.h ||
+      (df.r || 0) !== (sf.r || 0) ||
+      (df.z || 0) !== (sf.z || 0) ||
+      Boolean(df.hidden) !== Boolean(sf.hidden)
+    ) {
+      return false
+    }
+  }
+
+  return true
+}
+

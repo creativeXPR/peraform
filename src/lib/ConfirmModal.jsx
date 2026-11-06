@@ -14,6 +14,7 @@ export default function ConfirmModal({
   open,
   title,
   message,
+  extra,
   confirmLabel = 'Delete',
   tone = 'danger',
   busy = false,
@@ -47,6 +48,7 @@ export default function ConfirmModal({
         )}
         <h2>{title}</h2>
         {message && <p>{message}</p>}
+        {extra}
         <div className="confirm-actions">
           <button type="button" className="btn btn-ghost" onClick={onCancel} disabled={busy}>
             Cancel
