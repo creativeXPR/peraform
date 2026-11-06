@@ -12,6 +12,7 @@ import {
   MoreVertical,
   Palette,
   Printer,
+  QrCode as QrCodeIcon,
   Redo2,
   Trash2,
   Undo2,
@@ -25,6 +26,7 @@ import { createImportedForm, deleteForm } from '../dashboard/formActions.js'
 import { fileName, fileToForm, formToFile } from '../../lib/formFile.js'
 import EditFormDialog from '../ai/EditFormDialog.jsx'
 import EmbedDialog from './EmbedDialog.jsx'
+import QrCodeDialog from './QrCodeDialog.jsx'
 import ShareDialog from './ShareDialog.jsx'
 import ShortcutsDialog from './ShortcutsDialog.jsx'
 import ThemePanel from './ThemePanel.jsx'
@@ -50,6 +52,7 @@ export default function BuilderActions() {
   const [embedOpen, setEmbedOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
+  const [qrOpen, setQrOpen] = useState(false)
   const isOwner = form.ownerId === user.uid
   const link = `${window.location.origin}/f/${form.id}`
 
@@ -168,6 +171,7 @@ export default function BuilderActions() {
   const moreItems = [
     { label: 'Preview', icon: Eye, onSelect: () => window.open(link, '_blank', 'noopener') },
     { label: 'Copy link', icon: Link2, onSelect: copyLink },
+    { label: 'Show QR code', icon: QrCodeIcon, onSelect: () => setQrOpen(true) },
     { label: 'Share', icon: UserPlus, onSelect: () => setCollabOpen(true) },
     { label: 'Theme', icon: Palette, onSelect: () => setThemeOpen(true) },
     { label: 'Edit with Dawn', icon: DawnOrb, onSelect: () => setAiOpen(true) },
@@ -291,6 +295,14 @@ export default function BuilderActions() {
       </div>
 
       <EmbedDialog open={embedOpen} link={link} onClose={() => setEmbedOpen(false)} showToast={showToast} />
+      <QrCodeDialog
+        open={qrOpen}
+        formId={form.id}
+        formTitle={draft?.title}
+        status={form.status}
+        onClose={() => setQrOpen(false)}
+        showToast={showToast}
+      />
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <EditFormDialog open={aiOpen} onClose={() => setAiOpen(false)} />
 
