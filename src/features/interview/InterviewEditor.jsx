@@ -1,16 +1,11 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Monitor, RotateCcw, Smartphone } from 'lucide-react'
-import ColorPicker from '../../lib/ColorPicker.jsx'
+import { Monitor, Smartphone } from 'lucide-react'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { isQuestion, isSection } from '../../lib/formLogic.js'
 import { fieldPaddingStyle, newSection } from '../../lib/formModel.js'
 import { showIfProps } from '../../lib/showIf.js'
-import ShowIf from '../builder/ShowIf.jsx'
-import TargetSelect from '../builder/TargetSelect.jsx'
-import { buildTargets } from '../builder/questionTypes.js'
 import { applyLook, applyStyle, captureLook, restoreOriginal } from '../../lib/designStyles.js'
-import { GRADIENT_PRESETS } from '../../lib/gradient.js'
 import {
   COLOR_TOKENS,
   DEVICES,
@@ -59,8 +54,7 @@ import ScreenIssues from './ScreenIssues.jsx'
 import Inspector from './Inspector.jsx'
 import LayersPanel from './LayersPanel.jsx'
 import MoveBlockDialog from './MoveBlockDialog.jsx'
-import StylePicker from './StylePicker.jsx'
-import LayoutPicker from './LayoutPicker.jsx'
+import ScreenPanel from './ScreenPanel.jsx'
 import { keepScreenData, pasteScreen } from '../../lib/keptScreens.js'
 import { LAYOUTS, SAMPLE_PHOTOS, applyLayout } from '../../lib/screenLayouts.js'
 import DesignScreensDialog from '../ai/DesignScreensDialog.jsx'
@@ -389,6 +383,7 @@ export default function InterviewEditor({ viewSwitch, viewHint }) {
             setSelection([])
           }}
           onAddScreen={addScreen}
+          designOf={(s) => screenDesign(draft, s, screens)}
           design={design}
           device={device}
           questions={questions}
@@ -513,128 +508,37 @@ export default function InterviewEditor({ viewSwitch, viewHint }) {
               }}
             />
           ) : (
-            <div className="inspector">
-              <div className="insp-head">
-                <strong>Screen {screen.index + 1}</strong>
-              </div>
-              <section className="insp-group">
-                <h3>Layout</h3>
-                <LayoutPicker current={design.layout} onPick={(key) => setPending({ kind: 'layout', key })} />
-              </section>
-              <section className="insp-group">
-                <h3>Style</h3>
-                <StylePicker
-                  key={screen.key}
-                  current={design.style}
-                  onApply={(key, where) => applyDesignStyle(key, where)}
-                  restorable={Object.values(interviewOf(draft).screens ?? {}).some((s) => s?.original)}
-                  onRestore={restoreDesignStyle}
-                />
-              </section>
-              {screen.index > 0 && (
-                <section className="insp-group">
-                  <h3>Visibility</h3>
-                  <label className="insp-check">
-                    <input
-                      type="checkbox"
-                      checked={Boolean(design.hidden)}
-                      onChange={(e) => setScreenHidden(screen.key, e.target.checked)}
-                    />
-                    Skip this screen until an action shows it
-                  </label>
-                  <ShowIf {...showIfProps(draft.questions, section, setQuestions)} noun="screen" />
-                  <p className="insp-note">
-                    A button or an answer on any screen can show it (or hide it, or change its background): pick
-                    “Screen {screen.index + 1}” as the action’s target.
-                  </p>
-                </section>
-              )}
-              <section className="insp-group">
-                <h3>After this screen</h3>
-                {section ? (
-                  <TargetSelect
-                    value={section.next}
-                    targets={buildTargets(sections).filter((t) => t.value !== section.id)}
-                    onChange={(next) =>
-                      setQuestions(`q:${section.id}:next`, (qs) => qs.map((q) => (q.id === section.id ? { ...q, next } : q)))
-                    }
-                    label="After this screen"
-                  />
-                ) : (
-                  <p className="insp-note">{screens.length > 1 ? 'Goes on to the next screen.' : 'The only screen: Next submits.'}</p>
-                )}
-                {branching.length > 0 && (
-                  <p className="insp-note">
-                    Answers to {branching.map((q) => `“${q.title || 'Untitled question'}”`).join(', ')} can send people
-                    elsewhere (set on the question in Edit questions).
-                  </p>
-                )}
-                <p className="insp-note">
-                  {section ? `The same setting as “After section ${screen.index + 1}” in Edit questions. ` : ''}Next buttons
-                  follow it; a button set to “Jump to a screen…” goes straight there.
-                </p>
-              </section>
-              <section className="insp-group">
-                <h3>Background</h3>
-                <ColorPicker
-                  value={design.bg ?? 'bg'}
-                  presets={SCREEN_BG_PRESETS}
-                  gradients={GRADIENT_PRESETS}
-                  onChange={(bg) => change('bg', (dsn) => ({ ...dsn, bg: bg === 'bg' ? null : bg }))}
-                  label="Screen background"
-                />
-              </section>
-              <section className="insp-group">
-                <h3>Design</h3>
-                <p className="insp-note">
-                  Click a block to edit it. Drag to move: it snaps to the card’s edges and centre
-                  and to the other blocks (hold Alt to place freely). Shift-click, or drag a box on
-                  empty space, to select several and move or style them together. Drag the corners
-                  to resize and the round knob to rotate. Ctrl + scroll zooms; hold Space (or press
-                  H) and drag to move around.
-                </p>
-                <div className="insp-keep">
-                  <button
-                    type="button"
-                    className="btn btn-outline"
-                    onClick={() =>
-                      keepStore?.keep(makeKeep('screen', keepScreenData(design, draft.questions), `Screen · ${screen.title}`))
-                    }
-                    title="Save this screen's design to your Keep, to use on a screen of any form"
-                  >
-                    Keep this screen
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-outline"
-                    onClick={() => keepStore?.keep(makeKeep('look', captureLook(design), `Look · ${draft.title || 'Untitled form'}`))}
-                    title="Save this screen's colours, fonts and entrance to your Keep, to give another form the same look"
-                  >
-                    Keep this look
-                  </button>
-                </div>
-                <button type="button" className="btn btn-outline" onClick={() => setPending({ kind: 'reset' })}>
-                  <RotateCcw size={15} />
-                  Start this screen over
-                </button>
-                {device === 'desktop' &&
-                  isDesktopUntouched(design, starterScreen(draft, screen, screen.index === screens.length - 1)) && (
-                    <p className="insp-note">
-                      Desktop hasn't been designed yet: people on computers see the starter layout.
-                    </p>
-                  )}
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={() => {
-                    setApplyAll(false)
-                    setPending({ kind: 'copy-phone' })
-                  }}
-                >
-                  Copy phone design to desktop
-                </button>
-              </section>
-            </div>
+            <ScreenPanel
+              screen={screen}
+              screens={screens}
+              design={design}
+              section={section}
+              sections={sections}
+              branching={branching}
+              showIf={screen.index > 0 ? showIfProps(draft.questions, section, setQuestions) : null}
+              desktopUntouched={
+                device === 'desktop' && isDesktopUntouched(design, starterScreen(draft, screen, screen.index === screens.length - 1))
+              }
+              bgPresets={SCREEN_BG_PRESETS}
+              styleRestorable={Object.values(interviewOf(draft).screens ?? {}).some((s) => s?.original)}
+              onLayout={(key) => setPending({ kind: 'layout', key })}
+              onStyle={(key, where) => applyDesignStyle(key, where)}
+              onRestoreStyle={restoreDesignStyle}
+              onNext={(next) =>
+                setQuestions(`q:${section.id}:next`, (qs) => qs.map((q) => (q.id === section.id ? { ...q, next } : q)))
+              }
+              onHidden={(hidden) => setScreenHidden(screen.key, hidden)}
+              onBackground={(bg) => change('bg', (dsn) => ({ ...dsn, bg: bg === 'bg' ? null : bg }))}
+              onKeepScreen={() =>
+                keepStore?.keep(makeKeep('screen', keepScreenData(design, draft.questions), `Screen · ${screen.title}`))
+              }
+              onKeepLook={() => keepStore?.keep(makeKeep('look', captureLook(design), `Look · ${draft.title || 'Untitled form'}`))}
+              onCopyToDesktop={() => {
+                setApplyAll(false)
+                setPending({ kind: 'copy-phone' })
+              }}
+              onStartOver={() => setPending({ kind: 'reset' })}
+            />
           )}
         </div>
       </div>

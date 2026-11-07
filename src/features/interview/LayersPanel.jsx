@@ -14,6 +14,7 @@ import {
   Video,
 } from 'lucide-react'
 import MenuButton from '../../lib/MenuButton.jsx'
+import ScreenThumb from './ScreenThumb.jsx'
 import { NODE_TYPES, childrenOf, frameOf, nodeLabel } from '../../lib/interview.js'
 
 const NODE_ICONS = {
@@ -24,6 +25,17 @@ const NODE_ICONS = {
   embed: AppWindow,
   question: CircleHelp,
   button: MousePointerClick,
+}
+
+// Each block type's colour, on its (soft) icon tile.
+const NODE_COLOURS = {
+  card: '#64748b',
+  text: '#f59e0b',
+  image: '#0ea5e9',
+  video: '#0ea5e9',
+  embed: '#0ea5e9',
+  question: '#10b981',
+  button: '#8b5cf6',
 }
 
 function Tree({ nodes, parentId, device, depth, ctx }) {
@@ -47,7 +59,9 @@ function Tree({ nodes, parentId, device, depth, ctx }) {
                 // Shift or Ctrl/⌘: add to (or take out of) the selection.
                 onClick={(e) => ctx.onSelect(node.id, e.shiftKey || e.ctrlKey || e.metaKey)}
               >
-                <Icon size={14} />
+                <span className="layer-tile" style={{ '--c': NODE_COLOURS[node.type] }} aria-hidden="true">
+                  <Icon size={13} />
+                </span>
                 <span>{nodeLabel(node, ctx.questions)}</span>
               </button>
               <button
@@ -55,7 +69,7 @@ function Tree({ nodes, parentId, device, depth, ctx }) {
                 className="icon-btn layer-eye"
                 onClick={() => ctx.onToggleHidden(node)}
                 aria-label={hidden ? 'Show' : 'Hide'}
-                title={hidden ? 'Show on this device' : 'Hide on this device'}
+                title={hidden ? 'Hidden until an action shows it. Click to show it on this device.' : 'Hide on this device'}
               >
                 {hidden ? <EyeOff size={14} /> : <Eye size={14} />}
               </button>
@@ -86,6 +100,7 @@ export default function LayersPanel({
   screenKey,
   onScreen,
   onAddScreen, // adds a section at the end (a screen is a section)
+  designOf, // (screen) its design, for the tiny phone
   design,
   device,
   questions,
@@ -112,8 +127,13 @@ export default function LayersPanel({
   return (
     <aside className="layers">
       <section className="layers-section">
-        <h3>Screens</h3>
-        <ol className="screens-list">
+        <div className="layers-head">
+          <h3>Screens</h3>
+          <button type="button" className="layers-add" onClick={onAddScreen}>
+            + Screen
+          </button>
+        </div>
+        <ol className="screen-thumbs">
           {screens.map((sc) => (
             <li key={sc.key}>
               <button
@@ -121,9 +141,12 @@ export default function LayersPanel({
                 className={sc.key === screenKey ? 'is-current' : ''}
                 aria-current={sc.key === screenKey ? 'true' : undefined}
                 onClick={() => onScreen(sc.key)}
+                title={`${sc.index + 1}. ${sc.title}`}
               >
-                <span className="screen-num">{sc.index + 1}</span>
-                <span className="screen-title">{sc.title}</span>
+                <ScreenThumb design={designOf(sc)} />
+                <span className="screen-thumb-name">
+                  {sc.index + 1} {sc.title}
+                </span>
                 {issueKeys?.has(sc.key) && (
                   <span className="screen-issue" title="Needs your attention" aria-label="Needs your attention">
                     !
@@ -132,10 +155,13 @@ export default function LayersPanel({
               </button>
             </li>
           ))}
+          <li>
+            <button type="button" className="screen-thumb-new" onClick={onAddScreen} aria-label="Add a screen">
+              <span className="st-phone">+</span>
+              <span className="screen-thumb-name">New</span>
+            </button>
+          </li>
         </ol>
-        <button type="button" className="link-btn screens-add" onClick={onAddScreen}>
-          + Add screen
-        </button>
       </section>
 
       <section className="layers-section">

@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Screen panel mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@700;800&family=Lora:wght@700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f6f5fb;
+    --surface: #ffffff;
+    --card: #faf9ff;
+    --line: rgb(20 16 60 / 0.08);
+    --text: #14151a;
+    --muted: #6b6f7b;
+    --accent: #6d55d8;
+    --accent-soft: rgb(109 85 216 / 0.1);
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; padding: 24px 16px 48px; background: var(--bg); color: var(--text); font: 14px/1.4 Inter, system-ui, sans-serif; }
+  h1 { margin: 0 0 4px; font-size: 20px; }
+  .lede { margin: 0 0 20px; color: var(--muted); max-width: 760px; }
+  .compare { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+  .col h2 { margin: 0 0 8px; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+  .notes { max-width: 300px; margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
+  .notes li { margin-bottom: 6px; }
+  .notes b { color: var(--text); font-weight: 600; }
+
+  /* ── The panel ─────────────────────────────── */
+  .panel { width: 270px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 10px; display: flex; flex-direction: column; gap: 2px; }
+  .head { display: flex; align-items: center; gap: 6px; padding: 4px 4px 8px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+  .head strong { flex: 1; font-size: 14px; }
+  .icon { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; position: relative; }
+  .icon:hover, .icon[aria-expanded="true"] { background: var(--accent-soft); color: var(--accent); }
+  .icon svg { width: 17px; height: 17px; }
+
+  /* Overflow menu */
+  .menu-wrap { position: relative; }
+  .menu { position: absolute; right: 0; top: 34px; z-index: 5; width: 232px; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px rgb(20 16 60 / .14); }
+  .menu button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 0; border-radius: 8px; background: none; font: inherit; font-size: 13px; color: var(--text); text-align: left; cursor: pointer; }
+  .menu button:hover { background: var(--accent-soft); }
+  .menu svg { width: 16px; height: 16px; color: var(--muted); flex: none; }
+  .menu hr { border: 0; border-top: 1px solid var(--line); margin: 4px 2px; }
+  .menu .danger { color: #c0392b; }
+  .menu .danger svg { color: #c0392b; }
+
+  /* Collapsible groups */
+  details { border-radius: 10px; }
+  summary { list-style: none; display: flex; align-items: center; gap: 6px; padding: 8px 6px; cursor: pointer; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-radius: 8px; }
+  summary::-webkit-details-marker { display: none; }
+  summary:hover { background: var(--card); }
+  summary .chev { width: 14px; height: 14px; transition: transform .15s; }
+  details[open] summary .chev { transform: rotate(90deg); }
+  summary .value { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--text); font-size: 12px; }
+  .body { padding: 2px 6px 10px; display: flex; flex-direction: column; gap: 8px; }
+
+  /* Info tip: the long notes live here */
+  .tip { position: relative; display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; color: var(--muted); }
+  .tip svg { width: 14px; height: 14px; }
+  .tip .bubble { display: none; position: absolute; left: 50%; top: 22px; transform: translateX(-50%); z-index: 6; width: 220px; padding: 10px 12px; background: #1d1b2b; color: #fff; border-radius: 10px; font-size: 12px; font-weight: 400; line-height: 1.45; text-transform: none; letter-spacing: 0; box-shadow: 0 10px 28px rgb(0 0 0 / .2); }
+  .tip:hover .bubble, .tip.show .bubble { display: block; }
+
+  /* Layout tiles: 3 across, small */
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .tile { padding: 4px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); cursor: pointer; text-align: center; font-size: 10.5px; color: var(--muted); }
+  .tile.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); color: var(--text); }
+  .thumb { height: 34px; border-radius: 6px; background: #f1f0f7; margin-bottom: 3px; position: relative; overflow: hidden; }
+  .thumb b { position: absolute; inset: 7px 24%; border-radius: 3px; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .15); }
+  .thumb i { position: absolute; background: linear-gradient(160deg, #f4a261, #c2185b 55%, #6a4c93); }
+  .t-focus b { background: none; box-shadow: none; border-top: 4px solid #444; border-bottom: 3px solid #bbb; inset: 11px 22%; }
+  .t-side i { inset: 0 55% 0 0; } .t-side b { inset: 8px 8% 8px 52%; }
+  .t-photo i { inset: 0; } .t-photo b { background: rgb(255 255 255 / .6); }
+  .t-cover b { background: none; box-shadow: none; border-top: 5px solid #333; inset: 9px 30% auto; height: 0; }
+  .t-cover::after { content: ""; position: absolute; left: 38%; right: 38%; bottom: 6px; height: 5px; border-radius: 9px; background: var(--accent); }
+
+  /* Small controls */
+  .row { display: flex; align-items: center; gap: 8px; }
+  .select { flex: 1; height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); font-size: 13px; display: flex; align-items: center; justify-content: space-between; }
+  .select::after { content: "▾"; color: var(--muted); font-size: 11px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-size: 12px; cursor: pointer; }
+  .chip svg { width: 14px; height: 14px; color: var(--muted); }
+  .swatches { display: flex; gap: 6px; }
+  /* Every swatch is a true circle (block, clipped), the custom one too. */
+  .sw { display: block; flex: none; width: 24px; height: 24px; border-radius: 50%; overflow: hidden; border: 1px solid var(--line); background-clip: padding-box; cursor: pointer; }
+  .sw.on { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--accent); }
+  /* Custom colour: a rainbow ring around a white centre with a +. */
+  .sw.custom { position: relative; border: 0; background: conic-gradient(#ff4d4d, #ffb84d, #f5f54d, #4dff88, #4dd2ff, #6d4dff, #ff4dd2, #ff4d4d); }
+  .sw.custom::after { content: "+"; position: absolute; inset: 4px; border-radius: 50%; background: #fff; color: var(--muted); font: 600 14px/16px Inter, sans-serif; text-align: center; }
+
+  /* Where Next goes: a destination card, opening a list of screens. */
+  .dest-wrap { position: relative; }
+  .dest { width: 100%; display: flex; align-items: center; gap: 10px; padding: 7px 10px 7px 7px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); font: inherit; text-align: left; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+  .dest:hover, .dest[aria-expanded="true"] { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .dest .go { width: 30px; height: 30px; flex: none; border-radius: 9px; display: grid; place-items: center; background: var(--accent); color: #fff; }
+  .dest .go svg { width: 16px; height: 16px; }
+  .dest .what { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .dest .what small { font-size: 10.5px; color: var(--muted); }
+  .dest .what span { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dest .chev2 { width: 16px; height: 16px; color: var(--muted); flex: none; transition: transform .15s; }
+  .dest[aria-expanded="true"] .chev2 { transform: rotate(180deg); }
+  .dest-list { position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 7; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px rgb(20 16 60 / .14); }
+  .dest-list button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 7px 8px; border: 0; border-radius: 8px; background: none; font: inherit; font-size: 13px; text-align: left; cursor: pointer; color: var(--text); }
+  .dest-list button:hover { background: var(--accent-soft); }
+  .dest-list .num { width: 22px; height: 22px; flex: none; border-radius: 7px; display: grid; place-items: center; background: #efedf8; color: var(--muted); font-size: 11px; font-weight: 600; }
+  .dest-list .num.submit { background: #e5f6ec; color: #1f8a4c; }
+  .dest-list .on { background: var(--accent-soft); }
+  .dest-list .on .num { background: var(--accent); color: #fff; }
+  .dest-list .tick { margin-left: auto; color: var(--accent); font-weight: 700; }
+  .dest-list .label { display: flex; flex-direction: column; }
+  .dest-list .label small { color: var(--muted); font-size: 10.5px; }
+  .dest-list hr { border: 0; border-top: 1px solid var(--line); margin: 4px 2px; }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+  /* Style tiles: each a tiny live screen in that style (its background,
+     card, fonts, corners, options and buttons). Hover plays its entrance. */
+  .styles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .st { position: relative; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); cursor: pointer; text-align: left; font: inherit; overflow: hidden; transition: transform .15s, box-shadow .15s; }
+  .st:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgb(20 16 60 / .12); }
+  .st.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft), 0 0 0 1px var(--accent); }
+  .st.on::after { content: "✓"; position: absolute; top: 6px; right: 6px; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; box-shadow: 0 0 0 2px #fff; }
+  .scr { height: 86px; padding: 9px 10px; display: flex; align-items: center; justify-content: center; }
+  .mini { width: 100%; padding: 7px 8px; display: flex; flex-direction: column; gap: 4px; }
+  .mini h4 { margin: 0 0 1px; font-size: 11px; line-height: 1.1; }
+  .opt { display: flex; align-items: center; gap: 4px; height: 9px; font-size: 7px; }
+  .opt i { width: 6px; height: 6px; border-radius: 50%; border: 1.2px solid currentColor; opacity: .7; }
+  .opt i.on { background: currentColor; opacity: 1; }
+  .opt span { height: 3px; border-radius: 2px; background: currentColor; opacity: .35; }
+  .btns { display: flex; justify-content: flex-end; gap: 4px; margin-top: 2px; }
+  .btns em { height: 11px; width: 22px; }
+  .btns b { height: 11px; width: 32px; }
+  .cap { padding: 6px 9px 8px; border-top: 1px solid var(--line); }
+  .cap strong { display: block; font-size: 12.5px; }
+  .cap small { display: block; font-size: 10.5px; color: var(--muted); line-height: 1.3; }
+
+  .s-playful .scr { background: linear-gradient(135deg, #ff9a8b, #a18cd1); }
+  .s-playful .mini { background: #fff; border-radius: 12px; box-shadow: 0 6px 14px rgb(80 20 120 / .3); color: #4b5060; font-family: Nunito, sans-serif; }
+  .s-playful h4 { color: #7c3aed; font-weight: 800; }
+  .s-playful .btns em { background: #f1ecff; border-radius: 9px; } .s-playful .btns b { background: #7c3aed; border-radius: 9px; }
+  .s-playful:hover .mini { animation: bounce .6s cubic-bezier(.34,1.56,.64,1); }
+
+  .s-classroom .scr { background: linear-gradient(135deg, #e0f2fe, #fef9c3); }
+  .s-classroom .mini { background: #fff; border-radius: 7px; box-shadow: 0 3px 8px rgb(30 58 138 / .15); color: #334155; }
+  .s-classroom h4 { color: #1e3a8a; font-family: Lora, Georgia, serif; }
+  .s-classroom .btns em { background: #dbeafe; border-radius: 4px; } .s-classroom .btns b { background: #2563eb; border-radius: 4px; }
+  .s-classroom:hover .mini { animation: rise .5s ease-out; }
+
+  .s-official .scr { background: linear-gradient(135deg, #f8fafc, #e2e8f0); }
+  .s-official .mini { background: #fff; border: 1px solid #cbd5e1; border-radius: 2px; color: #334155; }
+  .s-official h4 { color: #0f172a; font-family: Lora, Georgia, serif; }
+  .s-official .opt i { border-radius: 1px; }
+  .s-official .btns em { background: #e2e8f0; border-radius: 2px; } .s-official .btns b { background: #0f172a; border-radius: 2px; }
+  .s-official:hover .mini { animation: fade .4s linear; }
+
+  .s-flow .scr { background: linear-gradient(135deg, #ffffff, #f5f7ff); }
+  .s-flow .mini { color: #6b7280; padding: 4px 6px; }
+  .s-flow h4 { color: #111827; font-size: 13px; font-weight: 700; letter-spacing: -.02em; }
+  .s-flow .btns { justify-content: flex-start; }
+  .s-flow .btns em { background: #f3f4f6; border-radius: 9px; } .s-flow .btns b { background: #111827; border-radius: 9px; }
+  .s-flow:hover .mini { animation: slide .5s ease-out; }
+
+  .s-glass .scr { background: radial-gradient(circle at 20% 20%, #ffd6f5 0 18%, transparent 19%), linear-gradient(135deg, #667eea, #f093fb); }
+  .s-glass .mini { background: rgb(255 255 255 / .22); border: 1px solid rgb(255 255 255 / .7); border-radius: 11px; backdrop-filter: blur(6px); color: #f5f3ff; }
+  .s-glass h4 { color: #fff; }
+  .s-glass .btns em { background: rgb(255 255 255 / .25); border-radius: 9px; } .s-glass .btns b { background: #fff; border-radius: 9px; }
+  .s-glass:hover .mini { animation: blurIn .6s ease-out; }
+
+  .s-midnight .scr { background: linear-gradient(135deg, #0f172a, #1e1b4b); }
+  .s-midnight .mini { background: #111827; border: 1px solid #334155; border-radius: 9px; box-shadow: 0 0 14px rgb(167 139 250 / .35); color: #cbd5e1; }
+  .s-midnight h4 { color: #f8fafc; }
+  .s-midnight .btns em { background: #1f2937; border-radius: 4px; } .s-midnight .btns b { background: #a78bfa; border-radius: 4px; box-shadow: 0 0 8px #a78bfa; }
+  .s-midnight:hover .mini { animation: glow 1s ease-in-out; }
+
+  @keyframes bounce { 0% { transform: scale(.85); } 60% { transform: scale(1.06); } 100% { transform: scale(1); } }
+  @keyframes rise { from { transform: translateY(8px); opacity: .3; } }
+  @keyframes fade { from { opacity: .2; } }
+  @keyframes slide { from { transform: translateX(-10px); opacity: .2; } }
+  @keyframes blurIn { from { filter: blur(4px); opacity: .3; } }
+  @keyframes glow { 50% { box-shadow: 0 0 24px rgb(167 139 250 / .8); } }
+  @media (prefers-reduced-motion: reduce) { .st .mini { animation: none !important; } }
+  .styles-foot { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .styles-foot a { color: var(--accent); text-decoration: none; margin-left: auto; }
+  .footer { display: flex; align-items: center; gap: 6px; padding: 8px 4px 2px; border-top: 1px solid var(--line); margin-top: 4px; color: var(--muted); font-size: 12px; }
+  .footer kbd { font: 11px/1 Inter, sans-serif; padding: 3px 5px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; background: var(--card); color: var(--text); }
+  .footer a { color: var(--accent); text-decoration: none; margin-left: auto; }
+
+  /* Before: today, for comparison */
+  .before .panel { gap: 10px; padding: 14px; }
+  .before h3 { margin: 0; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .before p { margin: 0; font-size: 13px; color: var(--muted); }
+  .before .big { height: 40px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font: inherit; font-size: 15px; padding: 0 16px; text-align: left; }
+
+  /* ── Layout tiles: tiny phones showing the layout with real content ── */
+  .lay { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px 6px; }
+  .lay > * { grid-column: span 2; }
+  .lay > :nth-child(4) { grid-column: 2 / span 2; }
+  .lt { position: relative; padding: 6px 4px 6px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); font: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; transition: transform .15s, box-shadow .15s; }
+  .lt:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgb(20 16 60 / .12); }
+  .lt.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft), 0 0 0 1px var(--accent); }
+  .lt.on::after { content: "✓"; position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; box-shadow: 0 0 0 2px #fff; }
+  .lt .name { font-size: 11px; font-weight: 600; color: var(--text); line-height: 1.1; }
+  .lt .feel { font-size: 9.5px; color: var(--muted); line-height: 1.1; margin-top: -3px; }
+  /* The phone: rounded body, a notch, the screen inside. */
+  .ph { display: block; flex: none; position: relative; width: 44px; height: 76px; border-radius: 9px; padding: 3px; background: #1b1a24; box-shadow: 0 3px 8px rgb(20 16 60 / .2); }
+  .ph::before { content: ""; position: absolute; top: 4px; left: 50%; width: 12px; height: 3px; margin-left: -6px; border-radius: 3px; background: #1b1a24; z-index: 3; }
+  .sc { display: block; position: relative; width: 100%; height: 100%; border-radius: 7px; overflow: hidden; background: #f4f3fa; }
+  .sc > * { display: block; }
+  .sc .card { position: absolute; left: 3px; right: 3px; border-radius: 4px; background: #fff; box-shadow: 0 1px 3px rgb(0 0 0 / .15); }
+  .sc .h { position: absolute; left: 6px; height: 3px; border-radius: 2px; background: #2b2840; }
+  .sc .l { position: absolute; left: 6px; height: 2px; border-radius: 2px; background: #c9c6d8; }
+  .sc .q { position: absolute; left: 6px; right: 6px; height: 5px; border-radius: 2px; border: 1px solid #d9d6e8; background: #fbfaff; }
+  .sc .btn { position: absolute; right: 6px; width: 14px; height: 5px; border-radius: 4px; background: var(--accent); }
+  .sc img { position: absolute; left: 0; width: 100%; object-fit: cover; }
+  .sc .glass { position: absolute; left: 4px; right: 4px; border-radius: 5px; background: rgb(255 255 255 / .72); backdrop-filter: blur(2px); }
+  /* Hover: the blocks settle into place, one after another. */
+  .lt:hover .sc > * { animation: drop .45s cubic-bezier(.34,1.56,.64,1) both; }
+  .lt:hover .sc > :nth-child(2) { animation-delay: .05s; } .lt:hover .sc > :nth-child(3) { animation-delay: .1s; }
+  .lt:hover .sc > :nth-child(4) { animation-delay: .15s; } .lt:hover .sc > :nth-child(5) { animation-delay: .2s; }
+  .lt:hover .sc > :nth-child(6) { animation-delay: .25s; } .lt:hover .sc > :nth-child(7) { animation-delay: .3s; }
+  @keyframes drop { from { opacity: 0; transform: translateY(-5px); } }
+  @media (prefers-reduced-motion: reduce) { .lt .sc > * { animation: none !important; } }
+
+  /* ── Visibility: two picture choices + a sentence-style rule ── */
+  .vis { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .vc { position: relative; padding: 8px 8px 7px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); font: inherit; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 6px; transition: border-color .15s, box-shadow .15s; }
+  .vc:hover { border-color: rgb(109 85 216 / .5); }
+  .vc.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); background: linear-gradient(180deg, #faf8ff, #fff); }
+  .vc .pic { height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 4px; background: #f3f1fb; }
+  .vc .mini-scr { width: 15px; height: 22px; border-radius: 3px; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .15); }
+  .vc .mini-scr.ghost { background: transparent; box-shadow: none; border: 1.5px dashed #b3acd6; }
+  .vc .mini-scr.lit { background: var(--accent); box-shadow: 0 0 8px rgb(109 85 216 / .6); }
+  .vc .arrow { color: #b3acd6; font-size: 10px; }
+  .vc strong { font-size: 11.5px; line-height: 1.15; }
+  .vc small { font-size: 10px; color: var(--muted); line-height: 1.25; margin-top: -4px; }
+  .vc .dot { position: absolute; top: 8px; right: 8px; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid #c9c4e0; background: #fff; }
+  .vc.on .dot { border-color: var(--accent); background: radial-gradient(circle, var(--accent) 0 3px, #fff 3.5px); }
+  .rule-head { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--muted); margin-top: 2px; }
+  .rule-head svg { width: 13px; height: 13px; color: #e0a100; }
+  .rule { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 8px 9px; border-radius: 12px; background: linear-gradient(135deg, #fff8e6, #fdf2ff); border: 1px solid #f1e3c4; font-size: 12px; }
+  .rule .tok { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: #fff; border: 1px solid var(--line); font-weight: 600; font-size: 11.5px; box-shadow: 0 1px 2px rgb(0 0 0 / .05); }
+  .rule .tok.q { color: var(--accent); }
+  .rule .tok.a { color: #b45309; }
+  .rule .x { margin-left: auto; width: 20px; height: 20px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; }
+  .rule .x:hover { background: rgb(0 0 0 / .05); }
+  .add-rule { width: 100%; display: flex; align-items: center; gap: 8px; padding: 7px 9px; border: 1.5px dashed #d6d0ee; border-radius: 12px; background: none; font: inherit; font-size: 12px; color: var(--accent); cursor: pointer; }
+  .add-rule:hover { background: var(--accent-soft); border-color: var(--accent); }
+  .add-rule .plus { width: 18px; height: 18px; border-radius: 6px; display: grid; place-items: center; background: var(--accent); color: #fff; font-weight: 700; font-size: 13px; }
+  .add-rule { white-space: nowrap; }
+  .add-rule small { margin-left: auto; color: var(--muted); font-size: 10.5px; }
+</style>
+</head>
+<body>
+  <h1>Screen panel: compact proposal</h1>
+  <p class="lede">The right-hand panel on Design screens when no block is selected. Hover the <b>ⓘ</b> icons and click <b>⋯</b> to see where the long notes and the big buttons go.</p>
+
+  <div class="compare">
+    <!-- Proposal -->
+    <div class="col">
+      <h2>Proposed</h2>
+      <div class="panel">
+        <div class="head">
+          <strong>Screen 1</strong>
+          <span class="tip" tabindex="0" aria-label="How to design">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            <span class="bubble">Click a block to edit it. Drag to move (hold Alt to place freely). Shift-click or drag a box to select several. Ctrl + scroll zooms; Space + drag moves around.</span>
+          </span>
+          <div class="menu-wrap">
+            <button class="icon" id="more" aria-expanded="false" aria-label="More for this screen" title="More for this screen">
+              <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+            </button>
+            <div class="menu" id="menu" hidden>
+              <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>Keep this screen</button>
+              <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><path d="M12 2a10 10 0 1 0 0 20c1 0 1.5-.8 1.5-1.6 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.6 1.6-1.6H16a6 6 0 0 0 6-6c0-4.4-4.5-8-10-8z"/></svg>Keep this look</button>
+              <hr />
+              <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="14" height="10" rx="2"/><rect x="17" y="8" width="5" height="12" rx="1"/></svg>Copy phone design to desktop</button>
+              <hr />
+              <button class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Start this screen over</button>
+            </div>
+          </div>
+        </div>
+
+        <details open>
+          <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>Layout<span class="value">Big question</span></summary>
+          <div class="body">
+            <div class="lay">
+              <button class="lt"><span class="ph"><span class="sc"><span class="card" style="top:10px;bottom:10px"></span><span class="h" style="top:15px;width:20px"></span><span class="q" style="top:22px"></span><span class="q" style="top:31px"></span><span class="q" style="top:40px"></span><span class="btn" style="top:52px"></span></span></span><span class="name">Card</span><span class="feel">all in one</span></button>
+              <button class="lt on"><span class="ph"><span class="sc"><span class="h" style="top:16px;width:26px;height:5px;left:6px"></span><span class="h" style="top:24px;width:18px;height:5px;left:6px"></span><span class="q" style="top:36px;height:8px"></span><span class="btn" style="top:52px;right:12px;width:20px"></span></span></span><span class="name">Big question</span><span class="feel">one at a time</span></button>
+              <button class="lt"><span class="ph"><span class="sc"><img src="../public/layouts/forest-falls.jpg" style="top:0;height:30px" alt=""><span class="h" style="top:35px;width:20px"></span><span class="q" style="top:42px"></span><span class="q" style="top:50px"></span><span class="btn" style="top:60px"></span></span></span><span class="name">Picture</span><span class="feel">photo on top</span></button>
+              <button class="lt"><span class="ph"><span class="sc"><img src="../public/layouts/violet-path.jpg" style="top:0;height:100%" alt=""><span class="glass" style="top:18px;bottom:16px"></span><span class="h" style="top:23px;width:18px"></span><span class="q" style="top:30px;left:8px;right:8px"></span><span class="btn" style="top:44px;right:9px"></span></span></span><span class="name">Photo</span><span class="feel">glass on a photo</span></button>
+              <button class="lt"><span class="ph"><span class="sc"><span class="h" style="top:22px;left:9px;width:22px;height:5px"></span><span class="l" style="top:31px;left:12px;width:16px"></span><span class="btn" style="top:44px;left:11px;right:auto;width:18px;height:6px"></span></span></span><span class="name">Cover</span><span class="feel">big hello</span></button>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>Style<span class="value">Midnight</span></summary>
+          <div class="body">
+            <div class="styles">
+              <button class="st s-playful" title="Bright, round, bouncy">
+                <div class="scr"><div class="mini">
+                  <h4>Hey there! 🎉</h4>
+                  <div class="opt"><i class="on"></i><span style="width:55%"></span></div>
+                  <div class="opt"><i></i><span style="width:40%"></span></div>
+                  <div class="btns"><em></em><b></b></div>
+                </div></div>
+                <div class="cap"><strong>Playful</strong><small>Bright, round, bouncy</small></div>
+              </button>
+              <button class="st s-classroom" title="Calm, clear, for schools">
+                <div class="scr"><div class="mini">
+                  <h4>Lesson 1</h4>
+                  <div class="opt"><i class="on"></i><span style="width:55%"></span></div>
+                  <div class="opt"><i></i><span style="width:40%"></span></div>
+                  <div class="btns"><em></em><b></b></div>
+                </div></div>
+                <div class="cap"><strong>Classroom</strong><small>Calm, clear, for schools</small></div>
+              </button>
+              <button class="st s-official" title="Formal, square, no fuss">
+                <div class="scr"><div class="mini">
+                  <h4>Application</h4>
+                  <div class="opt"><i class="on"></i><span style="width:55%"></span></div>
+                  <div class="opt"><i></i><span style="width:40%"></span></div>
+                  <div class="btns"><em></em><b></b></div>
+                </div></div>
+                <div class="cap"><strong>Official</strong><small>Formal, square, no fuss</small></div>
+              </button>
+              <button class="st s-flow" title="Minimal, big heading">
+                <div class="scr"><div class="mini">
+                  <h4>Welcome</h4>
+                  <div class="opt"><i class="on"></i><span style="width:55%"></span></div>
+                  <div class="opt"><i></i><span style="width:40%"></span></div>
+                  <div class="btns"><em></em><b></b></div>
+                </div></div>
+                <div class="cap"><strong>Flow</strong><small>Minimal, big heading</small></div>
+              </button>
+              <button class="st s-glass" title="Frosted, vivid, modern">
+                <div class="scr"><div class="mini">
+                  <h4>Join us</h4>
+                  <div class="opt"><i class="on"></i><span style="width:55%"></span></div>
+                  <div class="opt"><i></i><span style="width:40%"></span></div>
+                  <div class="btns"><em></em><b></b></div>
+                </div></div>
+                <div class="cap"><strong>Glass</strong><small>Frosted, vivid, modern</small></div>
+              </button>
+              <button class="st s-midnight on" title="Dark with a glow">
+                <div class="scr"><div class="mini">
+                  <h4>Level up</h4>
+                  <div class="opt"><i class="on"></i><span style="width:55%"></span></div>
+                  <div class="opt"><i></i><span style="width:40%"></span></div>
+                  <div class="btns"><em></em><b></b></div>
+                </div></div>
+                <div class="cap"><strong>Midnight</strong><small>Dark with a glow</small></div>
+              </button>
+            </div>
+            <div class="styles-foot">Hover a style to see how screens move in.<a href="#">Back to original</a></div>
+          </div>
+        </details>
+
+        <details>
+          <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>After this screen
+            <span class="tip" tabindex="0" onclick="event.preventDefault()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+              <span class="bubble">Same setting as “After section 1” in Edit questions. Next buttons follow it; a button set to “Jump to a screen…” goes straight there.</span></span>
+          </summary>
+          <div class="body">
+            <div class="dest-wrap">
+              <button class="dest" id="dest" aria-expanded="false" aria-haspopup="listbox">
+                <span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+                <span class="what"><small>Next goes to</small><span>Screen 2 · Tell us more</span></span>
+                <svg class="chev2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg>
+              </button>
+              <div class="dest-list" id="destList" role="listbox" hidden>
+                <button class="on" role="option" aria-selected="true"><span class="num">2</span><span class="label">Tell us more<small>The next screen</small></span><span class="tick">✓</span></button>
+                <button role="option"><span class="num">3</span><span class="label">Your details</span></button>
+                <button role="option"><span class="num">4</span><span class="label">Thank you</span></button>
+                <hr />
+                <button role="option"><span class="num submit">✓</span><span class="label">Submit the form<small>Ends here</small></span></button>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>Visibility<span class="value">Only for teachers</span></summary>
+          <div class="body">
+            <div class="vis" role="radiogroup" aria-label="When this screen shows">
+              <button class="vc on" role="radio" aria-checked="true"><span class="dot"></span>
+                <span class="pic"><span class="mini-scr"></span><span class="arrow">›</span><span class="mini-scr lit"></span><span class="arrow">›</span><span class="mini-scr"></span></span>
+                <strong>In the flow</strong><small>Everyone sees it</small>
+              </button>
+              <button class="vc" role="radio" aria-checked="false"><span class="dot"></span>
+                <span class="pic"><span class="mini-scr"></span><span class="arrow">›</span><span class="mini-scr ghost"></span><span class="arrow">›</span><span class="mini-scr"></span></span>
+                <strong>Skipped</strong><small>Until a button or answer shows it</small>
+              </button>
+            </div>
+            <div class="rule-head"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg>Show only when</div>
+            <div class="rule">
+              <span>When</span><span class="tok q">Your role</span><span>is</span><span class="tok a">Teacher</span>
+              <button class="x" aria-label="Remove this condition" title="Remove this condition">✕</button>
+            </div>
+            <button class="add-rule"><span class="plus">+</span>Or when…<small>an answer matches</small></button>
+          </div>
+        </details>
+
+        <details open>
+          <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>Background</summary>
+          <div class="body">
+            <div class="swatches">
+              <span class="sw on" style="background:#fbfcff"></span>
+              <span class="sw" style="background:#fff"></span>
+              <span class="sw" style="background:#6d55d8"></span>
+              <span class="sw" style="background:#ece8fb"></span>
+              <span class="sw" style="background:#000"></span>
+              <span class="sw custom" title="Choose your own colour"></span>
+            </div>
+          </div>
+        </details>
+
+        <div class="footer"><kbd>Ctrl</kbd>+<kbd>/</kbd> shortcuts<a href="#">How to design</a></div>
+      </div>
+    </div>
+
+    <!-- What changes -->
+    <div class="col">
+      <h2>What changes</h2>
+      <ul class="notes">
+        <li><b>Big buttons → one ⋯ menu</b> next to “Screen 1”: Keep this screen, Keep this look, Copy phone design to desktop, and Start this screen over (red, still asks first).</li>
+        <li><b>Long notes → ⓘ tips</b>: hover or tap to read. “How to design” sits by the screen name; the “After this screen” note sits on its heading.</li>
+        <li><b>Groups fold away</b>. Each heading shows its current choice (“Big question”, “Midnight”, “Always shown”), so a closed group still tells you what’s set. The panel remembers which ones you opened.</li>
+        <li><b>Layout tiles are tiny phones</b> showing each layout with real pieces (your sample photos, a heading, answer boxes, the button) and a two-word feel. Hover one and its blocks drop into place.</li>
+        <li><b>Visibility is two picture choices</b>: “In the flow” (the screen lit up between the others) or “Skipped” (a dashed gap). “Show only if” reads as a sentence, <i>When [Your role] is [Teacher]</i>, on a warm card; “Or when…” adds another.</li>
+        <li><b>Style tiles are tiny live screens</b>: each shows its own background, card, fonts, corners, options and buttons, with a one-line feel underneath. Hover one to watch its entrance (Playful bounces, Glass blurs in, Midnight glows). The chosen one gets a tick.</li>
+        <li><b>“After this screen” is a destination card</b>: an arrow tile, “Next goes to”, and the screen by number and name. Click it for the list of screens (numbered) and “Submit the form”, with the current one ticked.</li>
+        <li><b>Smaller controls</b>: 28px chips, 24px round swatches (the custom colour is a rainbow ring with a +), 13px text.</li>
+        <li><b>Footer</b>: the keyboard shortcut list and a “How to design” link, in one quiet line.</li>
+        <li>The same compact style goes on the block Inspector (when a block is selected), so both panels match.</li>
+      </ul>
+    </div>
+
+    <!-- Before -->
+    <div class="col before">
+      <h2>Today</h2>
+      <div class="panel">
+        <h3>After this screen</h3>
+        <p>Goes on to the next screen.</p>
+        <p>Next buttons follow it; a button set to “Jump to a screen…” goes straight there.</p>
+        <h3>Design</h3>
+        <p>Click a block to edit it. Drag to move: it snaps to the card’s edges and centre and to the other blocks (hold Alt to place freely). Shift-click, or drag a box on empty space, to select several and move or style them together. Drag the corners to resize and the round knob to rotate. Ctrl + scroll zooms; hold Space (or press H) and drag to move around.</p>
+        <button class="big">Keep this screen</button>
+        <button class="big">Keep this look</button>
+        <button class="big">↺ Start this screen over</button>
+        <button class="big">Copy phone design to desktop</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const more = document.getElementById('more')
+  const menu = document.getElementById('menu')
+  more.addEventListener('click', (e) => {
+    e.stopPropagation()
+    const open = menu.hidden
+    menu.hidden = !open
+    more.setAttribute('aria-expanded', String(open))
+  })
+  const dest = document.getElementById('dest')
+  const destList = document.getElementById('destList')
+  dest.addEventListener('click', (e) => {
+    e.stopPropagation()
+    const open = destList.hidden
+    destList.hidden = !open
+    dest.setAttribute('aria-expanded', String(open))
+  })
+  document.addEventListener('click', () => {
+    menu.hidden = true
+    more.setAttribute('aria-expanded', 'false')
+    destList.hidden = true
+    dest.setAttribute('aria-expanded', 'false')
+  })
+</script>
+</body>
+</html>

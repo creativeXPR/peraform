@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Eye, Plus, Trash2 } from 'lucide-react'
+import { Eye, Plus, Trash2, Zap } from 'lucide-react'
 import ConfirmModal from '../../lib/ConfirmModal.jsx'
 import { triggerKindFor } from '../../lib/actions.js'
 import Select from '../../lib/Select.jsx'
@@ -18,6 +18,26 @@ function ruleText(rule, sources) {
   const name = `“${q?.title || 'Untitled question'}”`
   if (rule.trigger.type === 'select') return `${name} is “${rule.trigger.option}”`
   return rule.trigger.pattern ? `${name} includes “${rule.trigger.pattern}”` : `${name} is answered`
+}
+
+// The same rule as a sentence: When [question] is [answer].
+function RuleSentence({ rule, sources }) {
+  const q = sources.find((s) => s.id === rule.sourceId)
+  const name = <span className="tok tok-q">{q?.title || 'Untitled question'}</span>
+  if (rule.trigger.type === 'select') {
+    return (
+      <span className="showif-sentence">
+        When {name} is <span className="tok tok-a">{rule.trigger.option}</span>
+      </span>
+    )
+  }
+  return rule.trigger.pattern ? (
+    <span className="showif-sentence">
+      When {name} includes <span className="tok tok-a">{rule.trigger.pattern}</span>
+    </span>
+  ) : (
+    <span className="showif-sentence">When {name} is answered</span>
+  )
 }
 
 export default function ShowIf({ rules, sources, onAdd, onRemove, compact = false, noun = 'question' }) {
@@ -52,12 +72,12 @@ export default function ShowIf({ rules, sources, onAdd, onRemove, compact = fals
       {rules.length > 0 && (
         <div className="showif-rules">
           <span className="showif-head">
-            <Eye size={15} aria-hidden="true" /> This {noun} shows only if
+            <Zap size={14} aria-hidden="true" /> This {noun} shows only when
           </span>
           {rules.map((r, i) => (
             <div key={r.actionId} className="showif-rule">
               {i > 0 && <span className="showif-or">or</span>}
-              <span>{ruleText(r, sources)}</span>
+              <RuleSentence rule={r} sources={sources} />
               <button
                 type="button"
                 className="icon-btn"
@@ -128,8 +148,12 @@ export default function ShowIf({ rules, sources, onAdd, onRemove, compact = fals
           </div>
         </div>
       ) : sources.length > 0 ? (
-        <button type="button" className="link-btn showif-add" onClick={() => setAdding(true)}>
-          <Plus size={15} /> {rules.length ? 'Or show it if…' : 'Show only if…'}
+        <button type="button" className="showif-add" onClick={() => setAdding(true)}>
+          <span className="showif-plus" aria-hidden="true">
+            <Plus size={13} />
+          </span>
+          {rules.length ? 'Or when…' : 'Show only when…'}
+          <small>an answer matches</small>
         </button>
       ) : null}
 

@@ -2476,3 +2476,86 @@
     padding: 0 12px 16px;
   }
 }
+
+/* "Show only if" as sentences (ShowIf.jsx): When [question] is [answer],
+   on a warm card; adding one is a dashed "+ Or when…". Both modes. */
+.showif-rules {
+  border: 1px solid rgb(245 158 11 / 0.25);
+  background: linear-gradient(135deg, rgb(245 158 11 / 0.1), rgb(168 85 247 / 0.08));
+}
+
+.showif-rules .showif-head {
+  color: var(--text-muted);
+  font-size: 11.5px;
+}
+
+.showif-rules .showif-head svg {
+  color: #e0a100;
+}
+
+.showif-sentence {
+  display: inline-flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.showif-sentence .tok {
+  padding: 1px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.showif-sentence .tok-q {
+  color: var(--accent);
+}
+
+.showif-sentence .tok-a {
+  color: #c26a0a;
+}
+
+.showif-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1.5px dashed color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 12px;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.showif-add:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.showif-add small {
+  margin-left: auto;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+}
+
+.showif-plus {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--on-accent, #fff);
+}

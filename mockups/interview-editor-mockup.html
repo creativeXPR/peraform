@@ -1,0 +1,897 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Design screens mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@700;800&family=Lora:wght@700&display=swap" rel="stylesheet" />
+<style>
+
+  :root {
+    --bg: #f6f5fb;
+    --surface: #ffffff;
+    --card: #faf9ff;
+    --line: rgb(20 16 60 / 0.08);
+    --text: #14151a;
+    --muted: #6b6f7b;
+    --accent: #6d55d8;
+    --accent-soft: rgb(109 85 216 / 0.1);
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; padding: 24px 16px 48px; background: var(--bg); color: var(--text); font: 14px/1.4 Inter, system-ui, sans-serif; }
+  h1 { margin: 0 0 4px; font-size: 20px; }
+  .lede { margin: 0 0 20px; color: var(--muted); max-width: 760px; }
+  .compare { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+  .col h2 { margin: 0 0 8px; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+  .notes { max-width: 300px; margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
+  .notes li { margin-bottom: 6px; }
+  .notes b { color: var(--text); font-weight: 600; }
+
+  /* ── The panel ─────────────────────────────── */
+  .panel { width: 270px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 10px; display: flex; flex-direction: column; gap: 2px; }
+  .head { display: flex; align-items: center; gap: 6px; padding: 4px 4px 8px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+  .head strong { flex: 1; font-size: 14px; }
+  .icon { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; position: relative; }
+  .icon:hover, .icon[aria-expanded="true"] { background: var(--accent-soft); color: var(--accent); }
+  .icon svg { width: 17px; height: 17px; }
+
+  /* Overflow menu */
+  .menu-wrap { position: relative; }
+  .menu { position: absolute; right: 0; top: 34px; z-index: 5; width: 232px; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px rgb(20 16 60 / .14); }
+  .menu button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 0; border-radius: 8px; background: none; font: inherit; font-size: 13px; color: var(--text); text-align: left; cursor: pointer; }
+  .menu button:hover { background: var(--accent-soft); }
+  .menu svg { width: 16px; height: 16px; color: var(--muted); flex: none; }
+  .menu hr { border: 0; border-top: 1px solid var(--line); margin: 4px 2px; }
+  .menu .danger { color: #c0392b; }
+  .menu .danger svg { color: #c0392b; }
+
+  /* Collapsible groups */
+  details { border-radius: 10px; }
+  summary { list-style: none; display: flex; align-items: center; gap: 6px; padding: 8px 6px; cursor: pointer; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-radius: 8px; }
+  summary::-webkit-details-marker { display: none; }
+  summary:hover { background: var(--card); }
+  summary .chev { width: 14px; height: 14px; transition: transform .15s; }
+  details[open] summary .chev { transform: rotate(90deg); }
+  summary .value { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--text); font-size: 12px; }
+  .body { padding: 2px 6px 10px; display: flex; flex-direction: column; gap: 8px; }
+
+  /* Info tip: the long notes live here */
+  .tip { position: relative; display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; color: var(--muted); }
+  .tip svg { width: 14px; height: 14px; }
+  .tip .bubble { display: none; position: absolute; left: 50%; top: 22px; transform: translateX(-50%); z-index: 6; width: 220px; padding: 10px 12px; background: #1d1b2b; color: #fff; border-radius: 10px; font-size: 12px; font-weight: 400; line-height: 1.45; text-transform: none; letter-spacing: 0; box-shadow: 0 10px 28px rgb(0 0 0 / .2); }
+  .tip:hover .bubble, .tip.show .bubble { display: block; }
+
+  /* Layout tiles: 3 across, small */
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .tile { padding: 4px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); cursor: pointer; text-align: center; font-size: 10.5px; color: var(--muted); }
+  .tile.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); color: var(--text); }
+  .thumb { height: 34px; border-radius: 6px; background: #f1f0f7; margin-bottom: 3px; position: relative; overflow: hidden; }
+  .thumb b { position: absolute; inset: 7px 24%; border-radius: 3px; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .15); }
+  .thumb i { position: absolute; background: linear-gradient(160deg, #f4a261, #c2185b 55%, #6a4c93); }
+  .t-focus b { background: none; box-shadow: none; border-top: 4px solid #444; border-bottom: 3px solid #bbb; inset: 11px 22%; }
+  .t-side i { inset: 0 55% 0 0; } .t-side b { inset: 8px 8% 8px 52%; }
+  .t-photo i { inset: 0; } .t-photo b { background: rgb(255 255 255 / .6); }
+  .t-cover b { background: none; box-shadow: none; border-top: 5px solid #333; inset: 9px 30% auto; height: 0; }
+  .t-cover::after { content: ""; position: absolute; left: 38%; right: 38%; bottom: 6px; height: 5px; border-radius: 9px; background: var(--accent); }
+
+  /* Small controls */
+  .row { display: flex; align-items: center; gap: 8px; }
+  .select { flex: 1; height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); font-size: 13px; display: flex; align-items: center; justify-content: space-between; }
+  .select::after { content: "▾"; color: var(--muted); font-size: 11px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-size: 12px; cursor: pointer; }
+  .chip svg { width: 14px; height: 14px; color: var(--muted); }
+  .swatches { display: flex; gap: 6px; }
+  /* Every swatch is a true circle (block, clipped), the custom one too. */
+  .sw { display: block; flex: none; width: 24px; height: 24px; border-radius: 50%; overflow: hidden; border: 1px solid var(--line); background-clip: padding-box; cursor: pointer; }
+  .sw.on { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--accent); }
+  /* Custom colour: a rainbow ring around a white centre with a +. */
+  .sw.custom { position: relative; border: 0; background: conic-gradient(#ff4d4d, #ffb84d, #f5f54d, #4dff88, #4dd2ff, #6d4dff, #ff4dd2, #ff4d4d); }
+  .sw.custom::after { content: "+"; position: absolute; inset: 4px; border-radius: 50%; background: #fff; color: var(--muted); font: 600 14px/16px Inter, sans-serif; text-align: center; }
+
+  /* Where Next goes: a destination card, opening a list of screens. */
+  .dest-wrap { position: relative; }
+  .dest { width: 100%; display: flex; align-items: center; gap: 10px; padding: 7px 10px 7px 7px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); font: inherit; text-align: left; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+  .dest:hover, .dest[aria-expanded="true"] { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .dest .go { width: 30px; height: 30px; flex: none; border-radius: 9px; display: grid; place-items: center; background: var(--accent); color: #fff; }
+  .dest .go svg { width: 16px; height: 16px; }
+  .dest .what { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .dest .what small { font-size: 10.5px; color: var(--muted); }
+  .dest .what span { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dest .chev2 { width: 16px; height: 16px; color: var(--muted); flex: none; transition: transform .15s; }
+  .dest[aria-expanded="true"] .chev2 { transform: rotate(180deg); }
+  .dest-list { position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 7; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px rgb(20 16 60 / .14); }
+  .dest-list button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 7px 8px; border: 0; border-radius: 8px; background: none; font: inherit; font-size: 13px; text-align: left; cursor: pointer; color: var(--text); }
+  .dest-list button:hover { background: var(--accent-soft); }
+  .dest-list .num { width: 22px; height: 22px; flex: none; border-radius: 7px; display: grid; place-items: center; background: #efedf8; color: var(--muted); font-size: 11px; font-weight: 600; }
+  .dest-list .num.submit { background: #e5f6ec; color: #1f8a4c; }
+  .dest-list .on { background: var(--accent-soft); }
+  .dest-list .on .num { background: var(--accent); color: #fff; }
+  .dest-list .tick { margin-left: auto; color: var(--accent); font-weight: 700; }
+  .dest-list .label { display: flex; flex-direction: column; }
+  .dest-list .label small { color: var(--muted); font-size: 10.5px; }
+  .dest-list hr { border: 0; border-top: 1px solid var(--line); margin: 4px 2px; }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+  /* Style tiles: each a tiny live screen in that style (its background,
+     card, fonts, corners, options and buttons). Hover plays its entrance. */
+  .styles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .st { position: relative; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); cursor: pointer; text-align: left; font: inherit; overflow: hidden; transition: transform .15s, box-shadow .15s; }
+  .st:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgb(20 16 60 / .12); }
+  .st.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft), 0 0 0 1px var(--accent); }
+  .st.on::after { content: "✓"; position: absolute; top: 6px; right: 6px; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; box-shadow: 0 0 0 2px #fff; }
+  .scr { height: 86px; padding: 9px 10px; display: flex; align-items: center; justify-content: center; }
+  .mini { width: 100%; padding: 7px 8px; display: flex; flex-direction: column; gap: 4px; }
+  .mini h4 { margin: 0 0 1px; font-size: 11px; line-height: 1.1; }
+  .opt { display: flex; align-items: center; gap: 4px; height: 9px; font-size: 7px; }
+  .opt i { width: 6px; height: 6px; border-radius: 50%; border: 1.2px solid currentColor; opacity: .7; }
+  .opt i.on { background: currentColor; opacity: 1; }
+  .opt span { height: 3px; border-radius: 2px; background: currentColor; opacity: .35; }
+  .btns { display: flex; justify-content: flex-end; gap: 4px; margin-top: 2px; }
+  .btns em { height: 11px; width: 22px; }
+  .btns b { height: 11px; width: 32px; }
+  .cap { padding: 6px 9px 8px; border-top: 1px solid var(--line); }
+  .cap strong { display: block; font-size: 12.5px; }
+  .cap small { display: block; font-size: 10.5px; color: var(--muted); line-height: 1.3; }
+
+  .s-playful .scr { background: linear-gradient(135deg, #ff9a8b, #a18cd1); }
+  .s-playful .mini { background: #fff; border-radius: 12px; box-shadow: 0 6px 14px rgb(80 20 120 / .3); color: #4b5060; font-family: Nunito, sans-serif; }
+  .s-playful h4 { color: #7c3aed; font-weight: 800; }
+  .s-playful .btns em { background: #f1ecff; border-radius: 9px; } .s-playful .btns b { background: #7c3aed; border-radius: 9px; }
+  .s-playful:hover .mini { animation: bounce .6s cubic-bezier(.34,1.56,.64,1); }
+
+  .s-classroom .scr { background: linear-gradient(135deg, #e0f2fe, #fef9c3); }
+  .s-classroom .mini { background: #fff; border-radius: 7px; box-shadow: 0 3px 8px rgb(30 58 138 / .15); color: #334155; }
+  .s-classroom h4 { color: #1e3a8a; font-family: Lora, Georgia, serif; }
+  .s-classroom .btns em { background: #dbeafe; border-radius: 4px; } .s-classroom .btns b { background: #2563eb; border-radius: 4px; }
+  .s-classroom:hover .mini { animation: rise .5s ease-out; }
+
+  .s-official .scr { background: linear-gradient(135deg, #f8fafc, #e2e8f0); }
+  .s-official .mini { background: #fff; border: 1px solid #cbd5e1; border-radius: 2px; color: #334155; }
+  .s-official h4 { color: #0f172a; font-family: Lora, Georgia, serif; }
+  .s-official .opt i { border-radius: 1px; }
+  .s-official .btns em { background: #e2e8f0; border-radius: 2px; } .s-official .btns b { background: #0f172a; border-radius: 2px; }
+  .s-official:hover .mini { animation: fade .4s linear; }
+
+  .s-flow .scr { background: linear-gradient(135deg, #ffffff, #f5f7ff); }
+  .s-flow .mini { color: #6b7280; padding: 4px 6px; }
+  .s-flow h4 { color: #111827; font-size: 13px; font-weight: 700; letter-spacing: -.02em; }
+  .s-flow .btns { justify-content: flex-start; }
+  .s-flow .btns em { background: #f3f4f6; border-radius: 9px; } .s-flow .btns b { background: #111827; border-radius: 9px; }
+  .s-flow:hover .mini { animation: slide .5s ease-out; }
+
+  .s-glass .scr { background: radial-gradient(circle at 20% 20%, #ffd6f5 0 18%, transparent 19%), linear-gradient(135deg, #667eea, #f093fb); }
+  .s-glass .mini { background: rgb(255 255 255 / .22); border: 1px solid rgb(255 255 255 / .7); border-radius: 11px; backdrop-filter: blur(6px); color: #f5f3ff; }
+  .s-glass h4 { color: #fff; }
+  .s-glass .btns em { background: rgb(255 255 255 / .25); border-radius: 9px; } .s-glass .btns b { background: #fff; border-radius: 9px; }
+  .s-glass:hover .mini { animation: blurIn .6s ease-out; }
+
+  .s-midnight .scr { background: linear-gradient(135deg, #0f172a, #1e1b4b); }
+  .s-midnight .mini { background: #111827; border: 1px solid #334155; border-radius: 9px; box-shadow: 0 0 14px rgb(167 139 250 / .35); color: #cbd5e1; }
+  .s-midnight h4 { color: #f8fafc; }
+  .s-midnight .btns em { background: #1f2937; border-radius: 4px; } .s-midnight .btns b { background: #a78bfa; border-radius: 4px; box-shadow: 0 0 8px #a78bfa; }
+  .s-midnight:hover .mini { animation: glow 1s ease-in-out; }
+
+  @keyframes bounce { 0% { transform: scale(.85); } 60% { transform: scale(1.06); } 100% { transform: scale(1); } }
+  @keyframes rise { from { transform: translateY(8px); opacity: .3; } }
+  @keyframes fade { from { opacity: .2; } }
+  @keyframes slide { from { transform: translateX(-10px); opacity: .2; } }
+  @keyframes blurIn { from { filter: blur(4px); opacity: .3; } }
+  @keyframes glow { 50% { box-shadow: 0 0 24px rgb(167 139 250 / .8); } }
+  @media (prefers-reduced-motion: reduce) { .st .mini { animation: none !important; } }
+  .styles-foot { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .styles-foot a { color: var(--accent); text-decoration: none; margin-left: auto; }
+  .footer { display: flex; align-items: center; gap: 6px; padding: 8px 4px 2px; border-top: 1px solid var(--line); margin-top: 4px; color: var(--muted); font-size: 12px; }
+  .footer kbd { font: 11px/1 Inter, sans-serif; padding: 3px 5px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; background: var(--card); color: var(--text); }
+  .footer a { color: var(--accent); text-decoration: none; margin-left: auto; }
+
+  /* Before: today, for comparison */
+  .before .panel { gap: 10px; padding: 14px; }
+  .before h3 { margin: 0; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .before p { margin: 0; font-size: 13px; color: var(--muted); }
+  .before .big { height: 40px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font: inherit; font-size: 15px; padding: 0 16px; text-align: left; }
+
+  /* ── Layout tiles: tiny phones showing the layout with real content ── */
+  .lay { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px 6px; }
+  .lay > * { grid-column: span 2; }
+  .lay > :nth-child(4) { grid-column: 2 / span 2; }
+  .lt { position: relative; padding: 6px 4px 6px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); font: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; transition: transform .15s, box-shadow .15s; }
+  .lt:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgb(20 16 60 / .12); }
+  .lt.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft), 0 0 0 1px var(--accent); }
+  .lt.on::after { content: "✓"; position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; box-shadow: 0 0 0 2px #fff; }
+  .lt .name { font-size: 11px; font-weight: 600; color: var(--text); line-height: 1.1; }
+  .lt .feel { font-size: 9.5px; color: var(--muted); line-height: 1.1; margin-top: -3px; }
+  /* The phone: rounded body, a notch, the screen inside. */
+  .ph { display: block; flex: none; position: relative; width: 44px; height: 76px; border-radius: 9px; padding: 3px; background: #1b1a24; box-shadow: 0 3px 8px rgb(20 16 60 / .2); }
+  .ph::before { content: ""; position: absolute; top: 4px; left: 50%; width: 12px; height: 3px; margin-left: -6px; border-radius: 3px; background: #1b1a24; z-index: 3; }
+  .sc { display: block; position: relative; width: 100%; height: 100%; border-radius: 7px; overflow: hidden; background: #f4f3fa; }
+  .sc > * { display: block; }
+  .sc .card { position: absolute; left: 3px; right: 3px; border-radius: 4px; background: #fff; box-shadow: 0 1px 3px rgb(0 0 0 / .15); }
+  .sc .h { position: absolute; left: 6px; height: 3px; border-radius: 2px; background: #2b2840; }
+  .sc .l { position: absolute; left: 6px; height: 2px; border-radius: 2px; background: #c9c6d8; }
+  .sc .q { position: absolute; left: 6px; right: 6px; height: 5px; border-radius: 2px; border: 1px solid #d9d6e8; background: #fbfaff; }
+  .sc .btn { position: absolute; right: 6px; width: 14px; height: 5px; border-radius: 4px; background: var(--accent); }
+  .sc img { position: absolute; left: 0; width: 100%; object-fit: cover; }
+  .sc .glass { position: absolute; left: 4px; right: 4px; border-radius: 5px; background: rgb(255 255 255 / .72); backdrop-filter: blur(2px); }
+  /* Hover: the blocks settle into place, one after another. */
+  .lt:hover .sc > * { animation: drop .45s cubic-bezier(.34,1.56,.64,1) both; }
+  .lt:hover .sc > :nth-child(2) { animation-delay: .05s; } .lt:hover .sc > :nth-child(3) { animation-delay: .1s; }
+  .lt:hover .sc > :nth-child(4) { animation-delay: .15s; } .lt:hover .sc > :nth-child(5) { animation-delay: .2s; }
+  .lt:hover .sc > :nth-child(6) { animation-delay: .25s; } .lt:hover .sc > :nth-child(7) { animation-delay: .3s; }
+  @keyframes drop { from { opacity: 0; transform: translateY(-5px); } }
+  @media (prefers-reduced-motion: reduce) { .lt .sc > * { animation: none !important; } }
+
+  /* ── Visibility: two picture choices + a sentence-style rule ── */
+  .vis { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .vc { position: relative; padding: 8px 8px 7px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); font: inherit; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 6px; transition: border-color .15s, box-shadow .15s; }
+  .vc:hover { border-color: rgb(109 85 216 / .5); }
+  .vc.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); background: linear-gradient(180deg, #faf8ff, #fff); }
+  .vc .pic { height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 4px; background: #f3f1fb; }
+  .vc .mini-scr { width: 15px; height: 22px; border-radius: 3px; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .15); }
+  .vc .mini-scr.ghost { background: transparent; box-shadow: none; border: 1.5px dashed #b3acd6; }
+  .vc .mini-scr.lit { background: var(--accent); box-shadow: 0 0 8px rgb(109 85 216 / .6); }
+  .vc .arrow { color: #b3acd6; font-size: 10px; }
+  .vc strong { font-size: 11.5px; line-height: 1.15; }
+  .vc small { font-size: 10px; color: var(--muted); line-height: 1.25; margin-top: -4px; }
+  .vc .dot { position: absolute; top: 8px; right: 8px; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid #c9c4e0; background: #fff; }
+  .vc.on .dot { border-color: var(--accent); background: radial-gradient(circle, var(--accent) 0 3px, #fff 3.5px); }
+  .rule-head { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--muted); margin-top: 2px; }
+  .rule-head svg { width: 13px; height: 13px; color: #e0a100; }
+  .rule { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 8px 9px; border-radius: 12px; background: linear-gradient(135deg, #fff8e6, #fdf2ff); border: 1px solid #f1e3c4; font-size: 12px; }
+  .rule .tok { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: #fff; border: 1px solid var(--line); font-weight: 600; font-size: 11.5px; box-shadow: 0 1px 2px rgb(0 0 0 / .05); }
+  .rule .tok.q { color: var(--accent); }
+  .rule .tok.a { color: #b45309; }
+  .rule .x { margin-left: auto; width: 20px; height: 20px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; }
+  .rule .x:hover { background: rgb(0 0 0 / .05); }
+  .add-rule { width: 100%; display: flex; align-items: center; gap: 8px; padding: 7px 9px; border: 1.5px dashed #d6d0ee; border-radius: 12px; background: none; font: inherit; font-size: 12px; color: var(--accent); cursor: pointer; }
+  .add-rule:hover { background: var(--accent-soft); border-color: var(--accent); }
+  .add-rule .plus { width: 18px; height: 18px; border-radius: 6px; display: grid; place-items: center; background: var(--accent); color: #fff; font-weight: 700; font-size: 13px; }
+  .add-rule { white-space: nowrap; }
+  .add-rule small { margin-left: auto; color: var(--muted); font-size: 10.5px; }
+
+  /* The app's scrollbars (suite rule): 14px track, light see-through thumb. */
+  ::-webkit-scrollbar { width: 14px; height: 14px; }
+  ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+  ::-webkit-scrollbar-button { display: none; }
+  ::-webkit-scrollbar-thumb { border: 3px solid transparent; border-radius: 7px; background-clip: content-box; background-color: transparent; }
+  *:hover::-webkit-scrollbar-thumb { background-color: rgb(100 100 100 / 0.22); }
+  *:hover::-webkit-scrollbar-thumb:hover { background-color: rgb(100 100 100 / 0.4); }
+  *::-webkit-scrollbar-thumb:active { background-color: rgb(100 100 100 / 0.5); }
+
+  /* ── App frame (as PeraForm today) ─────────────────────────────── */
+  body { padding: 0; min-width: 1240px; }
+  svg { flex: none; }
+  .switcher { display: flex; justify-content: center; gap: 6px; padding: 10px; background: #1d1b2b; position: sticky; top: 0; z-index: 50; }
+  .switcher button { border: 0; border-radius: 999px; padding: 6px 14px; font: 600 12px Inter, sans-serif; background: #2c2940; color: #cfcbe6; cursor: pointer; }
+  .switcher button.on { background: #fff; color: #1d1b2b; }
+  .switcher span { color: #8f8aa8; font: 12px Inter, sans-serif; align-self: center; margin-right: 6px; }
+  .topbar { display: flex; align-items: center; gap: 10px; padding: 12px 24px; }
+  .brand { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px 0 10px; border-radius: 999px; background: #efedf8; font-weight: 700; }
+  .brand i { width: 22px; height: 18px; border-radius: 4px; background: linear-gradient(135deg, #7c6cf0, #4cc9f0); }
+  .titlebox { flex: 0 1 420px; display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 16px; border-radius: 999px; background: #efedf8; }
+  .titlebox b { flex: 1; font-weight: 500; }
+  .titlebox small { color: var(--muted); }
+  .tb-icons { display: flex; align-items: center; gap: 2px; margin-left: auto; color: var(--muted); }
+  .tb-icons .icon { width: 36px; height: 36px; }
+  .pub { height: 36px; padding: 0 14px; border-radius: 999px; background: #efedf8; color: var(--accent); font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  .credit { height: 36px; padding: 0 12px; border-radius: 999px; background: #efedf8; color: var(--accent); font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: #6b7f8f; color: #fff; display: grid; place-items: center; font-weight: 600; }
+  .shell { display: grid; grid-template-columns: 220px 1fr; gap: 16px; padding: 0 24px 0 24px; }
+  .nav { padding-top: 180px; display: flex; flex-direction: column; gap: 4px; }
+  .nav a { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 14px; border-radius: 999px; color: var(--text); text-decoration: none; }
+  .nav a.on { background: #efedf8; color: var(--accent); font-weight: 600; }
+  .nav svg { width: 18px; height: 18px; }
+  .content { background: #faf9fd; border-radius: 20px; padding: 18px 20px 16px; min-height: 640px; }
+  .foot { text-align: center; color: var(--muted); font-size: 12px; padding: 10px; }
+  .foot u { color: var(--text); }
+
+  /* Editor toolbar: switch + inline hint + Dawn + device, one row. */
+  .etool { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .seg { display: flex; padding: 3px; border-radius: 999px; background: #efedf8; }
+  .seg button { display: flex; align-items: center; gap: 6px; border: 0; height: 32px; padding: 0 14px; border-radius: 999px; background: none; font: 500 13px Inter, sans-serif; color: var(--muted); cursor: pointer; }
+  .seg button.on { background: #fff; color: var(--text); box-shadow: 0 1px 3px rgb(0 0 0 / .08); }
+  .seg svg { width: 15px; height: 15px; }
+  .ehint { flex: 1; min-width: 0; color: var(--muted); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dawn { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px 0 6px; border-radius: 999px; border: 1px solid #e3def7; background: #fff; color: var(--accent); font: 600 13px Inter, sans-serif; }
+  .orb { width: 24px; height: 24px; border-radius: 50%; background: radial-gradient(circle at 50% 55%, #ffb347 0 22%, #ffd9a8 34%, #e9e6ff 60%, #fff 80%); box-shadow: inset 0 0 0 1px #e1dcff; }
+
+  .ebody { display: grid; grid-template-columns: 232px minmax(0, 1fr) 270px; gap: 14px; align-items: start; }
+
+  /* ── Left: screens as mini phones + a tidy layer list ─────────── */
+  .left { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 10px; display: flex; flex-direction: column; gap: 4px; }
+  .sec-h { display: flex; align-items: center; gap: 6px; padding: 6px 6px 4px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .sec-h .add { margin-left: auto; display: flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; border: 0; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font: 600 11.5px Inter, sans-serif; letter-spacing: 0; text-transform: none; cursor: pointer; }
+  .screens { display: flex; gap: 8px; padding: 4px 6px 10px; overflow-x: auto; }
+  .scr-t { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0; background: none; font: inherit; cursor: pointer; }
+  .scr-t .ph { width: 40px; height: 66px; }
+  .scr-t.on .ph { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--accent); }
+  .scr-t span.n { font-size: 10.5px; color: var(--muted); max-width: 52px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .scr-t.on span.n { color: var(--accent); font-weight: 600; }
+  .scr-new .ph { background: none; border: 1.5px dashed #c9c3e6; box-shadow: none; display: grid; place-items: center; color: var(--accent); font-size: 18px; }
+  .scr-new .ph::before { display: none; }
+  .tree { display: flex; flex-direction: column; gap: 1px; }
+  .lr { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 6px 0 calc(6px + var(--d, 0) * 16px); border-radius: 9px; font-size: 13px; cursor: pointer; }
+  .lr:hover { background: var(--card); }
+  .lr.on { background: var(--accent-soft); color: var(--accent); }
+  /* Soft tiles: the type colour, see-through, with the icon in full colour. */
+  .lr .ti { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; background: color-mix(in srgb, var(--c, #64748b) 15%, transparent); color: var(--c, #64748b); }
+  .lr.on .ti { background: color-mix(in srgb, var(--c) 24%, transparent); }
+  .lr .ti svg { width: 13px; height: 13px; }
+  .lr .nm { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lr .vis { width: 22px; height: 22px; display: grid; place-items: center; color: var(--muted); opacity: .0; }
+  .lr:hover .vis, .lr .vis.off { opacity: 1; }
+  .lr .vis svg { width: 14px; height: 14px; }
+  /* Hidden until an action shows it: a ghost of the row (dashed, faded
+     icon tile; muted name) and the crossed eye, always shown, to bring it back. */
+  .lr.dim .nm { color: var(--muted); }
+  .lr.dim .ti { background: transparent; outline: 1.5px dashed color-mix(in srgb, var(--c) 55%, transparent); outline-offset: -1.5px; color: color-mix(in srgb, var(--c) 70%, transparent); }
+  .lr .vis.off { color: var(--accent); }
+  .lr .tag { font-size: 10px; padding: 1px 6px; border-radius: 999px; background: #fff3d6; color: #a16207; }
+
+  /* ── Canvas ─────────────────────────────────────────────────── */
+  .canvas { position: relative; height: 640px; border-radius: 16px; background: radial-gradient(#d9d5ec 1px, transparent 1.2px) 0 0 / 16px 16px, #f3f1fa; display: grid; place-items: start center; padding-top: 24px; overflow: hidden; }
+  .device { width: 280px; height: 560px; border-radius: 30px; padding: 8px; background: #121019; box-shadow: 0 24px 50px rgb(20 16 60 / .25); }
+  .dscreen { position: relative; height: 100%; border-radius: 23px; overflow: hidden; background: linear-gradient(160deg, #0f172a, #1e1b4b); color: #e5e7eb; padding: 26px 14px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .dcard { border-radius: 14px; background: #111827; border: 1px solid #334155; box-shadow: 0 0 22px rgb(167 139 250 / .25); padding: 12px; display: flex; flex-direction: column; gap: 8px; position: relative; }
+  .dcard img { width: 100%; height: 84px; object-fit: cover; border-radius: 9px; }
+  .dcard h3 { margin: 0; font-size: 17px; color: #f8fafc; }
+  .dcard p { margin: 0; font-size: 10.5px; color: #cbd5e1; }
+  .stars { color: #475569; letter-spacing: 3px; font-size: 14px; }
+  .radio { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+  .radio i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #94a3b8; }
+  .dbtns { display: flex; gap: 6px; }
+  .dbtns span { flex: 1; height: 30px; border-radius: 9px; display: grid; place-items: center; font-size: 11.5px; font-weight: 700; }
+  .dbtns .bk { background: #1f2937; color: #e5e7eb; }
+  .dbtns .nx { background: #a78bfa; color: #0f172a; }
+  .sel { outline: 2px solid #8b7cf6; outline-offset: 3px; }
+  .sel::after { content: ""; position: absolute; right: -7px; bottom: -7px; width: 9px; height: 9px; border-radius: 2px; background: #fff; border: 2px solid #8b7cf6; }
+  .sel-badge { position: absolute; top: -22px; left: -2px; padding: 2px 8px; border-radius: 6px 6px 6px 0; background: #8b7cf6; color: #fff; font-size: 10.5px; font-weight: 600; }
+  .ctools { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; align-items: center; gap: 2px; padding: 4px; border-radius: 14px; background: #fff; box-shadow: 0 8px 24px rgb(20 16 60 / .14); }
+  .ctools .icon { width: 32px; height: 32px; }
+  .ctools .icon.on { background: var(--accent); color: #fff; }
+  .ctools .z { padding: 0 8px; font-size: 12.5px; color: var(--muted); }
+  .ctools .sepv { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
+
+  /* ── Inspector (a block selected): same pattern ────────────── */
+  .insp-blk { display: flex; align-items: center; gap: 8px; padding: 4px 4px 8px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+  .insp-blk .ti { width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; background: color-mix(in srgb, #8b5cf6 15%, transparent); color: #8b5cf6; }
+  .insp-blk .ti svg { width: 15px; height: 15px; }
+  .insp-blk strong { flex: 1; font-size: 14px; }
+  .insp-blk small { display: block; font-size: 11px; color: var(--muted); font-weight: 400; }
+  .does { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .do { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px 7px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); font: 500 11px Inter, sans-serif; color: var(--text); cursor: pointer; }
+  .do .g { width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 15%, transparent); color: var(--c); }
+  .do.on .g { background: color-mix(in srgb, var(--c) 24%, transparent); }
+  .do .g svg { width: 15px; height: 15px; }
+  .do.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .looks { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .lk { height: 40px; border: 1px solid var(--line); border-radius: 10px; display: grid; place-items: center; cursor: pointer; background: #f6f5fb; }
+  .lk span { width: 70%; height: 14px; display: grid; place-items: center; font-size: 8px; font-weight: 700; }
+  .lk.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .act { display: flex; flex-direction: column; gap: 6px; padding: 9px; border-radius: 12px; background: linear-gradient(135deg, #f4f0ff, #eef8ff); border: 1px solid #e3dcfb; font-size: 12px; }
+  .act .line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+  .act .tok { padding: 2px 8px; border-radius: 999px; background: #fff; border: 1px solid var(--line); font-weight: 600; font-size: 11.5px; }
+  .act .tok.v { color: var(--accent); } .act .tok.t { color: #0f766e; }
+  .anim { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .an { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); font: 500 10.5px Inter, sans-serif; cursor: pointer; }
+  .an i { width: 26px; height: 16px; border-radius: 5px; background: linear-gradient(90deg, #a78bfa, #60a5fa); }
+  .an:hover i { animation: var(--a) .8s ease-in-out infinite alternate; }
+  .an.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  @keyframes pop { from { transform: scale(.6); } } @keyframes fadeA { from { opacity: .1; } }
+  @keyframes slideA { from { transform: translateX(-8px); } } @keyframes pulse { to { transform: scale(1.15); } }
+  .nums { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .num-f { display: flex; flex-direction: column; gap: 2px; padding: 5px 7px; border-radius: 9px; background: var(--card); border: 1px solid var(--line); }
+  .num-f small { font-size: 9.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .num-f b { font-size: 12.5px; font-weight: 600; }
+  [data-view] { display: none; }
+  body[data-show="screen"] [data-view="screen"], body[data-show="block"] [data-view="block"], body[data-show="block-open"] [data-view="block-open"] { display: block; }
+
+  /* ── Opened action: the sentence on top, its settings below ───────── */
+  .act.open { gap: 10px; background: #fff; border-color: #d9d0fb; box-shadow: 0 6px 18px rgb(109 85 216 / .1); }
+  .act-top { display: flex; align-items: center; gap: 6px; }
+  .act-top .n { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; background: color-mix(in srgb, #a855f7 15%, transparent); color: #a855f7; font-size: 11px; font-weight: 700; }
+  .act-top .line { flex: 1; }
+  .act .tok { cursor: pointer; }
+  .act .tok:hover { border-color: var(--accent); }
+  .act .tok.open { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .mini-h { font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .eff { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+  .eff button { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; border: 1px solid var(--line); border-radius: 10px; background: #fff; font: 500 10px Inter, sans-serif; color: var(--text); cursor: pointer; }
+  .eff button i { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 15%, transparent); color: var(--c); font-style: normal; font-size: 12px; }
+  .eff button.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .props { display: flex; flex-direction: column; gap: 6px; }
+  .prop { display: grid; grid-template-columns: 74px 1fr 44px 18px; align-items: center; gap: 8px; font-size: 12px; }
+  .prop .sl { position: relative; height: 4px; border-radius: 4px; background: #ebe8f6; }
+  .prop .sl::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: var(--v); border-radius: 4px; background: var(--accent); }
+  .prop .sl::after { content: ""; position: absolute; left: var(--v); top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #fff; border: 2px solid var(--accent); }
+  .prop b { font-weight: 600; text-align: right; font-size: 11.5px; }
+  .prop .rm { color: var(--muted); cursor: pointer; text-align: center; }
+  .prop .swc { width: 18px; height: 18px; border-radius: 50%; }
+  .add-prop { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 9px; border: 1px dashed #cfc7ef; border-radius: 999px; background: none; color: var(--accent); font: 600 11px Inter, sans-serif; cursor: pointer; }
+  .timing { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .curves { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+  .cv { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 2px 3px; border: 1px solid var(--line); border-radius: 9px; background: #fff; font: 500 9.5px Inter, sans-serif; color: var(--muted); cursor: pointer; }
+  .cv svg { width: 26px; height: 18px; color: var(--accent); }
+  .cv.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); color: var(--text); }
+  .tgl { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .tgl .sw2 { width: 28px; height: 16px; border-radius: 999px; background: var(--accent); position: relative; flex: none; }
+  .tgl .sw2::after { content: ""; position: absolute; right: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; }
+  .act-foot { display: flex; align-items: center; gap: 8px; }
+  .act-foot .ghost { height: 26px; padding: 0 10px; border: 0; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font: 600 11.5px Inter, sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .act-foot .del { margin-left: auto; color: #c0392b; background: none; border: 0; font: 500 11.5px Inter, sans-serif; cursor: pointer; }
+  .act.shut { cursor: pointer; }
+  .act.shut .act-top::after { content: "›"; color: var(--muted); font-size: 16px; }
+
+  /* ── Animations: a list of rows, one opened; quick picks + Custom ── */
+  .an-row { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); font-size: 12px; cursor: pointer; }
+  .an-row i { width: 26px; height: 18px; flex: none; border-radius: 6px; background: linear-gradient(90deg, #a78bfa, #60a5fa); }
+  .an-row .t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .an-row .t b { font-weight: 600; }
+  .an-row .t small { color: var(--muted); font-size: 10.5px; }
+  .an-open { display: flex; flex-direction: column; gap: 9px; padding: 9px; border: 1px solid #d9d0fb; border-radius: 12px; background: #fff; box-shadow: 0 6px 18px rgb(109 85 216 / .1); }
+  .when { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .when button { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; border: 1px solid var(--line); border-radius: 10px; background: #fff; font: 500 9.5px/1.15 Inter, sans-serif; color: var(--text); cursor: pointer; text-align: center; }
+  .when button i { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 15%, transparent); color: var(--c); font-style: normal; font-size: 12px; }
+  .when button.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .fromto { display: grid; grid-template-columns: 70px 1fr 14px 1fr 18px; align-items: center; gap: 6px; font-size: 12px; }
+  .fromto .v { height: 26px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); display: grid; place-items: center; font-weight: 600; font-size: 11.5px; }
+  .fromto .ar { color: var(--muted); text-align: center; }
+  .preview-btn { align-self: stretch; height: 30px; border: 0; border-radius: 999px; background: var(--accent); color: #fff; font: 600 12px Inter, sans-serif; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; }
+  .anim5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+  .anim5 .an { padding: 6px 1px; font-size: 10px; }
+  .an.custom i { background: none; border: 1.5px dashed #b9b0e4; display: grid; place-items: center; color: var(--accent); font-style: normal; font-size: 12px; font-weight: 700; }
+</style>
+</head>
+<body data-show="screen">
+  <div class="switcher"><span>Mockup:</span>
+    <button class="on" data-pick="screen">No block selected</button>
+    <button data-pick="block">A button selected</button>
+    <button data-pick="block-open">Its actions and animations, opened</button>
+  </div>
+
+  <div class="topbar">
+    <div class="brand"><i></i>PeraForm</div>
+    <div class="titlebox"><b>FeedBack</b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="color:var(--muted)"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="color:var(--muted)"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg><small>Saved</small></div>
+    <div class="tb-icons">
+      <span class="orb" style="margin:0 6px"></span>
+      <button class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><path d="M12 2a10 10 0 1 0 0 20c1 0 1.5-.8 1.5-1.6 0-.9.7-1.6 1.6-1.6H16a6 6 0 0 0 6-6c0-4.4-4.5-8-10-8z"/></svg></button><button class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button>
+      <button class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button><button class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></button><button class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></button>
+      <span class="pub">Published ▾</span>
+      <button class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button><button class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>
+      <span class="credit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/></svg>37.4</span>
+      <button class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button><button class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="5" cy="5" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="19" cy="5" r="1.5"/><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="19" r="1.5"/><circle cx="12" cy="19" r="1.5"/><circle cx="19" cy="19" r="1.5"/></svg></button>
+      <span class="avatar">A</span>
+    </div>
+  </div>
+
+  <div class="shell">
+    <nav class="nav">
+      <a class="on" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M10 6h11M10 12h11M10 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>Questions</a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M3 3v18h18"/><path d="M8 17v-6M13 17V7M18 17v-3"/></svg>Responses</a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</a>
+    </nav>
+    <div>
+      <div class="content">
+        <div class="etool">
+          <div class="seg"><button class="on">Design screens</button><button>Edit questions</button></div>
+          <span class="ehint">Looks and movement only: words, answers and rules are in Edit questions.</span>
+          <span class="dawn"><span class="orb"></span>Design with Dawn</span>
+          <div class="seg"><button class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>Phone</button><button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Desktop</button></div>
+        </div>
+
+        <div class="ebody">
+          <!-- Left: screens + layers -->
+          <aside class="left">
+            <div class="sec-h">Screens<button class="add">+ Screen</button></div>
+            <div class="screens">
+              <button class="scr-t on"><span class="ph"><span class="sc" style="background:linear-gradient(160deg,#0f172a,#1e1b4b)"><span class="card" style="top:8px;height:20px;background:#111827"></span><img src="../public/layouts/forest-falls.jpg" style="top:10px;left:5px;width:30px;height:12px;border-radius:2px" alt=""><span class="card" style="top:31px;bottom:6px;background:#111827"></span><span class="btn" style="bottom:9px;top:auto;background:#a78bfa"></span></span></span><span class="n">1 FeedBack</span></button>
+              <button class="scr-t"><span class="ph"><span class="sc" style="background:linear-gradient(160deg,#0f172a,#1e1b4b)"><span class="card" style="top:10px;bottom:10px;background:#111827"></span><span class="h" style="top:15px;width:18px;background:#e5e7eb"></span><span class="q" style="top:22px;background:#1f2937;border-color:#334155"></span><span class="btn" style="top:40px;background:#a78bfa"></span></span></span><span class="n">2 Tell us More</span></button>
+              <button class="scr-t scr-new"><span class="ph">+</span><span class="n">New</span></button>
+            </div>
+            <div class="sec-h">Layers<button class="add">+ Add</button></div>
+            <div class="tree">
+              <div class="lr" style="--d:0"><span class="ti" style="--c:#64748b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><rect x="4" y="4" width="16" height="16" rx="3"/></svg></span><span class="nm">Top card</span><span class="vis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span></div>
+              <div class="lr" style="--d:1"><span class="ti" style="--c:#0ea5e9"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg></span><span class="nm">Hackathon photo</span><span class="vis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span></div>
+              <div class="lr" style="--d:1"><span class="ti" style="--c:#f59e0b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M4 7V5h16v2M9 19h6M12 5v14"/></svg></span><span class="nm">Hackathon Feedback</span><span class="vis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span></div>
+              <div class="lr" style="--d:0"><span class="ti" style="--c:#64748b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><rect x="4" y="4" width="16" height="16" rx="3"/></svg></span><span class="nm">Question card</span><span class="vis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span></div>
+              <div class="lr" style="--d:1"><span class="ti" style="--c:#f59e0b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M4 7V5h16v2M9 19h6M12 5v14"/></svg></span><span class="nm">Give us a FeedBack</span><span class="vis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span></div>
+              <div class="lr" style="--d:1"><span class="ti" style="--c:#10b981"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M10 6h11M10 12h11M10 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg></span><span class="nm">Give a Rating</span><span class="vis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span></div>
+              <div class="lr" style="--d:1"><span class="ti" style="--c:#10b981"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M10 6h11M10 12h11M10 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg></span><span class="nm">Want to tell us more?</span><span class="vis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span></div>
+              <div class="lr" data-row="btn" style="--d:1"><span class="ti" style="--c:#8b5cf6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="m9 9 5 12 1.8-5.2L21 14z"/><path d="M7.2 2.2 8 5.1M5.1 8l-2.9-.8M14 4.1 12 6M6 12l-1.9 2"/></svg></span><span class="nm">Next</span><span class="vis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span></div>
+              <div class="lr dim" style="--d:1"><span class="ti" style="--c:#8b5cf6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="m9 9 5 12 1.8-5.2L21 14z"/><path d="M7.2 2.2 8 5.1M5.1 8l-2.9-.8M14 4.1 12 6M6 12l-1.9 2"/></svg></span><span class="nm">Submit</span><span class="vis off" title="Hidden until an action shows it. Click to show it."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M3 3l18 18"/><path d="M10.6 5.1A10 10 0 0 1 12 5c7 0 10 7 10 7a17 17 0 0 1-3.1 4.1M6.6 6.6A17 17 0 0 0 2 12s3 7 10 7a10 10 0 0 0 5.4-1.6"/></svg></span></div>
+            </div>
+          </aside>
+
+          <!-- Canvas -->
+          <div class="canvas">
+            <div class="device"><div class="dscreen">
+              <div class="dcard"><img src="../public/layouts/forest-falls.jpg" alt=""><p style="text-align:center;font-weight:700;color:#f8fafc">⚡ Hackathon Feedback</p></div>
+              <div class="dcard">
+                <h3>Give us a FeedBack</h3>
+                <p><b style="color:#f8fafc">Give a Rating *</b></p>
+                <span class="stars">☆☆☆☆☆☆☆</span>
+                <p><b style="color:#f8fafc">Want to tell us more?</b></p>
+                <span class="radio"><i></i>Yes</span><span class="radio"><i></i>No</span>
+                <div class="dbtns" style="position:relative"><span class="nx" id="nextBtn" style="position:relative">Next</span></div>
+              </div>
+            </div></div>
+            <div class="ctools">
+              <button class="icon on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="m4 4 7 17 2.5-7.5L21 11z"/></svg></button><button class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M18 11V6a2 2 0 0 0-4 0v5M14 10V4a2 2 0 0 0-4 0v6M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.9-6-2.4l-3.6-3.6a2 2 0 0 1 2.8-2.8L6 15"/></svg></button><button class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="3 3"/></svg></button>
+              <span class="sepv"></span><button class="icon">−</button><span class="z">42%</span><button class="icon">+</button><span class="z">Fit</span>
+              <span class="sepv"></span><button class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
+            </div>
+          </div>
+
+          <!-- Right: screen panel (no block) / inspector (button) -->
+          <div>
+            <div data-view="screen">
+              <div class="panel">
+        <div class="head">
+          <strong>Screen 1</strong>
+          <span class="tip" tabindex="0" aria-label="How to design">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            <span class="bubble">Click a block to edit it. Drag to move (hold Alt to place freely). Shift-click or drag a box to select several. Ctrl + scroll zooms; Space + drag moves around.</span>
+          </span>
+          <div class="menu-wrap">
+            <button class="icon" id="more" aria-expanded="false" aria-label="More for this screen" title="More for this screen">
+              <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+            </button>
+            <div class="menu" id="menu" hidden>
+              <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>Keep this screen</button>
+              <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><path d="M12 2a10 10 0 1 0 0 20c1 0 1.5-.8 1.5-1.6 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.6 1.6-1.6H16a6 6 0 0 0 6-6c0-4.4-4.5-8-10-8z"/></svg>Keep this look</button>
+              <hr />
+              <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="14" height="10" rx="2"/><rect x="17" y="8" width="5" height="12" rx="1"/></svg>Copy phone design to desktop</button>
+              <hr />
+              <button class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Start this screen over</button>
+            </div>
+          </div>
+        </div>
+
+        <details open>
+          <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>Layout<span class="value">Big question</span></summary>
+          <div class="body">
+            <div class="lay">
+              <button class="lt"><span class="ph"><span class="sc"><span class="card" style="top:10px;bottom:10px"></span><span class="h" style="top:15px;width:20px"></span><span class="q" style="top:22px"></span><span class="q" style="top:31px"></span><span class="q" style="top:40px"></span><span class="btn" style="top:52px"></span></span></span><span class="name">Card</span><span class="feel">all in one</span></button>
+              <button class="lt on"><span class="ph"><span class="sc"><span class="h" style="top:16px;width:26px;height:5px;left:6px"></span><span class="h" style="top:24px;width:18px;height:5px;left:6px"></span><span class="q" style="top:36px;height:8px"></span><span class="btn" style="top:52px;right:12px;width:20px"></span></span></span><span class="name">Big question</span><span class="feel">one at a time</span></button>
+              <button class="lt"><span class="ph"><span class="sc"><img src="../public/layouts/forest-falls.jpg" style="top:0;height:30px" alt=""><span class="h" style="top:35px;width:20px"></span><span class="q" style="top:42px"></span><span class="q" style="top:50px"></span><span class="btn" style="top:60px"></span></span></span><span class="name">Picture</span><span class="feel">photo on top</span></button>
+              <button class="lt"><span class="ph"><span class="sc"><img src="../public/layouts/violet-path.jpg" style="top:0;height:100%" alt=""><span class="glass" style="top:18px;bottom:16px"></span><span class="h" style="top:23px;width:18px"></span><span class="q" style="top:30px;left:8px;right:8px"></span><span class="btn" style="top:44px;right:9px"></span></span></span><span class="name">Photo</span><span class="feel">glass on a photo</span></button>
+              <button class="lt"><span class="ph"><span class="sc"><span class="h" style="top:22px;left:9px;width:22px;height:5px"></span><span class="l" style="top:31px;left:12px;width:16px"></span><span class="btn" style="top:44px;left:11px;right:auto;width:18px;height:6px"></span></span></span><span class="name">Cover</span><span class="feel">big hello</span></button>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>Style<span class="value">Midnight</span></summary>
+          <div class="body">
+            <div class="styles">
+              <button class="st s-playful" title="Bright, round, bouncy">
+                <div class="scr"><div class="mini">
+                  <h4>Hey there! 🎉</h4>
+                  <div class="opt"><i class="on"></i><span style="width:55%"></span></div>
+                  <div class="opt"><i></i><span style="width:40%"></span></div>
+                  <div class="btns"><em></em><b></b></div>
+                </div></div>
+                <div class="cap"><strong>Playful</strong><small>Bright, round, bouncy</small></div>
+              </button>
+              <button class="st s-classroom" title="Calm, clear, for schools">
+                <div class="scr"><div class="mini">
+                  <h4>Lesson 1</h4>
+                  <div class="opt"><i class="on"></i><span style="width:55%"></span></div>
+                  <div class="opt"><i></i><span style="width:40%"></span></div>
+                  <div class="btns"><em></em><b></b></div>
+                </div></div>
+                <div class="cap"><strong>Classroom</strong><small>Calm, clear, for schools</small></div>
+              </button>
+              <button class="st s-official" title="Formal, square, no fuss">
+                <div class="scr"><div class="mini">
+                  <h4>Application</h4>
+                  <div class="opt"><i class="on"></i><span style="width:55%"></span></div>
+                  <div class="opt"><i></i><span style="width:40%"></span></div>
+                  <div class="btns"><em></em><b></b></div>
+                </div></div>
+                <div class="cap"><strong>Official</strong><small>Formal, square, no fuss</small></div>
+              </button>
+              <button class="st s-flow" title="Minimal, big heading">
+                <div class="scr"><div class="mini">
+                  <h4>Welcome</h4>
+                  <div class="opt"><i class="on"></i><span style="width:55%"></span></div>
+                  <div class="opt"><i></i><span style="width:40%"></span></div>
+                  <div class="btns"><em></em><b></b></div>
+                </div></div>
+                <div class="cap"><strong>Flow</strong><small>Minimal, big heading</small></div>
+              </button>
+              <button class="st s-glass" title="Frosted, vivid, modern">
+                <div class="scr"><div class="mini">
+                  <h4>Join us</h4>
+                  <div class="opt"><i class="on"></i><span style="width:55%"></span></div>
+                  <div class="opt"><i></i><span style="width:40%"></span></div>
+                  <div class="btns"><em></em><b></b></div>
+                </div></div>
+                <div class="cap"><strong>Glass</strong><small>Frosted, vivid, modern</small></div>
+              </button>
+              <button class="st s-midnight on" title="Dark with a glow">
+                <div class="scr"><div class="mini">
+                  <h4>Level up</h4>
+                  <div class="opt"><i class="on"></i><span style="width:55%"></span></div>
+                  <div class="opt"><i></i><span style="width:40%"></span></div>
+                  <div class="btns"><em></em><b></b></div>
+                </div></div>
+                <div class="cap"><strong>Midnight</strong><small>Dark with a glow</small></div>
+              </button>
+            </div>
+            <div class="styles-foot">Hover a style to see how screens move in.<a href="#">Back to original</a></div>
+          </div>
+        </details>
+
+        <details>
+          <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>After this screen
+            <span class="tip" tabindex="0" onclick="event.preventDefault()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+              <span class="bubble">Same setting as “After section 1” in Edit questions. Next buttons follow it; a button set to “Jump to a screen…” goes straight there.</span></span>
+          </summary>
+          <div class="body">
+            <div class="dest-wrap">
+              <button class="dest" id="dest" aria-expanded="false" aria-haspopup="listbox">
+                <span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+                <span class="what"><small>Next goes to</small><span>Screen 2 · Tell us more</span></span>
+                <svg class="chev2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg>
+              </button>
+              <div class="dest-list" id="destList" role="listbox" hidden>
+                <button class="on" role="option" aria-selected="true"><span class="num">2</span><span class="label">Tell us more<small>The next screen</small></span><span class="tick">✓</span></button>
+                <button role="option"><span class="num">3</span><span class="label">Your details</span></button>
+                <button role="option"><span class="num">4</span><span class="label">Thank you</span></button>
+                <hr />
+                <button role="option"><span class="num submit">✓</span><span class="label">Submit the form<small>Ends here</small></span></button>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>Visibility<span class="value">Only for teachers</span></summary>
+          <div class="body">
+            <div class="vis" role="radiogroup" aria-label="When this screen shows">
+              <button class="vc on" role="radio" aria-checked="true"><span class="dot"></span>
+                <span class="pic"><span class="mini-scr"></span><span class="arrow">›</span><span class="mini-scr lit"></span><span class="arrow">›</span><span class="mini-scr"></span></span>
+                <strong>In the flow</strong><small>Everyone sees it</small>
+              </button>
+              <button class="vc" role="radio" aria-checked="false"><span class="dot"></span>
+                <span class="pic"><span class="mini-scr"></span><span class="arrow">›</span><span class="mini-scr ghost"></span><span class="arrow">›</span><span class="mini-scr"></span></span>
+                <strong>Skipped</strong><small>Until a button or answer shows it</small>
+              </button>
+            </div>
+            <div class="rule-head"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg>Show only when</div>
+            <div class="rule">
+              <span>When</span><span class="tok q">Your role</span><span>is</span><span class="tok a">Teacher</span>
+              <button class="x" aria-label="Remove this condition" title="Remove this condition">✕</button>
+            </div>
+            <button class="add-rule"><span class="plus">+</span>Or when…<small>an answer matches</small></button>
+          </div>
+        </details>
+
+        <details open>
+          <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>Background</summary>
+          <div class="body">
+            <div class="swatches">
+              <span class="sw on" style="background:#fbfcff"></span>
+              <span class="sw" style="background:#fff"></span>
+              <span class="sw" style="background:#6d55d8"></span>
+              <span class="sw" style="background:#ece8fb"></span>
+              <span class="sw" style="background:#000"></span>
+              <span class="sw custom" title="Choose your own colour"></span>
+            </div>
+          </div>
+        </details>
+
+        <div class="footer"><kbd>Ctrl</kbd>+<kbd>/</kbd> shortcuts<a href="#">How to design</a></div>
+      </div>
+            </div>
+            <div data-view="block">
+              <div class="panel">
+                <div class="insp-blk">
+                  <span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="m9 9 5 12 1.8-5.2L21 14z"/><path d="M7.2 2.2 8 5.1M5.1 8l-2.9-.8M14 4.1 12 6M6 12l-1.9 2"/></svg></span>
+                  <strong>Next<small>Button · in Question card</small></strong>
+                  <button class="icon" title="Keep, duplicate, move, delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+                </div>
+
+                <details open>
+                  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>Does<span class="value">Next</span></summary>
+                  <div class="body">
+                    <div class="does">
+                      <button class="do on" style="--c:#6d55d8"><span class="g"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>Next</button>
+                      <button class="do" style="--c:#64748b"><span class="g"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M19 12H5M11 18l-6-6 6-6"/></svg></span>Back</button>
+                      <button class="do" style="--c:#16a34a"><span class="g"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M20 6 9 17l-5-5"/></svg></span>Submit</button>
+                      <button class="do" style="--c:#0ea5e9"><span class="g"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M4 12h12M10 6l6 6-6 6M20 4v16"/></svg></span>Jump to…</button>
+                      <button class="do" style="--c:#f59e0b"><span class="g"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></span>Open link</button>
+                      <button class="do" style="--c:#a855f7"><span class="g"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg></span>Effects only</button>
+                    </div>
+                  </div>
+                </details>
+
+                <details open>
+                  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>Look<span class="value">Glow pill</span></summary>
+                  <div class="body">
+                    <div class="looks">
+                      <div class="lk on"><span style="background:#a78bfa;color:#0f172a;border-radius:9px;box-shadow:0 0 6px #a78bfa">Next</span></div>
+                      <div class="lk"><span style="background:#6d55d8;color:#fff;border-radius:4px">Next</span></div>
+                      <div class="lk"><span style="border:1.5px solid #6d55d8;color:#6d55d8;border-radius:9px">Next</span></div>
+                      <div class="lk"><span style="color:#6d55d8;text-decoration:underline">Next</span></div>
+                    </div>
+                    <div class="nums">
+                      <div class="num-f"><small>Width</small><b>220</b></div>
+                      <div class="num-f"><small>Height</small><b>36</b></div>
+                      <div class="num-f"><small>Radius</small><b>12</b></div>
+                      <div class="num-f"><small>Text</small><b>14</b></div>
+                    </div>
+                    <div class="swatches">
+                      <span class="sw on" style="background:#a78bfa"></span><span class="sw" style="background:#6d55d8"></span><span class="sw" style="background:#0f172a"></span><span class="sw" style="background:#fff"></span><span class="sw" style="background:#ece8fb"></span><span class="sw custom" title="Choose your own colour"></span>
+                    </div>
+                  </div>
+                </details>
+
+                <details>
+                  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>When clicked<span class="value">1 effect</span></summary>
+                  <div class="body">
+                    <div class="act">
+                      <div class="line"><span>Show</span><span class="tok v">Submit</span><span>with a</span><span class="tok t">fade</span></div>
+                    </div>
+                    <button class="add-rule"><span class="plus">+</span>Add an effect<small>show, hide, animate</small></button>
+                  </div>
+                </details>
+
+                <details>
+                  <summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>Animation<span class="value">Pop in</span></summary>
+                  <div class="body">
+                    <div class="anim">
+                      <button class="an on" style="--a:pop"><i></i>Pop in</button>
+                      <button class="an" style="--a:fadeA"><i></i>Fade</button>
+                      <button class="an" style="--a:slideA"><i></i>Slide</button>
+                      <button class="an" style="--a:pulse"><i></i>Pulse</button>
+                    </div>
+                  </div>
+                </details>
+                <div class="footer"><kbd>Del</kbd> remove <kbd>Ctrl</kbd>+<kbd>D</kbd> copy<a href="#">Help</a></div>
+              </div>
+            </div>
+
+            <div data-view="block-open">
+              <div class="panel">
+                <div class="insp-blk">
+                  <span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 9 5 12 1.8-5.2L21 14z"/><path d="M7.2 2.2 8 5.1M5.1 8l-2.9-.8M14 4.1 12 6M6 12l-1.9 2"/></svg></span>
+                  <strong>Next<small>Button · in Question card</small></strong>
+                  <button class="icon" title="Keep, duplicate, move, delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+                </div>
+                <details><summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>Does<span class="value">Next</span></summary></details>
+                <details><summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>Look<span class="value">Glow pill</span></summary></details>
+
+                <details open><summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>When clicked<span class="value">2 effects</span></summary>
+                  <div class="body">
+                    <div class="act open">
+                      <div class="act-top"><span class="n">1</span><div class="line"><span class="tok">Change</span><span class="tok v open">Question card</span></div></div>
+                      <span class="mini-h">Do this</span>
+                      <div class="eff">
+                        <button style="--c:#16a34a"><i>👁</i>Show</button>
+                        <button style="--c:#64748b"><i>⦸</i>Hide</button>
+                        <button style="--c:#0ea5e9"><i>⇄</i>Toggle</button>
+                        <button class="on" style="--c:#a855f7"><i>✎</i>Change</button>
+                        <button style="--c:#f59e0b"><i>▶</i>Animate</button>
+                      </div>
+                      <span class="mini-h">Change these</span>
+                      <div class="props">
+                        <div class="prop"><span>Background</span><span style="display:flex;gap:6px;align-items:center"><span class="swc" style="background:#1e1b4b"></span><span style="color:var(--muted)">→</span><span class="swc" style="background:#a78bfa;box-shadow:0 0 0 2px #fff,0 0 0 3px var(--accent)"></span></span><b></b><span class="rm" title="Remove">✕</span></div>
+                        <div class="prop"><span>Scale</span><span class="sl" style="--v:38%"></span><b>105%</b><span class="rm" title="Remove">✕</span></div>
+                        <div class="prop"><span>Radius</span><span class="sl" style="--v:22%"></span><b>24px</b><span class="rm" title="Remove">✕</span></div>
+                        <button class="add-prop">+ Another property</button>
+                      </div>
+                      <span class="mini-h">Transition</span>
+                      <div class="timing">
+                        <div class="num-f"><small>Duration</small><b>300 ms</b></div>
+                        <div class="num-f"><small>Delay</small><b>0 ms</b></div>
+                      </div>
+                      <div class="curves">
+                        <span class="cv on"><svg viewBox="0 0 26 18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 16 C 10 16, 16 2, 24 2"/></svg>Smooth</span>
+                        <span class="cv"><svg viewBox="0 0 26 18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 16 L 24 2"/></svg>Linear</span>
+                        <span class="cv"><svg viewBox="0 0 26 18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 16 C 14 16, 20 10, 24 2"/></svg>Speed up</span>
+                        <span class="cv"><svg viewBox="0 0 26 18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 16 C 6 4, 14 2, 24 2"/></svg>Slow down</span>
+                        <span class="cv"><svg viewBox="0 0 26 18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 16 C 8 -4, 16 4, 24 2"/></svg>Bounce</span>
+                      </div>
+                      <div class="act-foot">
+                        <button class="ghost">▶ Preview</button>
+                        <button class="del">Remove</button>
+                      </div>
+                    </div>
+                    <div class="act shut">
+                      <div class="act-top"><span class="n">2</span><div class="line"><span>Show</span><span class="tok v">Submit</span><span>with a</span><span class="tok t">fade</span></div></div>
+                    </div>
+                    <button class="add-rule"><span class="plus">+</span>Add an effect<small>show, hide, animate</small></button>
+                  </div>
+                </details>
+
+                <details open><summary><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>Animation<span class="value">2 animations</span></summary>
+                  <div class="body">
+                    <div class="an-row"><i></i><span class="t"><b>Pop in</b><small>On screen start · 0.4 s</small></span><span style="color:var(--muted)">›</span></div>
+                    <div class="an-open">
+                      <div class="act-top"><span class="n" style="background:color-mix(in srgb,#f59e0b 15%,transparent);color:#d97706">2</span><div class="line"><b style="font-size:12.5px">Gentle float</b></div></div>
+                      <span class="mini-h">Plays</span>
+                      <div class="when">
+                        <button style="--c:#16a34a"><i>⏵</i>On start</button>
+                        <button class="on" style="--c:#0ea5e9"><i>↻</i>Always</button>
+                        <button style="--c:#a855f7"><i>⚡</i>On an action</button>
+                        <button style="--c:#f59e0b"><i>⏏</i>Before leaving</button>
+                      </div>
+                      <span class="mini-h">From → to</span>
+                      <div class="fromto"><span>Move up</span><span class="v">0 px</span><span class="ar">→</span><span class="v">6 px</span><span class="rm" style="color:var(--muted);text-align:center">✕</span></div>
+                      <div class="fromto"><span>Opacity</span><span class="v">100%</span><span class="ar">→</span><span class="v">85%</span><span class="rm" style="color:var(--muted);text-align:center">✕</span></div>
+                      <button class="add-prop">+ Another property</button>
+                      <div class="timing" style="grid-template-columns:repeat(3,1fr)">
+                        <div class="num-f"><small>Duration</small><b>1.6 s</b></div>
+                        <div class="num-f"><small>Delay</small><b>0 s</b></div>
+                        <div class="num-f"><small>Repeat</small><b>Back &amp; forth</b></div>
+                      </div>
+                      <div class="curves">
+                        <span class="cv on"><svg viewBox="0 0 26 18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 16 C 10 16, 16 2, 24 2"/></svg>Smooth</span>
+                        <span class="cv"><svg viewBox="0 0 26 18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 16 L 24 2"/></svg>Linear</span>
+                        <span class="cv"><svg viewBox="0 0 26 18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 16 C 14 16, 20 10, 24 2"/></svg>Speed up</span>
+                        <span class="cv"><svg viewBox="0 0 26 18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 16 C 6 4, 14 2, 24 2"/></svg>Slow down</span>
+                        <span class="cv"><svg viewBox="0 0 26 18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 16 C 8 -4, 16 4, 24 2"/></svg>Bounce</span>
+                      </div>
+                      <div class="act-foot">
+                        <button class="ghost">▶ Preview on canvas</button>
+                        <button class="del">Remove</button>
+                      </div>
+                    </div>
+                    <span class="mini-h" style="margin-top:2px">Add another</span>
+                    <div class="anim5">
+                      <button class="an" style="--a:pop"><i></i>Pop in</button>
+                      <button class="an" style="--a:fadeA"><i></i>Fade</button>
+                      <button class="an" style="--a:slideA"><i></i>Slide</button>
+                      <button class="an" style="--a:pulse"><i></i>Pulse</button>
+                      <button class="an custom"><i>+</i>Custom</button>
+                    </div>
+                  </div>
+                </details>
+                <div class="footer"><kbd>Del</kbd> remove <kbd>Ctrl</kbd>+<kbd>D</kbd> copy<a href="#">Help</a></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foot">PeraForm · by <u>Quality Tools</u></div>
+    </div>
+  </div>
+
+<script>
+
+  const more = document.getElementById('more')
+  const menu = document.getElementById('menu')
+  more.addEventListener('click', (e) => {
+    e.stopPropagation()
+    const open = menu.hidden
+    menu.hidden = !open
+    more.setAttribute('aria-expanded', String(open))
+  })
+  const dest = document.getElementById('dest')
+  const destList = document.getElementById('destList')
+  dest.addEventListener('click', (e) => {
+    e.stopPropagation()
+    const open = destList.hidden
+    destList.hidden = !open
+    dest.setAttribute('aria-expanded', String(open))
+  })
+  document.addEventListener('click', () => {
+    menu.hidden = true
+    more.setAttribute('aria-expanded', 'false')
+    destList.hidden = true
+    dest.setAttribute('aria-expanded', 'false')
+  })
+
+  for (const b of document.querySelectorAll('[data-pick]')) {
+    b.addEventListener('click', () => {
+      document.body.dataset.show = b.dataset.pick
+      for (const x of document.querySelectorAll('[data-pick]')) x.classList.toggle('on', x === b)
+      const sel = b.dataset.pick !== 'screen'
+      document.getElementById('nextBtn').classList.toggle('sel', sel)
+      document.querySelector('[data-row="btn"]').classList.toggle('on', sel)
+    })
+  }
+</script>
+</body>
+</html>
