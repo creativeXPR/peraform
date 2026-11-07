@@ -868,3 +868,47 @@
   opacity: 1;
   color: var(--accent);
 }
+
+/* Quiet phone frames: a light outline at rest, so the canvas keeps the
+   eye; the dark frame shows only on hover. */
+.lp-phone,
+.lp-phone::before,
+.st-phone,
+.st-phone::before {
+  transition:
+    background-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.lp-phone,
+.st-phone {
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+  box-shadow: none;
+}
+
+.lp-phone::before {
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+}
+
+.lp-tile:hover .lp-phone,
+.lp-tile:hover .lp-phone::before,
+.screen-thumbs button:hover .st-phone {
+  background: #1b1a24;
+}
+
+.lp-tile:hover .lp-phone,
+.screen-thumbs button:hover .st-phone {
+  box-shadow: 0 3px 8px rgb(20 16 60 / 0.2);
+}
+
+.screen-thumbs .screen-thumb-new .st-phone,
+.screen-thumbs .screen-thumb-new:hover .st-phone {
+  background: none;
+  box-shadow: none;
+}
+
+.screen-thumbs .is-current:hover .st-phone {
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 4px var(--accent);
+}
