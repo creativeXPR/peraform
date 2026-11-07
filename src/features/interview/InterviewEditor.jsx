@@ -430,6 +430,8 @@ export default function InterviewEditor({ viewSwitch, viewHint }) {
             <Inspector
               key={selectedIds.join()}
               node={resolveNode(selected, device)}
+              label={nodeLabel(selected, questions)}
+              where={selected.parentId && design.nodes[selected.parentId] ? nodeLabel(design.nodes[selected.parentId], questions) : null}
               parentOverflow={selected.parentId && design.nodes[selected.parentId] ? overflowOf(resolveNode(design.nodes[selected.parentId], device)) : undefined}
               multi={selectedIds.length > 1 ? selectedIds.length : 0}
               onAlign={align}

@@ -1,0 +1,508 @@
+/* The block panel (Inspector.jsx) and its action / animation editors, in
+   the Design screens look: soft colour tiles (no borders), sentences that
+   open in place, small controls. mockups/interview-editor-mockup.html */
+
+/* ── Header ─────────────────────────────────────────────── */
+.blk-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+.blk-head strong {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.blk-head small {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 400;
+  text-overflow: ellipsis;
+}
+
+.blk-tile {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--c) 15%, transparent);
+  color: var(--c);
+}
+
+.mini-h {
+  display: block;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.insp-tipline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.insp-grid-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* ── Soft tiles (Tiles.jsx) ─────────────────────────────── */
+.soft-tiles {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  gap: 6px;
+}
+
+.soft-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 7px 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.15;
+  text-align: center;
+  cursor: pointer;
+}
+
+.soft-tile:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.soft-tile.is-on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.soft-tile-icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--c) 15%, transparent);
+  color: var(--c);
+}
+
+.soft-tile.is-on .soft-tile-icon {
+  background: color-mix(in srgb, var(--c) 24%, transparent);
+}
+
+/* ── Easing curves ──────────────────────────────────────── */
+.curves {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  gap: 4px;
+}
+
+.curve {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 4px 1px 3px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 9px;
+  line-height: 1.1;
+  cursor: pointer;
+}
+
+.curve svg {
+  width: 24px;
+  height: 16px;
+  color: var(--accent);
+}
+
+.curve.is-on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+  color: var(--text);
+}
+
+/* ── Button looks ───────────────────────────────────────── */
+.btn-looks {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.btn-look {
+  display: grid;
+  place-items: center;
+  height: 40px;
+  padding: 0 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  cursor: pointer;
+}
+
+.btn-look.is-on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.btn-look span {
+  max-width: 100%;
+  overflow: hidden;
+  padding: 2px 6px;
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.btn-look-glow {
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent, #fff);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.btn-look-solid {
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--on-accent, #fff);
+}
+
+.btn-look-outline {
+  border: 1.5px solid var(--accent);
+  border-radius: 999px;
+  color: var(--accent);
+}
+
+.btn-look-link {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+/* ── Actions and animations: sentence cards ─────────────── */
+.act-card {
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--line));
+  border-radius: 12px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 6%, var(--surface)), color-mix(in srgb, #0ea5e9 5%, var(--surface)));
+}
+
+.act-card.is-open {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: var(--surface);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.act-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 9px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.act-n {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: color-mix(in srgb, #a855f7 15%, transparent);
+  color: #a855f7;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.act-line {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.act-line .tok {
+  max-width: 100%;
+  overflow: hidden;
+  padding: 1px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.act-line .tok-v {
+  color: var(--accent);
+}
+
+.act-line .tok-t {
+  color: #0f766e;
+}
+
+.act-line .tok-a {
+  color: #b45309;
+}
+
+.act-line .tok.is-missing {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.act-chev {
+  flex: none;
+  color: var(--text-muted);
+  transition: transform 0.15s;
+}
+
+.act-card.is-open .act-chev {
+  transform: rotate(180deg);
+}
+
+.act-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 9px 10px;
+}
+
+.act-body .action-props {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 0;
+}
+
+.act-body .action-prop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.act-body .action-prop > span:first-child {
+  flex: none;
+  min-width: 64px;
+}
+
+.act-body .action-prop .color-picker {
+  flex-basis: 100%;
+  order: 3;
+}
+
+/* Fields inside the opened cards: small, like the rest of the panel. */
+.act-body select,
+.act-body .ui-select,
+.act-body input:not([type='checkbox']):not([type='range']) {
+  min-width: 0;
+  max-width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.act-body .action-num input {
+  width: 72px;
+}
+
+.act-body .action-check,
+.act-body .action-fixed,
+.act-body .action-hint {
+  font-size: 12px;
+}
+
+.act-body select.action-missing,
+.act-body .ui-select.action-missing {
+  border-color: var(--danger);
+}
+
+.insp-grid-4 .insp-num input {
+  padding: 0 5px;
+  font-size: 12px;
+}
+
+.prop-slide {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.prop-slide input[type='range'] {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+  accent-color: var(--accent);
+}
+
+.act-body .prop-slide .action-num input {
+  width: 50px;
+  padding: 0 5px;
+}
+
+.act-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.act-foot .chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--accent);
+}
+
+.act-remove {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #c0392b;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.actions-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.actions-editor .showif-add:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Animations */
+.anim-chip {
+  flex: none;
+  width: 26px;
+  height: 18px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #a78bfa, #60a5fa);
+}
+
+.anim-what {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.anim-what b {
+  overflow: hidden;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.anim-what small {
+  color: var(--text-muted);
+  font-size: 10.5px;
+}
+
+.anim-timing {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.anim-quick {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.anim-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 6px 1px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.anim-pick:hover {
+  border-color: var(--accent);
+}
+
+.anim-pick i {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 16px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #a78bfa, #60a5fa);
+  color: var(--accent);
+}
+
+.anim-pick.is-custom i {
+  border: 1.5px dashed color-mix(in srgb, var(--accent) 45%, transparent);
+  background: none;
+}
+
+.anim-pop:hover i { animation: anim-pop 0.8s ease-in-out infinite alternate; }
+.anim-fadeIn:hover i { animation: anim-fade 0.8s ease-in-out infinite alternate; }
+.anim-slideUp:hover i { animation: anim-slide 0.8s ease-in-out infinite alternate; }
+.anim-pulse:hover i { animation: anim-pulse 0.8s ease-in-out infinite alternate; }
+@keyframes anim-pop { from { transform: scale(0.6); } }
+@keyframes anim-fade { from { opacity: 0.1; } }
+@keyframes anim-slide { from { transform: translateY(5px); } }
+@keyframes anim-pulse { to { transform: scale(1.15); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-pick i {
+    animation: none !important;
+  }
+}

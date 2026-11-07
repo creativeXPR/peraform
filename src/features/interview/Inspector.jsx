@@ -5,17 +5,31 @@ import {
   AlignEndVertical,
   AlignStartHorizontal,
   AlignStartVertical,
+  AppWindow,
   ArrowDownToLine,
+  ArrowLeft,
+  ArrowRight,
   ArrowUpToLine,
   BookmarkPlus,
+  Check,
+  CircleHelp,
   Copy,
   Eye,
   EyeOff,
   FolderInput,
+  Image,
   Info,
+  Link2,
+  MoreHorizontal,
+  MousePointerClick,
+  Redo2,
   Shrink,
   Sparkle,
+  Square,
   Trash2,
+  Type,
+  Video,
+  Zap,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import ColorPicker from '../../lib/ColorPicker.jsx'
@@ -41,6 +55,10 @@ import ShowIf from '../builder/ShowIf.jsx'
 import ActionsEditor from './ActionsEditor.jsx'
 import AnimationsEditor from './AnimationsEditor.jsx'
 import Select from '../../lib/Select.jsx'
+import MenuButton from '../../lib/MenuButton.jsx'
+import PanelGroup, { InfoTip } from './PanelGroup.jsx'
+import { SoftTiles } from './Tiles.jsx'
+import './inspector.css'
 
 // Colour choices on the canvas: transparent, the theme's own colours (so the
 // design follows theme changes), black and white — plus any custom colour.
@@ -74,14 +92,44 @@ function NumberField({ label, value, onChange, min, max, step = 1, suffix }) {
   )
 }
 
-function Group({ title, children }) {
+// A folding group (PanelGroup), remembered per block-panel group.
+function Group({ id, title, value, tip, open = false, children }) {
   return (
-    <section className="insp-group">
-      <h3>{title}</h3>
+    <PanelGroup id={`blk-${id}`} title={title} value={value} tip={tip} defaultOpen={open}>
       {children}
-    </section>
+    </PanelGroup>
   )
 }
+
+// Each block type's icon and colour (as in Layers).
+const TYPE_LOOK = {
+  card: [Square, '#64748b'],
+  text: [Type, '#f59e0b'],
+  image: [Image, '#0ea5e9'],
+  video: [Video, '#0ea5e9'],
+  embed: [AppWindow, '#0ea5e9'],
+  question: [CircleHelp, '#10b981'],
+  button: [MousePointerClick, '#8b5cf6'],
+}
+
+// What a button does, as soft tiles (BUTTON_ACTIONS).
+const DOES = [
+  { value: 'next', label: 'Next', icon: ArrowRight, color: '#6d55d8', title: BUTTON_ACTIONS.next },
+  { value: 'back', label: 'Back', icon: ArrowLeft, color: '#64748b', title: BUTTON_ACTIONS.back },
+  { value: 'submit', label: 'Submit', icon: Check, color: '#16a34a', title: BUTTON_ACTIONS.submit },
+  { value: 'goto', label: 'Jump to…', icon: Redo2, color: '#0ea5e9', title: BUTTON_ACTIONS.goto },
+  { value: 'url', label: 'Open link', icon: Link2, color: '#f59e0b', title: BUTTON_ACTIONS.url },
+  { value: 'none', label: 'Effects only', icon: Zap, color: '#a855f7', title: BUTTON_ACTIONS.none },
+]
+
+// One-click button looks: the style changes they make.
+const BUTTON_LOOKS = [
+  ['Glow pill', { bg: 'accent', color: 'on-accent', radius: 999, borderWidth: 0, shadow: 'glow', bgAlpha: 100 }],
+  ['Solid', { bg: 'accent', color: 'on-accent', radius: 8, borderWidth: 0, shadow: 'none', bgAlpha: 100 }],
+  ['Outline', { bg: 'transparent', color: 'accent', radius: 999, borderWidth: 2, borderColor: 'accent', shadow: 'none' }],
+  ['Link', { bg: 'transparent', color: 'accent', radius: 0, borderWidth: 0, shadow: 'none' }],
+]
+const lookOn = (s, look) => Object.entries(look).every(([k, v]) => (s[k] ?? (k === 'bgAlpha' ? 100 : undefined)) === v)
 
 const hasText = (type) => ['text', 'button', 'question', 'card'].includes(type)
 
@@ -230,6 +278,8 @@ export default function Inspector({
   onFitHeight, // (h) text/questions: this tall, blocks below move down
   parentOverflow, // the Overflow of the card it's in (scroll | hidden | visible), if any
   onPreview, // (animation) plays it on the canvas
+  where, // the card it's in (its name), if any
+  label, // the block's name (as in Layers)
 }) {
   const f = frameOf(node, device)
   const s = node.style ?? {}
@@ -241,70 +291,43 @@ export default function Inspector({
 
   return (
     <div className="inspector">
-      <div className="insp-head">
-        <strong>{multi ? `${multi} blocks selected` : type}</strong>
-        <div className="insp-tools">
-          {!multi && (
-            <>
-              <button
-                type="button"
-                className="icon-btn"
-                onClick={() => onLevel(1)}
-                title="Bring forward"
-                aria-label="Bring forward"
-              >
-                <ArrowUpToLine size={16} />
-              </button>
-              <button
-                type="button"
-                className="icon-btn"
-                onClick={() => onLevel(-1)}
-                title="Send backward"
-                aria-label="Send backward"
-              >
-                <ArrowDownToLine size={16} />
-              </button>
-            </>
-          )}
-          <button
-            type="button"
-            className="icon-btn"
-            onClick={onDuplicate}
-            title="Duplicate (Ctrl+D)"
-            aria-label="Duplicate"
-          >
-            <Copy size={16} />
-          </button>
-          {!multi && (
-            <button
-              type="button"
-              className="icon-btn"
-              onClick={onKeep}
-              title="Keep: save it to paste later, on any screen or form"
-              aria-label="Keep (save it to paste later)"
-            >
-              <BookmarkPlus size={16} />
-            </button>
-          )}
-          {!multi && (
-            <button
-              type="button"
-              className="icon-btn"
-              onClick={onMove}
-              title="Move to another card or screen"
-              aria-label="Move to…"
-            >
-              <FolderInput size={16} />
-            </button>
-          )}
-          <button type="button" className="icon-btn insp-danger" onClick={onDelete} title="Delete" aria-label="Delete">
-            <Trash2 size={16} />
-          </button>
-        </div>
+      <div className="blk-head">
+        <span className="blk-tile" style={{ '--c': TYPE_LOOK[node.type][1] }} aria-hidden="true">
+          {(() => {
+            const Icon = TYPE_LOOK[node.type][0]
+            return <Icon size={15} />
+          })()}
+        </span>
+        <strong>
+          {multi ? `${multi} blocks selected` : label || type}
+          {!multi && <small>{where ? `${type} · in ${where}` : type}</small>}
+        </strong>
+        <MenuButton
+          icon={<MoreHorizontal size={17} />}
+          label={multi ? 'More for these blocks' : 'More for this block'}
+          items={[
+            ...(multi
+              ? []
+              : [
+                  { label: 'Bring forward', icon: ArrowUpToLine, onSelect: () => onLevel(1) },
+                  { label: 'Send backward', icon: ArrowDownToLine, onSelect: () => onLevel(-1) },
+                ]),
+            { label: 'Duplicate (Ctrl+D)', icon: Copy, onSelect: onDuplicate },
+            ...(multi
+              ? []
+              : [
+                  { label: 'Keep (paste it later)', icon: BookmarkPlus, onSelect: onKeep },
+                  { label: 'Move to…', icon: FolderInput, onSelect: onMove },
+                ]),
+            { label: 'Delete', icon: Trash2, danger: true, onSelect: onDelete },
+          ]}
+        />
       </div>
 
+      {!multi && <SizeLimits node={node} frame={f} onFitHeight={onFitHeight} parentOverflow={parentOverflow} />}
+
       {multi > 0 && (
-        <Group title={`Arrange · ${DEVICES[device].label}`}>
+        <Group id="arrange" title="Arrange" value={DEVICES[device].label} open tip="Aligns the blocks that share a card with the last one you picked.">
           <div className="insp-align">
             {ALIGN.map(([how, Icon, label]) => (
               <button
@@ -319,7 +342,6 @@ export default function Inspector({
               </button>
             ))}
           </div>
-          <p className="insp-note">Aligns the blocks that share a card with the last one you picked.</p>
           <button
             type="button"
             className={`insp-toggle${f.hidden ? '' : ' is-on'}`}
@@ -334,59 +356,10 @@ export default function Inspector({
           <StartHidden node={node} onStartHidden={onStartHidden} />
         </Group>
       )}
-
-      {!multi && (
-        <Group title={`Position · ${DEVICES[device].label}`}>
-          <div className="insp-grid">
-            <NumberField label="X" value={f.x} onChange={(x) => onFrame({ x })} />
-            <NumberField label="Y" value={f.y} onChange={(y) => onFrame({ y })} />
-            <NumberField label="W" value={f.w} min={MIN_SIZE} onChange={(w) => onFrame({ w })} />
-            <NumberField label="H" value={f.h} min={MIN_SIZE} onChange={(h) => onFrame({ h })} />
-            <NumberField
-              label="Rotate"
-              value={f.r || 0}
-              min={-180}
-              max={180}
-              suffix="°"
-              onChange={(r) => onFrame({ r })}
-            />
-            <NumberField label="Level" value={f.z || 0} min={0} max={99} onChange={(z) => onFrame({ z })} />
-          </div>
-          <SizeLimits node={node} frame={f} onFitHeight={onFitHeight} parentOverflow={parentOverflow} />
-          <button
-            type="button"
-            className={`insp-toggle${f.hidden ? '' : ' is-on'}`}
-            aria-pressed={!f.hidden}
-            onClick={() => onFrame({ hidden: !f.hidden })}
-          >
-            {f.hidden ? <EyeOff size={16} /> : <Eye size={16} />}
-            {f.hidden
-              ? `Hidden on ${DEVICES[device].label.toLowerCase()}`
-              : `Shown on ${DEVICES[device].label.toLowerCase()}`}
-          </button>
-          <StartHidden node={node} onStartHidden={onStartHidden} />
-          <p className="insp-note">
-            Position, size and visibility are set per device — switch to {DEVICES[otherDevice].label} to lay it out
-            there. A hidden block gives its space back: the blocks below move up until it’s shown.
-          </p>
-        </Group>
-      )}
-
-      <Group title="Phone and desktop">
-        <label className="insp-check">
-          <input type="checkbox" checked={!node.split} onChange={(e) => onSplit(!e.target.checked)} />
-          Same look and words on both
-        </label>
-        <p className="insp-note">
-          {node.split
-            ? `Its own look and words on each device: colours, fonts, sizes and text you change here apply to the ${DEVICES[device].label.toLowerCase()} design only.`
-            : `Colours, fonts, sizes and text are shared; turn this off to give the ${DEVICES[otherDevice].label.toLowerCase()} design its own. Position and size are always per device.`}
-        </p>
-      </Group>
 
       {!multi && (
         <>
-          <Group title="Content">
+          <Group id={`content-${node.type}`} title={node.type === 'question' ? 'Question' : 'Content'} open>
             {node.type === 'text' && (
               <>
                 <textarea
@@ -431,32 +404,26 @@ export default function Inspector({
                   placeholder="Button label"
                   aria-label="Button label"
                 />
-                <label className="insp-field">
-                  <span>When clicked</span>
-                  <Select
-                    value={node.action?.type ?? 'next'}
-                    onChange={(e) =>
-                      // chosen: the creator's pick. It's never flagged as out of
-                      // step with the screen order (screenIssues).
-                      onContent({
-                        action: {
-                          ...node.action,
-                          type: e.target.value,
-                          screen: node.action?.screen ?? null,
-                          url: node.action?.url ?? '',
-                          target: node.action?.target ?? '_blank',
-                          chosen: true,
-                        },
-                      })
-                    }
-                  >
-                    {Object.entries(BUTTON_ACTIONS).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </Select>
-                </label>
+                <span className="mini-h">Does</span>
+                <SoftTiles
+                  label="When clicked"
+                  options={DOES}
+                  value={node.action?.type ?? 'next'}
+                  onChange={(type) =>
+                    // chosen: the creator's pick. It's never flagged as out of
+                    // step with the screen order (screenIssues).
+                    onContent({
+                      action: {
+                        ...node.action,
+                        type,
+                        screen: node.action?.screen ?? null,
+                        url: node.action?.url ?? '',
+                        target: node.action?.target ?? '_blank',
+                        chosen: true,
+                      },
+                    })
+                  }
+                />
                 {node.action?.type === 'goto' && (
                   <label className="insp-field">
                     <span>Screen</span>
@@ -563,9 +530,9 @@ export default function Inspector({
                   placeholder={'https://…  or  <iframe src="https://…"></iframe>'}
                   aria-label="Web page address or iframe embed code"
                 />
-                <p className="insp-note">
-                  A web address, or the embed code a site gives you (“&lt;iframe …&gt;” from YouTube, Google Maps,
-                  Slides, Canva, Calendly…). Any https page that allows embedding; some sites block it.
+                <p className="insp-note insp-tipline">
+                  Web address or embed code
+                  <InfoTip text="A web address, or the embed code a site gives you (“<iframe …>” from YouTube, Google Maps, Slides, Canva, Calendly…). Any https page that allows embedding; some sites block it." />
                 </p>
               </>
             )}
@@ -589,20 +556,45 @@ export default function Inspector({
             {node.type === 'card' && <FitCard key={node.id} pad={s.fitPad ?? 16} device={device} onFit={onFit} />}
           </Group>
 
+          {node.type === 'button' && (
+            <Group id="look" title="Look" value={BUTTON_LOOKS.find(([, l]) => lookOn(s, l))?.[0] ?? 'Your own'} open>
+              <div className="btn-looks">
+                {BUTTON_LOOKS.map(([name, look]) => (
+                  <button
+                    key={name}
+                    type="button"
+                    className={`btn-look${lookOn(s, look) ? ' is-on' : ''}`}
+                    onClick={() => onStyle(look)}
+                    title={name}
+                    aria-label={`${name} look`}
+                  >
+                    <span className={`btn-look-${name.split(' ')[0].toLowerCase()}`}>{node.label || 'Next'}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="insp-grid insp-grid-4">
+                <NumberField label="Width" value={f.w} min={MIN_SIZE} onChange={(w) => onFrame({ w })} />
+                <NumberField label="Height" value={f.h} min={MIN_SIZE} onChange={(h) => onFrame({ h })} />
+                <NumberField label="Radius" value={s.radius ?? 0} min={0} max={999} onChange={(radius) => onStyle({ radius })} />
+                <NumberField label="Text" value={s.size ?? 16} min={8} max={200} onChange={(size) => onStyle({ size })} />
+              </div>
+              <ColorPicker value={s.bg ?? 'accent'} presets={COLOR_PRESETS} onChange={(bg) => onStyle({ bg })} label="Button colour" />
+            </Group>
+          )}
+
           {showIf && (
-            <Group title="Show only if">
+            <Group id="showif" title="Show only if" value={showIf.rules.length ? 'Only when…' : 'Always'} tip="The same rule as on the question in Edit questions.">
               <ShowIf {...showIf} />
-              <p className="insp-note">The same rule as on the question in Edit questions.</p>
             </Group>
           )}
 
           {(node.type === 'button' || trigger) && (
-            <Group title="Actions">
-              {node.type === 'question' && (
-                <p className="insp-note">
-                  To show a question or a whole screen only for some answers, use “Show only if…” on it.
-                </p>
-              )}
+            <Group
+              id="actions"
+              title={node.type === 'button' ? 'When clicked' : 'When answered'}
+              value={node.actions?.length ? `${node.actions.length} effect${node.actions.length > 1 ? 's' : ''}` : 'Nothing'}
+              tip={node.type === 'question' ? 'To show a question or a whole screen only for some answers, use “Show only if…” on it.' : undefined}
+            >
               <ActionsEditor
                 actions={node.actions}
                 onChange={(actions) => onContent({ actions })}
@@ -616,7 +608,17 @@ export default function Inspector({
             </Group>
           )}
 
-          <Group title="Animations">
+          <Group
+            id="animations"
+            title="Animation"
+            value={
+              node.animations?.length
+                ? node.animations.length > 1
+                  ? `${node.animations.length} animations`
+                  : node.animations[0].name
+                : 'None'
+            }
+          >
             <AnimationsEditor
               animations={node.animations}
               onChange={(animations) => onContent({ animations })}
@@ -627,7 +629,60 @@ export default function Inspector({
         </>
       )}
 
-      <Group title="Appearance">
+      {!multi && (
+        <Group
+          id="position"
+          title="Position and size"
+          value={DEVICES[device].label}
+          tip={`Position, size and visibility are set per device: switch to ${DEVICES[otherDevice].label} to lay it out there. A hidden block gives its space back: the blocks below move up until it’s shown.`}
+        >
+          <div className="insp-grid">
+            <NumberField label="X" value={f.x} onChange={(x) => onFrame({ x })} />
+            <NumberField label="Y" value={f.y} onChange={(y) => onFrame({ y })} />
+            <NumberField label="W" value={f.w} min={MIN_SIZE} onChange={(w) => onFrame({ w })} />
+            <NumberField label="H" value={f.h} min={MIN_SIZE} onChange={(h) => onFrame({ h })} />
+            <NumberField
+              label="Rotate"
+              value={f.r || 0}
+              min={-180}
+              max={180}
+              suffix="°"
+              onChange={(r) => onFrame({ r })}
+            />
+            <NumberField label="Level" value={f.z || 0} min={0} max={99} onChange={(z) => onFrame({ z })} />
+          </div>
+          <button
+            type="button"
+            className={`insp-toggle${f.hidden ? '' : ' is-on'}`}
+            aria-pressed={!f.hidden}
+            onClick={() => onFrame({ hidden: !f.hidden })}
+          >
+            {f.hidden ? <EyeOff size={16} /> : <Eye size={16} />}
+            {f.hidden
+              ? `Hidden on ${DEVICES[device].label.toLowerCase()}`
+              : `Shown on ${DEVICES[device].label.toLowerCase()}`}
+          </button>
+          <StartHidden node={node} onStartHidden={onStartHidden} />
+        </Group>
+      )}
+
+      <Group
+        id="devices"
+        title="Phone and desktop"
+        value={node.split ? 'Each its own' : 'Shared'}
+        tip={
+          node.split
+            ? `Its own look and words on each device: colours, fonts, sizes and text you change here apply to the ${DEVICES[device].label.toLowerCase()} design only.`
+            : `Colours, fonts, sizes and text are shared; turn this off to give the ${DEVICES[otherDevice].label.toLowerCase()} design its own. Position and size are always per device.`
+        }
+      >
+        <label className="insp-check">
+          <input type="checkbox" checked={!node.split} onChange={(e) => onSplit(!e.target.checked)} />
+          Same look and words on both
+        </label>
+      </Group>
+
+      <Group id="appearance" title={node.type === 'button' ? 'More looks' : 'Appearance'} value={s.shadow && s.shadow !== 'none' ? SHADOWS[s.shadow]?.label : undefined}>
         <span className="insp-label">Background</span>
         <ColorPicker
           value={s.bg ?? 'transparent'}
@@ -732,13 +787,14 @@ export default function Inspector({
           <Sparkle size={15} />
           Glass effect
         </button>
-        <p className="insp-note">
-          Blur behind frosts whatever sits underneath (glassmorphism). Lower the background opacity to see it.
+        <p className="insp-note insp-tipline">
+          About blur
+          <InfoTip text="Blur behind frosts whatever sits underneath (glassmorphism). Lower the background opacity to see it." />
         </p>
       </Group>
 
       {hasText(node.type) && (
-        <Group title="Text">
+        <Group id="text" title="Text" value={THEME_FONTS[s.font]?.label ?? 'Theme font'}>
           <div className="insp-grid">
             <label className="insp-field">
               <span>Font</span>
