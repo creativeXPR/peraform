@@ -8,6 +8,7 @@ import {
   signInWithGoogle,
 } from './authActions.js'
 import { isCreator, useAuth } from './useAuth.js'
+import { useGoogleOneTap } from './oneTap.js'
 import './SignInPage.css'
 import LogoMark from '../../lib/LogoMark.jsx'
 import GoogleMark from '../../lib/GoogleMark.jsx'
@@ -35,6 +36,9 @@ export default function SignInPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  // Google's account list pops up by itself (One Tap) for anyone not
+  // signed in as a maker yet; picking an account signs them in.
+  useGoogleOneTap({ enabled: !loading && !isCreator(user) && mode !== 'reset' })
 
   if (loading) return <Spinner fill="page" />
   if (isCreator(user)) return <Navigate to={safeNext(params.get('next'))} replace />

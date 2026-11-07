@@ -47,6 +47,8 @@ export function resetPassword(email) {
 }
 
 export function signOut() {
+  // Google's account prompt (One Tap) mustn't sign them straight back in.
+  window.google?.accounts?.id?.disableAutoSelect()
   return firebaseSignOut(getFirebaseAuth())
 }
 
