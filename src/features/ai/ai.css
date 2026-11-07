@@ -310,6 +310,12 @@
   padding: 22px clamp(18px, 4vw, 44px) 22px;
 }
 
+/* Each part keeps its own height: a min-height (the result box) would
+   otherwise let flex shrink it, and a long result spills over what follows. */
+.ai-create-body > * {
+  flex-shrink: 0;
+}
+
 .ai-create-top {
   display: flex;
   align-items: center;
